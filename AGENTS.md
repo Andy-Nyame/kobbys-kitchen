@@ -1,5 +1,18 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+# Kobby's Kitchen Project Rules
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+- Use Next.js App Router.
+- Use JavaScript and JSX only.
+- Use plain CSS only.
+- Do not add TypeScript.
+- Do not add Tailwind CSS.
+- Do not install packages without approval.
+- Prefer Server Components.
+- Use Client Components only when browser interaction requires them.
+- Keep content separate from presentational components.
+- Build reusable accessible components.
+- Follow the approved Google Stitch web design.
+- Implement light mode only for Version 1.1.
+- Do not invent business information.
+- Do not add carts, online checkout, or online payments.
+- Run `npm run lint` and `npm run build` after meaningful changes.
+- Explain major architectural changes before making them.
