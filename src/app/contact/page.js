@@ -1,5 +1,6 @@
 import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
+import InlineIcon from "@/components/ui/InlineIcon";
 import PageIntro from "@/components/ui/PageIntro";
 import { businessData } from "@/data/businessData";
 
@@ -24,7 +25,10 @@ export default function ContactPage() {
             <div className="contact-methods__item">
               <h3>Phone</h3>
               <a className="inline-link" href={phone.href}>
-                {phone.display}
+                <span className="icon-link">
+                  <InlineIcon name="phone" />
+                  <span>{phone.display}</span>
+                </span>
               </a>
             </div>
             <div className="contact-methods__item">
@@ -48,7 +52,10 @@ export default function ContactPage() {
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  TikTok
+                  <span className="icon-link">
+                    <InlineIcon name="tiktok" />
+                    <span>TikTok</span>
+                  </span>
                 </a>
               </div>
             ) : null}

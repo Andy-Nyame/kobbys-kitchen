@@ -1,6 +1,5 @@
 import SiteFooter from "@/components/layout/SiteFooter";
 import SiteHeader from "@/components/layout/SiteHeader";
-import MobileActionBar from "@/components/layout/MobileActionBar";
 
 import "./globals.css";
 
@@ -17,7 +16,6 @@ export default function RootLayout({ children }) {
           <SiteHeader />
           <div className="site-main">{children}</div>
           <SiteFooter />
-          <MobileActionBar />
         </div>
       </body>
     </html>

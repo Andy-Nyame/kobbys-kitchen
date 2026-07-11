@@ -6,6 +6,7 @@ import {
   primaryNavigation,
 } from "@/data/navigation";
 import { businessData } from "@/data/businessData";
+import InlineIcon from "@/components/ui/InlineIcon";
 
 export default function SiteFooter() {
   const currentYear = new Date().getFullYear();
@@ -38,7 +39,10 @@ export default function SiteFooter() {
               className="footer-link"
               href={phone.href}
             >
-              Phone: {phone.display}
+              <span className="icon-link">
+                <InlineIcon name="phone" />
+                <span>Phone: {phone.display}</span>
+              </span>
             </a>
             <a
               aria-label={`WhatsApp Kobby’s Kitchen on ${whatsapp.display}`}
@@ -57,7 +61,10 @@ export default function SiteFooter() {
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                TikTok
+                <span className="icon-link">
+                  <InlineIcon name="tiktok" />
+                  <span>TikTok</span>
+                </span>
               </a>
             ) : null}
           </div>
