@@ -3,6 +3,8 @@ import Link from "next/link";
 
 import DesktopNavigation from "@/components/navigation/DesktopNavigation";
 import MobileNavigation from "@/components/navigation/MobileNavigation";
+import ButtonLink from "@/components/ui/ButtonLink";
+import { businessData } from "@/data/businessData";
 
 export default function SiteHeader() {
   return (
@@ -17,12 +19,25 @@ export default function SiteHeader() {
             height={767}
           />
           <span className="brand__copy">
-            <span className="brand__name">Kobby’s Kitchen</span>
-            <span className="brand__tagline">Tema Community Two</span>
+            <span className="brand__name">{businessData.name}</span>
+            <span className="brand__tagline">{businessData.location.area}</span>
           </span>
         </Link>
 
-        <DesktopNavigation />
+        <div className="site-header__desktop-actions">
+          <DesktopNavigation />
+          <ButtonLink
+            ariaLabel="Order on WhatsApp"
+            className="site-header__whatsapp"
+            href={businessData.whatsapp.href}
+            rel="noopener noreferrer"
+            target="_blank"
+            variant="primary"
+          >
+            Order on WhatsApp
+          </ButtonLink>
+        </div>
+
         <MobileNavigation />
       </div>
     </header>

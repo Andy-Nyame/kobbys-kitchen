@@ -1,24 +1,25 @@
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
-import { privacyPageContent } from "@/data/siteContent";
 
 export default function PrivacyPage() {
   return (
     <main className="page">
       <div className="container content-stack">
         <PageIntro
-          eyebrow={privacyPageContent.eyebrow}
-          title={privacyPageContent.title}
-          description={privacyPageContent.description}
+          eyebrow="Privacy"
+          title="Privacy"
+          description="Kobby’s Kitchen values your privacy."
         />
 
-        {privacyPageContent.sections.map((section) => (
-          <ContentSection
-            key={section.title}
-            title={section.title}
-            description={section.description}
-          />
-        ))}
+        <ContentSection
+          title="Feedback Forms"
+          description="If you use the review or private suggestion forms, please share only the information you are comfortable providing."
+        />
+
+        <ContentSection
+          title="Personal Information"
+          description="Avoid including sensitive personal information in open message fields."
+        />
       </div>
     </main>
   );

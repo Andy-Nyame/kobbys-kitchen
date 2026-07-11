@@ -7,6 +7,6 @@ export const primaryNavigation = [
 ];
 
 export const footerSupportNavigation = [
-  { label: "Private Suggestions", href: "/suggestions" },
+  { label: "Suggestions", href: "/suggestions" },
   { label: "Privacy", href: "/privacy" },
 ];

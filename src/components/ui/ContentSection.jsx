@@ -12,7 +12,7 @@ export default function ContentSection({
     <section className={sectionClassName}>
       <div className="content-section__header">
         <h2>{title}</h2>
-        <p>{description}</p>
+        {description ? <p>{description}</p> : null}
       </div>
       {children ? <div className="content-section__body">{children}</div> : null}
     </section>

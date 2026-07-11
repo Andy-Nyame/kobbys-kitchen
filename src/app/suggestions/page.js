@@ -3,37 +3,30 @@ import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
 import {
   suggestionFormFields,
-  suggestionsPageContent,
   suggestionTextareaField,
-} from "@/data/siteContent";
+} from "@/data/businessData";
 
 export default function SuggestionsPage() {
   return (
     <main className="page">
       <div className="container content-stack">
         <PageIntro
-          eyebrow={suggestionsPageContent.eyebrow}
-          title={suggestionsPageContent.title}
-          description={suggestionsPageContent.description}
+          eyebrow="Suggestions"
+          title="Private Suggestions"
+          description="Use this page to send private feedback to Kobby’s Kitchen."
         />
 
         <ContentSection
-          title={suggestionsPageContent.sections[0].title}
-          description={suggestionsPageContent.sections[0].description}
+          title="Share a Private Suggestion"
+          description="Share a suggestion, comment or idea using the form below."
         >
           <FeedbackForm
-            buttonLabel="Suggestion submissions coming soon"
+            buttonLabel="Send Suggestion"
             fields={suggestionFormFields}
-            hintPrefix="Before forms go live, read the"
-            hintSuffix="page for the approved form guidance."
+            hintText="Please read our"
             textarea={suggestionTextareaField}
           />
         </ContentSection>
-
-        <ContentSection
-          title={suggestionsPageContent.sections[1].title}
-          description={suggestionsPageContent.sections[1].description}
-        />
       </div>
     </main>
   );

@@ -1,49 +1,75 @@
 import Link from "next/link";
 
 import FeedbackForm from "@/components/forms/FeedbackForm";
+import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
 import {
   reviewFormFields,
-  reviewsPageContent,
   reviewTextareaField,
-} from "@/data/siteContent";
+  businessData,
+} from "@/data/businessData";
 
 export default function ReviewsPage() {
+  const { phone, whatsapp } = businessData;
+
   return (
     <main className="page">
       <div className="container content-stack">
         <PageIntro
-          eyebrow={reviewsPageContent.eyebrow}
-          title={reviewsPageContent.title}
-          description={reviewsPageContent.description}
+          eyebrow="Reviews"
+          title="Reviews"
+          description={businessData.reviewEmptyState}
         />
 
         <ContentSection
-          title={reviewsPageContent.sections[0].title}
-          description={reviewsPageContent.sections[0].description}
+          title="Customer Reviews"
+          description={businessData.reviewEmptyState}
         />
 
         <ContentSection
           title="Share a Review"
-          description="The form layout is ready here, while submission handling will be added later."
+          description="Use the form below to share your experience with Kobby’s Kitchen."
         >
           <FeedbackForm
-            buttonLabel="Review submissions coming soon"
+            buttonLabel="Submit Review"
             fields={reviewFormFields}
-            hintPrefix="Before forms go live, review the"
-            hintSuffix="page for the approved form guidance."
+            hintText="Please read our"
             textarea={reviewTextareaField}
           />
         </ContentSection>
 
         <ContentSection
-          title={reviewsPageContent.sections[1].title}
-          description={reviewsPageContent.sections[1].description}
+          title="Contact Kobby’s Kitchen"
+          description="For order questions or a direct follow-up, contact Kobby’s Kitchen by phone or WhatsApp."
+        >
+          <div className="section-actions">
+            <ButtonLink
+              ariaLabel={`WhatsApp Kobby’s Kitchen on ${whatsapp.display}`}
+              href={whatsapp.href}
+              rel="noopener noreferrer"
+              target="_blank"
+              variant="primary"
+            >
+              WhatsApp Kobby’s Kitchen
+            </ButtonLink>
+            <ButtonLink
+              ariaLabel={`Call Kobby’s Kitchen on ${phone.display}`}
+              href={phone.href}
+              variant="secondary"
+            >
+              Call Kobby’s Kitchen
+            </ButtonLink>
+          </div>
+        </ContentSection>
+
+        <ContentSection
+          title="Private Feedback"
+          description="Prefer to share feedback privately? Send a private suggestion instead."
         >
           <div className="section-actions">
             <Link className="inline-link" href="/suggestions">
-              Go to Private Suggestions
+              Send a Private Suggestion
             </Link>
           </div>
         </ContentSection>

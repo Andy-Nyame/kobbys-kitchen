@@ -1,75 +1,144 @@
 import Image from "next/image";
-import Link from "next/link";
 
+import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
+import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
 import PageIntro from "@/components/ui/PageIntro";
-import { aboutGalleryItems, aboutPageContent } from "@/data/siteContent";
+import { businessData } from "@/data/businessData";
 
 export default function AboutPage() {
+  const { phone, whatsapp } = businessData;
+
   return (
     <main className="page">
       <div className="container content-stack">
         <PageIntro
-          eyebrow={aboutPageContent.eyebrow}
-          title={aboutPageContent.title}
-          description={aboutPageContent.description}
+          eyebrow="About"
+          title="About Kobby’s Kitchen"
+          description={businessData.shortDescription}
         />
 
         <ContentSection
-          title={aboutPageContent.chefStory.title}
-          description={aboutPageContent.chefStory.description}
+          title="About Kobby’s Kitchen"
+          description={businessData.shortDescription}
+        />
+
+        <ContentSection
+          title="Our Services"
+          description="Kobby’s Kitchen serves everyday meals, takeaway orders and larger food requests for special occasions."
         >
           <div className="card-grid">
-            {aboutPageContent.chefStory.cards.map((card) => (
-              <article key={card.title} className="card">
-                <h3>{card.title}</h3>
-                <p>{card.description}</p>
+            {businessData.services.map((service) => (
+              <article key={service} className="card">
+                <h3>{service}</h3>
               </article>
             ))}
           </div>
         </ContentSection>
 
         <ContentSection
-          title={aboutPageContent.gallery.title}
-          description={aboutPageContent.gallery.description}
+          title="Why Choose Kobby’s Kitchen"
+          description="Kobby’s Kitchen focuses on satisfying meals, convenient service and an easy-to-find location."
         >
-          <div className="media-grid">
-            {aboutGalleryItems.map((item) => (
-              <article key={item.title} className="media-card">
-                {item.image ? (
-                  <Image
-                    className="media-card__image"
-                    src={item.image.src}
-                    alt={item.image.alt}
-                    width={item.image.width}
-                    height={item.image.height}
-                  />
-                ) : (
-                  <div className="media-card__placeholder">
-                    <span>{item.title}</span>
-                  </div>
-                )}
-
-                <div className="media-card__body">
-                  <h3>{item.title}</h3>
-                  <p>{item.description}</p>
-                </div>
-              </article>
+          <ul className="feature-list">
+            {businessData.whyChooseUs.map((reason) => (
+              <li key={reason}>{reason}</li>
             ))}
+          </ul>
+        </ContentSection>
+
+        <ContentSection
+          title="Meet the Chef"
+          description={businessData.chefPreviewIntroduction}
+        >
+          <div className="split-panel">
+            <div className="split-panel__media">
+              <Image
+                className="portrait-image"
+                src="/images/people/felix-chef.jpg"
+                alt="Felix Papa Kwasi Cudjoe in chef uniform"
+                width={1254}
+                height={1254}
+              />
+            </div>
+            <div className="split-panel__content">
+              <p className="kicker">{businessData.ownerTitle}</p>
+              <h3>{businessData.owner}</h3>
+              <p className="supporting-copy">{businessData.experience}</p>
+            </div>
           </div>
         </ContentSection>
 
         <ContentSection
-          title={aboutPageContent.eventOrders.title}
-          description={aboutPageContent.eventOrders.description}
+          title="Owner Biography"
+          description="Get to know the owner and chef behind Kobby’s Kitchen."
+        >
+          <div className="split-panel split-panel--reverse">
+            <div className="split-panel__media">
+              <Image
+                className="portrait-image portrait-image--tall"
+                src="/images/people/felix-graduation.jpg"
+                alt="Portrait of Felix Papa Kwasi Cudjoe"
+                width={1067}
+                height={1475}
+              />
+            </div>
+            <div className="split-panel__content">
+              <p>{businessData.chefIntroduction}</p>
+            </div>
+          </div>
+        </ContentSection>
+
+        <ContentSection
+          title="Chef Message"
+          description={businessData.chefMessage}
+        />
+
+        <ContentSection
+          title="Gallery"
+          description="A few glimpses of the Kobby’s Kitchen experience."
+        >
+          <div className="gallery-grid">
+            {businessData.galleryLabels.map((label) => (
+              <article key={label} className="gallery-card">
+                <ImagePlaceholder
+                  className="gallery-card__placeholder"
+                  label={label}
+                />
+                <h3>{label}</h3>
+              </article>
+            ))}
+          </div>
+
+          <p className="section-note">
+            More photos from Kobby’s Kitchen will be added soon.
+          </p>
+        </ContentSection>
+
+        <ContentSection
+          title="Contact Kobby’s Kitchen"
+          description="Get in touch for takeaway questions, event orders and general enquiries."
         >
           <div className="section-actions">
-            <Link className="inline-link" href="/menu">
-              View the Menu route
-            </Link>
-            <Link className="inline-link" href="/contact">
-              Continue to Contact
-            </Link>
+            <ButtonLink
+              ariaLabel={`WhatsApp Kobby’s Kitchen on ${whatsapp.display}`}
+              href={whatsapp.href}
+              rel="noopener noreferrer"
+              target="_blank"
+              variant="primary"
+            >
+              Order on WhatsApp
+            </ButtonLink>
+            <ButtonLink
+              ariaLabel={`Call Kobby’s Kitchen on ${phone.display}`}
+              href={phone.href}
+              variant="secondary"
+            >
+              Call Kobby’s Kitchen
+            </ButtonLink>
+            <ButtonLink href="/contact" variant="secondary">
+              Contact Us
+            </ButtonLink>
           </div>
         </ContentSection>
       </div>

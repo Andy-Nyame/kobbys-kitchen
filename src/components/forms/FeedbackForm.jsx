@@ -3,8 +3,7 @@ import Link from "next/link";
 export default function FeedbackForm({
   fields,
   textarea,
-  hintPrefix,
-  hintSuffix,
+  hintText,
   buttonLabel,
 }) {
   return (
@@ -34,11 +33,11 @@ export default function FeedbackForm({
 
       <div className="form-card__footer">
         <p className="form-card__hint">
-          {hintPrefix}{" "}
+          {hintText}{" "}
           <Link className="text-link" href="/privacy">
             Privacy
           </Link>{" "}
-          {hintSuffix}
+          page.
         </p>
         <button type="submit" disabled>
           {buttonLabel}

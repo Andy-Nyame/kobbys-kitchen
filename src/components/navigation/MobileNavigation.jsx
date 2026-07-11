@@ -2,13 +2,38 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import ButtonLink from "@/components/ui/ButtonLink";
+import { businessData } from "@/data/businessData";
 import { primaryNavigation } from "@/data/navigation";
 
 export default function MobileNavigation() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
 
   return (
     <div className="mobile-navigation">
@@ -56,6 +81,19 @@ export default function MobileNavigation() {
               );
             })}
           </ul>
+
+          <div className="mobile-navigation__actions">
+            <ButtonLink
+              ariaLabel="Order on WhatsApp"
+              href={businessData.whatsapp.href}
+              onClick={() => setIsOpen(false)}
+              rel="noopener noreferrer"
+              target="_blank"
+              variant="primary"
+            >
+              Order on WhatsApp
+            </ButtonLink>
+          </div>
         </nav>
       ) : null}
     </div>
