@@ -6,7 +6,7 @@ import { businessData } from "@/data/businessData";
 
 export default function ContactPage() {
   const directionsLink = businessData.googleMapsLink;
-  const { phone, whatsapp, socialLinks } = businessData;
+  const { phone, whatsapp, email, socialLinks } = businessData;
 
   return (
     <main className="page">
@@ -40,6 +40,19 @@ export default function ContactPage() {
                 target="_blank"
               >
                 {whatsapp.display}
+              </a>
+            </div>
+            <div className="contact-methods__item">
+              <h3>Email</h3>
+              <a
+                aria-label={`Email Kobby’s Kitchen at ${email.display}`}
+                className="inline-link"
+                href={email.href}
+              >
+                <span className="icon-link">
+                  <InlineIcon name="email" />
+                  <span>{email.display}</span>
+                </span>
               </a>
             </div>
             {socialLinks.tiktok ? (

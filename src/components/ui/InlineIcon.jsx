@@ -32,9 +32,38 @@ function TikTokIcon() {
   );
 }
 
+function EmailIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="inline-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M4 7.25C4 6.56 4.56 6 5.25 6H18.75C19.44 6 20 6.56 20 7.25V16.75C20 17.44 19.44 18 18.75 18H5.25C4.56 18 4 17.44 4 16.75V7.25Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M5 7L12 12.25L19 7"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.7"
+      />
+    </svg>
+  );
+}
+
 export default function InlineIcon({ name }) {
   if (name === "phone") {
     return <PhoneIcon />;
+  }
+
+  if (name === "email") {
+    return <EmailIcon />;
   }
 
   if (name === "tiktok") {

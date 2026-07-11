@@ -17,6 +17,10 @@ export const businessData = {
     display: "+233 (0) 55 367 1248",
     href: "https://wa.me/233553671248",
   },
+  email: {
+    display: "felixcudjoe1738@gmail.com",
+    href: "mailto:felixcudjoe1738@gmail.com",
+  },
   googleMapsLink: "", // Pending.
   socialLinks: {
     tiktok:

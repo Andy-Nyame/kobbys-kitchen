@@ -10,7 +10,7 @@ import InlineIcon from "@/components/ui/InlineIcon";
 
 export default function SiteFooter() {
   const currentYear = new Date().getFullYear();
-  const { phone, whatsapp, socialLinks } = businessData;
+  const { phone, whatsapp, email, socialLinks } = businessData;
 
   return (
     <footer className="site-footer">
@@ -52,6 +52,16 @@ export default function SiteFooter() {
               target="_blank"
             >
               WhatsApp: {whatsapp.display}
+            </a>
+            <a
+              aria-label={`Email Kobby’s Kitchen at ${email.display}`}
+              className="footer-link"
+              href={email.href}
+            >
+              <span className="icon-link">
+                <InlineIcon name="email" />
+                <span>Email: {email.display}</span>
+              </span>
             </a>
             {socialLinks.tiktok ? (
               <a
