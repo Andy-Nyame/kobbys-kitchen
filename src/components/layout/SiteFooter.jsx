@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import NavigationLink from "@/components/navigation/NavigationLink";
 import {
   footerSupportNavigation,
   primaryNavigation,
@@ -88,9 +89,13 @@ export default function SiteFooter() {
           <ul className="footer-link-list">
             {primaryNavigation.map((item) => (
               <li key={item.href}>
-                <Link className="footer-link" href={item.href}>
+                <NavigationLink
+                  activeClassName="footer-link--current"
+                  className="footer-link"
+                  href={item.href}
+                >
                   {item.label}
-                </Link>
+                </NavigationLink>
               </li>
             ))}
           </ul>
@@ -101,9 +106,13 @@ export default function SiteFooter() {
           <ul className="footer-link-list">
             {footerSupportNavigation.map((item) => (
               <li key={item.href}>
-                <Link className="footer-link" href={item.href}>
+                <NavigationLink
+                  activeClassName="footer-link--current"
+                  className="footer-link"
+                  href={item.href}
+                >
                   {item.label}
-                </Link>
+                </NavigationLink>
               </li>
             ))}
           </ul>

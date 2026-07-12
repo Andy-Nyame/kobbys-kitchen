@@ -3,8 +3,18 @@ import SiteHeader from "@/components/layout/SiteHeader";
 
 import "./globals.css";
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : undefined);
+
 export const metadata = {
-  title: "Kobby’s Kitchen",
+  metadataBase: siteUrl ? new URL(siteUrl) : undefined,
+  title: {
+    default: "Kobby’s Kitchen",
+    template: "%s | Kobby’s Kitchen",
+  },
   description: "Tasty and satisfying meals in Tema Community Two.",
 };
 

@@ -6,6 +6,12 @@ import {
   suggestionTextareaField,
 } from "@/data/businessData";
 
+export const metadata = {
+  title: "Suggestions",
+  description:
+    "Send a private suggestion to Kobby’s Kitchen using the private feedback form.",
+};
+
 export default function SuggestionsPage() {
   return (
     <main className="page">
@@ -24,6 +30,8 @@ export default function SuggestionsPage() {
             buttonLabel="Send Suggestion"
             fields={suggestionFormFields}
             hintText="Please read our"
+            loadingMessage="Checking your suggestion..."
+            unavailableMessage="Suggestion submission is not connected yet. Your message has not been sent."
             textarea={suggestionTextareaField}
           />
         </ContentSection>

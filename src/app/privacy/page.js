@@ -1,6 +1,12 @@
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
 
+export const metadata = {
+  title: "Privacy",
+  description:
+    "Read the privacy notice for Kobby’s Kitchen review and suggestion forms.",
+};
+
 export default function PrivacyPage() {
   return (
     <main className="page">

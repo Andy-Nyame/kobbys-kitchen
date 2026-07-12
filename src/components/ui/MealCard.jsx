@@ -14,9 +14,10 @@ export default function MealCard({ item, showPopular = false }) {
       <div className="meal-card__media">
         {showImage ? (
           <Image
-            alt={item.name}
+            alt={`${item.name} from Kobby’s Kitchen`}
             className="meal-card__image"
             onError={() => setFailedImage(item.image)}
+            sizes="(min-width: 1200px) 24rem, (min-width: 900px) 30vw, (min-width: 640px) 45vw, 100vw"
             src={item.image}
             width={1200}
             height={900}

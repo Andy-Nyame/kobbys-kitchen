@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import NavigationLink from "@/components/navigation/NavigationLink";
 import { primaryNavigation } from "@/data/navigation";
 
 export default function DesktopNavigation() {
@@ -8,9 +7,13 @@ export default function DesktopNavigation() {
       <ul className="navigation-list">
         {primaryNavigation.map((item) => (
           <li key={item.href}>
-            <Link className="navigation-link" href={item.href}>
+            <NavigationLink
+              activeClassName="navigation-link--current"
+              className="navigation-link"
+              href={item.href}
+            >
               {item.label}
-            </Link>
+            </NavigationLink>
           </li>
         ))}
       </ul>

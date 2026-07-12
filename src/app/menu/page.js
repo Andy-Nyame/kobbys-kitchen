@@ -5,6 +5,12 @@ import PageIntro from "@/components/ui/PageIntro";
 import { businessData } from "@/data/businessData";
 import { menuItems } from "@/data/menuData";
 
+export const metadata = {
+  title: "Menu",
+  description:
+    "Browse the meals available from Kobby’s Kitchen in Tema Community Two and confirm current availability before ordering.",
+};
+
 export default function MenuPage() {
   const { phone, whatsapp } = businessData;
 

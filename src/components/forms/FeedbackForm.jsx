@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import StarRatingInput from "@/components/reviews/StarRatingInput";
 import { validateReviewPayload } from "@/utils/reviewValidation";
@@ -12,58 +12,130 @@ export default function FeedbackForm({
   hintText,
   buttonLabel,
   ratingField,
+  consentField,
+  loadingMessage,
+  unavailableMessage,
 }) {
   const initialValues = Object.fromEntries(
-    [...fields, textarea].map((field) => [field.name, ""])
+    [
+      ...fields.map((field) => [field.name, ""]),
+      [textarea.name, ""],
+      ...(consentField ? [[consentField.name, false]] : []),
+    ]
   );
   const [formValues, setFormValues] = useState(initialValues);
   const [ratingValue, setRatingValue] = useState("");
   const [errors, setErrors] = useState({});
-  const [statusMessage, setStatusMessage] = useState("");
+  const [status, setStatus] = useState({ type: "idle", message: "" });
+  const timeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleFieldChange = (event) => {
-    const { name, value } = event.target;
+    const { checked, name, type, value } = event.target;
+
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
 
     setFormValues((current) => ({
       ...current,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
     }));
+    setErrors((current) => ({
+      ...current,
+      [name]: "",
+    }));
+    setStatus({ type: "idle", message: "" });
   };
 
   const handleRatingChange = (value) => {
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
     setRatingValue(value);
     setErrors((current) => ({
       ...current,
       rating: "",
     }));
-    setStatusMessage("");
+    setStatus({ type: "idle", message: "" });
+  };
+
+  const validateFields = () => {
+    const nextErrors = {};
+
+    fields.forEach((field) => {
+      if (field.required && !String(formValues[field.name] || "").trim()) {
+        nextErrors[field.name] =
+          field.errorMessage || `Please enter ${field.label.toLowerCase()}.`;
+      }
+    });
+
+    if (textarea.required && !String(formValues[textarea.name] || "").trim()) {
+      nextErrors[textarea.name] =
+        textarea.errorMessage ||
+        `Please enter ${textarea.label.toLowerCase()}.`;
+    }
+
+    if (consentField && !formValues[consentField.name]) {
+      nextErrors[consentField.name] =
+        consentField.errorMessage || "Please confirm before submitting.";
+    }
+
+    if (ratingField) {
+      const { errors: validationErrors } = validateReviewPayload({
+        ...formValues,
+        rating: ratingValue,
+      });
+
+      if (validationErrors.rating) {
+        nextErrors.rating = validationErrors.rating;
+      }
+    }
+
+    return nextErrors;
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    if (!ratingField) {
-      setStatusMessage(
-        "This form is not connected yet. Your message has not been sent."
-      );
-      return;
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
 
-    const { errors: validationErrors } = validateReviewPayload({
-      ...formValues,
-      rating: ratingValue,
-    });
+    const validationErrors = validateFields();
 
-    if (validationErrors.rating) {
+    if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      setStatusMessage("");
+      setStatus({ type: "idle", message: "" });
       return;
     }
 
     setErrors({});
-    setStatusMessage(
-      "Review submission is not connected yet. Your review has not been sent."
-    );
+    setStatus({
+      type: "loading",
+      message: loadingMessage || "Checking your message...",
+    });
+
+    timeoutRef.current = window.setTimeout(() => {
+      setStatus({
+        type: "error",
+        message:
+          unavailableMessage ||
+          "This form is not connected yet. Your message has not been sent.",
+      });
+      timeoutRef.current = null;
+    }, 320);
   };
 
   return (
@@ -73,13 +145,22 @@ export default function FeedbackForm({
           <div key={field.id} className="form-field">
             <label htmlFor={field.id}>{field.label}</label>
             <input
+              aria-describedby={errors[field.name] ? `${field.id}-error` : undefined}
+              aria-invalid={errors[field.name] ? "true" : "false"}
+              autoComplete={field.autoComplete}
               id={field.id}
               name={field.name}
               onChange={handleFieldChange}
               placeholder={field.placeholder}
+              required={field.required}
               type={field.type}
               value={formValues[field.name]}
             />
+            {errors[field.name] ? (
+              <p className="form-card__error" id={`${field.id}-error`} role="alert">
+                {errors[field.name]}
+              </p>
+            ) : null}
           </div>
         ))}
       </div>
@@ -99,17 +180,57 @@ export default function FeedbackForm({
       <div className="form-field">
         <label htmlFor={textarea.id}>{textarea.label}</label>
         <textarea
+          aria-describedby={errors[textarea.name] ? `${textarea.id}-error` : undefined}
+          aria-invalid={errors[textarea.name] ? "true" : "false"}
           id={textarea.id}
           name={textarea.name}
           onChange={handleFieldChange}
           placeholder={textarea.placeholder}
+          required={textarea.required}
           value={formValues[textarea.name]}
         />
+        {errors[textarea.name] ? (
+          <p className="form-card__error" id={`${textarea.id}-error`} role="alert">
+            {errors[textarea.name]}
+          </p>
+        ) : null}
       </div>
 
-      {statusMessage ? (
-        <p className="form-card__message" role="status">
-          {statusMessage}
+      {consentField ? (
+        <div className="form-field form-field--checkbox">
+          <label className="checkbox-field" htmlFor={consentField.id}>
+            <input
+              aria-describedby={
+                errors[consentField.name] ? `${consentField.id}-error` : undefined
+              }
+              aria-invalid={errors[consentField.name] ? "true" : "false"}
+              checked={Boolean(formValues[consentField.name])}
+              id={consentField.id}
+              name={consentField.name}
+              onChange={handleFieldChange}
+              required={consentField.required}
+              type="checkbox"
+            />
+            <span>{consentField.label}</span>
+          </label>
+          {errors[consentField.name] ? (
+            <p
+              className="form-card__error"
+              id={`${consentField.id}-error`}
+              role="alert"
+            >
+              {errors[consentField.name]}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {status.type !== "idle" ? (
+        <p
+          className={`form-card__message form-card__message--${status.type}`}
+          role={status.type === "error" ? "alert" : "status"}
+        >
+          {status.message}
         </p>
       ) : null}
 
@@ -121,8 +242,8 @@ export default function FeedbackForm({
           </Link>{" "}
           page.
         </p>
-        <button type="submit">
-          {buttonLabel}
+        <button disabled={status.type === "loading"} type="submit">
+          {status.type === "loading" ? "Please wait..." : buttonLabel}
         </button>
       </div>
     </form>

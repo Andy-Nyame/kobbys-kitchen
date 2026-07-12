@@ -6,6 +6,12 @@ import MealCard from "@/components/ui/MealCard";
 import { businessData } from "@/data/businessData";
 import { menuItems } from "@/data/menuData";
 
+export const metadata = {
+  title: "Home",
+  description:
+    "Tasty and satisfying meals from Kobby’s Kitchen in Tema Community Two, with takeaway, WhatsApp orders and event meals.",
+};
+
 export default function Home() {
   const featuredMeals = menuItems.filter((item) => item.featured);
   const phoneLink = businessData.phone.href;

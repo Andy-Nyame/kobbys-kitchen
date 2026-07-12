@@ -5,6 +5,12 @@ import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
 import { businessData } from "@/data/businessData";
 
+export const metadata = {
+  title: "About",
+  description:
+    "Learn about Kobby’s Kitchen, our services and Felix Papa Kwasi Cudjoe, the owner and chef.",
+};
+
 export default function AboutPage() {
   const { phone, whatsapp } = businessData;
 

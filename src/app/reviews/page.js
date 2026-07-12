@@ -8,8 +8,15 @@ import {
   reviewFormFields,
   reviewRatingField,
   reviewTextareaField,
+  reviewConsentField,
   businessData,
 } from "@/data/businessData";
+
+export const metadata = {
+  title: "Reviews",
+  description:
+    "Read customer review updates or share your experience with Kobby’s Kitchen.",
+};
 
 export default function ReviewsPage() {
   const { phone, whatsapp } = businessData;
@@ -36,6 +43,9 @@ export default function ReviewsPage() {
             buttonLabel="Submit Review"
             fields={reviewFormFields}
             hintText="Please read our"
+            consentField={reviewConsentField}
+            loadingMessage="Checking your review..."
+            unavailableMessage="Review submission is not connected yet. Your review has not been sent."
             ratingField={reviewRatingField}
             textarea={reviewTextareaField}
           />

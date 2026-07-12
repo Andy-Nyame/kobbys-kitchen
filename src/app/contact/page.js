@@ -4,6 +4,12 @@ import InlineIcon from "@/components/ui/InlineIcon";
 import PageIntro from "@/components/ui/PageIntro";
 import { businessData } from "@/data/businessData";
 
+export const metadata = {
+  title: "Contact",
+  description:
+    "Call, WhatsApp or email Kobby’s Kitchen in Tema Community Two for takeaway questions and event orders.",
+};
+
 export default function ContactPage() {
   const directionsLink = businessData.googleMapsLink;
   const { phone, whatsapp, email, socialLinks } = businessData;

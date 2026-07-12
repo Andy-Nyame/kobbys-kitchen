@@ -67,24 +67,39 @@ export const reviewFormFields = [
   {
     id: "review-name",
     name: "name",
-    label: "Name",
+    label: "Display name",
     type: "text",
     placeholder: "Your name",
+    autoComplete: "name",
+    required: true,
+    errorMessage: "Please enter your display name.",
   },
   {
-    id: "review-occasion",
-    name: "occasion",
-    label: "Visit or occasion",
+    id: "review-category",
+    name: "category",
+    label: "Category",
     type: "text",
-    placeholder: "How did Kobby’s Kitchen serve you?",
+    placeholder: "Dine-in, takeaway or event order",
+    required: true,
+    errorMessage: "Please enter a review category.",
+  },
+  {
+    id: "review-contact",
+    name: "contact",
+    label: "Email or phone (optional)",
+    type: "text",
+    placeholder: "you@example.com or +233 (0) 55 367 1248",
+    autoComplete: "email",
   },
 ];
 
 export const reviewTextareaField = {
   id: "review-message",
-  name: "review",
-  label: "Your review",
+  name: "comment",
+  label: "Comment",
   placeholder: "Share your feedback here.",
+  required: true,
+  errorMessage: "Please enter your review comment.",
 };
 
 export const reviewRatingField = {
@@ -94,26 +109,38 @@ export const reviewRatingField = {
   description: "Select a rating from 1 to 5 stars.",
 };
 
+export const reviewConsentField = {
+  id: "review-consent",
+  name: "consent",
+  label: "I confirm that this review may be reviewed before publication.",
+  required: true,
+  errorMessage: "Please confirm the review consent checkbox.",
+};
+
 export const suggestionFormFields = [
   {
     id: "suggestion-name",
     name: "name",
-    label: "Name",
+    label: "Name (optional)",
     type: "text",
     placeholder: "Your name",
+    autoComplete: "name",
   },
   {
-    id: "suggestion-topic",
-    name: "topic",
-    label: "Suggestion topic",
+    id: "suggestion-contact",
+    name: "contact",
+    label: "Email or phone (optional)",
     type: "text",
-    placeholder: "What is your suggestion about?",
+    placeholder: "you@example.com or +233 (0) 55 367 1248",
+    autoComplete: "email",
   },
 ];
 
 export const suggestionTextareaField = {
   id: "suggestion-message",
   name: "suggestion",
-  label: "Your suggestion",
+  label: "Suggestion",
   placeholder: "Share your private suggestion here.",
+  required: true,
+  errorMessage: "Please enter your suggestion.",
 };
