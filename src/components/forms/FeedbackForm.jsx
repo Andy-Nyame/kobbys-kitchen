@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import {
+  REVIEW_SERVER_ERROR_MESSAGE,
+  REVIEW_SUCCESS_MESSAGE,
+  validateReviewSubmission,
+} from "@/lib/validation/review";
 import StarRatingInput from "@/components/reviews/StarRatingInput";
-import { validateReviewPayload } from "@/utils/reviewValidation";
 
 export default function FeedbackForm({
   fields,
@@ -13,7 +17,12 @@ export default function FeedbackForm({
   buttonLabel,
   ratingField,
   consentField,
+  honeypotField,
+  formType,
   loadingMessage,
+  submitButtonLoadingLabel,
+  submitEndpoint,
+  successMessage,
   unavailableMessage,
 }) {
   const initialValues = Object.fromEntries(
@@ -21,6 +30,7 @@ export default function FeedbackForm({
       ...fields.map((field) => [field.name, ""]),
       [textarea.name, ""],
       ...(consentField ? [[consentField.name, false]] : []),
+      ...(honeypotField ? [[honeypotField.name, ""]] : []),
     ]
   );
   const [formValues, setFormValues] = useState(initialValues);
@@ -71,6 +81,15 @@ export default function FeedbackForm({
   };
 
   const validateFields = () => {
+    if (formType === "review") {
+      const { errors } = validateReviewSubmission({
+        ...formValues,
+        rating: ratingValue,
+      });
+
+      return errors;
+    }
+
     const nextErrors = {};
 
     fields.forEach((field) => {
@@ -90,22 +109,16 @@ export default function FeedbackForm({
       nextErrors[consentField.name] =
         consentField.errorMessage || "Please confirm before submitting.";
     }
-
-    if (ratingField) {
-      const { errors: validationErrors } = validateReviewPayload({
-        ...formValues,
-        rating: ratingValue,
-      });
-
-      if (validationErrors.rating) {
-        nextErrors.rating = validationErrors.rating;
-      }
-    }
-
     return nextErrors;
   };
 
-  const handleSubmit = (event) => {
+  const resetForm = () => {
+    setFormValues(initialValues);
+    setRatingValue("");
+    setErrors({});
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (timeoutRef.current) {
@@ -127,6 +140,48 @@ export default function FeedbackForm({
       message: loadingMessage || "Checking your message...",
     });
 
+    if (submitEndpoint) {
+      try {
+        const response = await fetch(submitEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...formValues,
+            ...(ratingField ? { rating: ratingValue } : {}),
+          }),
+        });
+        const responseBody = await response.json().catch(() => null);
+
+        if (response.ok) {
+          resetForm();
+          setStatus({
+            type: "success",
+            message:
+              responseBody?.message || successMessage || REVIEW_SUCCESS_MESSAGE,
+          });
+          return;
+        }
+
+        if (responseBody?.errors) {
+          setErrors(responseBody.errors);
+        }
+
+        setStatus({
+          type: "error",
+          message: responseBody?.message || REVIEW_SERVER_ERROR_MESSAGE,
+        });
+        return;
+      } catch {
+        setStatus({
+          type: "error",
+          message: REVIEW_SERVER_ERROR_MESSAGE,
+        });
+        return;
+      }
+    }
+
     timeoutRef.current = window.setTimeout(() => {
       setStatus({
         type: "error",
@@ -144,18 +199,37 @@ export default function FeedbackForm({
         {fields.map((field) => (
           <div key={field.id} className="form-field">
             <label htmlFor={field.id}>{field.label}</label>
-            <input
-              aria-describedby={errors[field.name] ? `${field.id}-error` : undefined}
-              aria-invalid={errors[field.name] ? "true" : "false"}
-              autoComplete={field.autoComplete}
-              id={field.id}
-              name={field.name}
-              onChange={handleFieldChange}
-              placeholder={field.placeholder}
-              required={field.required}
-              type={field.type}
-              value={formValues[field.name]}
-            />
+            {field.type === "select" ? (
+              <select
+                aria-describedby={errors[field.name] ? `${field.id}-error` : undefined}
+                aria-invalid={errors[field.name] ? "true" : "false"}
+                id={field.id}
+                name={field.name}
+                onChange={handleFieldChange}
+                required={field.required}
+                value={formValues[field.name]}
+              >
+                <option value="">{field.placeholder}</option>
+                {field.options?.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                aria-describedby={errors[field.name] ? `${field.id}-error` : undefined}
+                aria-invalid={errors[field.name] ? "true" : "false"}
+                autoComplete={field.autoComplete}
+                id={field.id}
+                name={field.name}
+                onChange={handleFieldChange}
+                placeholder={field.placeholder}
+                required={field.required}
+                type={field.type}
+                value={formValues[field.name]}
+              />
+            )}
             {errors[field.name] ? (
               <p className="form-card__error" id={`${field.id}-error`} role="alert">
                 {errors[field.name]}
@@ -164,6 +238,21 @@ export default function FeedbackForm({
           </div>
         ))}
       </div>
+
+      {honeypotField ? (
+        <div aria-hidden="true" className="visually-hidden-field">
+          <label htmlFor={honeypotField.id}>{honeypotField.label}</label>
+          <input
+            autoComplete={honeypotField.autoComplete}
+            id={honeypotField.id}
+            name={honeypotField.name}
+            onChange={handleFieldChange}
+            tabIndex={-1}
+            type="text"
+            value={formValues[honeypotField.name]}
+          />
+        </div>
+      ) : null}
 
       {ratingField ? (
         <StarRatingInput
@@ -243,7 +332,9 @@ export default function FeedbackForm({
           page.
         </p>
         <button disabled={status.type === "loading"} type="submit">
-          {status.type === "loading" ? "Please wait..." : buttonLabel}
+          {status.type === "loading"
+            ? submitButtonLoadingLabel || "Please wait..."
+            : buttonLabel}
         </button>
       </div>
     </form>

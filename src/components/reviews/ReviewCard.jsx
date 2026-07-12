@@ -1,6 +1,16 @@
-import { REVIEW_RATING_OPTIONS } from "@/utils/reviewValidation";
+import { REVIEW_RATING_OPTIONS } from "@/lib/validation/review";
+
+const dateFormatter = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
 
 export default function ReviewCard({ review }) {
+  const formattedDate = review.createdAt
+    ? dateFormatter.format(new Date(review.createdAt))
+    : "";
+
   return (
     <article className="review-card">
       <div
@@ -25,12 +35,12 @@ export default function ReviewCard({ review }) {
       </div>
 
       <div className="review-card__meta">
-        <h3>{review.name}</h3>
+        <h3>{review.displayName}</h3>
         <p>{review.category}</p>
       </div>
 
       <p className="review-card__comment">{review.comment}</p>
-      <p className="review-card__date">{review.date}</p>
+      {formattedDate ? <p className="review-card__date">{formattedDate}</p> : null}
     </article>
   );
 }

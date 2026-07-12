@@ -3,7 +3,7 @@
 import {
   REVIEW_RATING_ERROR,
   REVIEW_RATING_OPTIONS,
-} from "@/utils/reviewValidation";
+} from "@/lib/validation/review";
 
 export default function StarRatingInput({
   description,

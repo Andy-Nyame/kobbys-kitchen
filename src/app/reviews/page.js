@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import ApprovedReviewsSection from "@/components/reviews/ApprovedReviewsSection";
 import FeedbackForm from "@/components/forms/FeedbackForm";
 import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
@@ -9,6 +10,7 @@ import {
   reviewRatingField,
   reviewTextareaField,
   reviewConsentField,
+  reviewHoneypotField,
   businessData,
 } from "@/data/businessData";
 
@@ -27,13 +29,12 @@ export default function ReviewsPage() {
         <PageIntro
           eyebrow="Reviews"
           title="Reviews"
-          description={businessData.reviewEmptyState}
+          description="Read approved customer reviews and share your experience with Kobby’s Kitchen."
         />
 
-        <ContentSection
-          title="Customer Reviews"
-          description={businessData.reviewEmptyState}
-        />
+        <ContentSection title="Customer Reviews">
+          <ApprovedReviewsSection emptyMessage={businessData.reviewEmptyState} />
+        </ContentSection>
 
         <ContentSection
           title="Share a Review"
@@ -42,10 +43,13 @@ export default function ReviewsPage() {
           <FeedbackForm
             buttonLabel="Submit Review"
             fields={reviewFormFields}
+            formType="review"
             hintText="Please read our"
+            honeypotField={reviewHoneypotField}
             consentField={reviewConsentField}
-            loadingMessage="Checking your review..."
-            unavailableMessage="Review submission is not connected yet. Your review has not been sent."
+            loadingMessage="Submitting review..."
+            submitButtonLoadingLabel="Submitting review..."
+            submitEndpoint="/api/reviews"
             ratingField={reviewRatingField}
             textarea={reviewTextareaField}
           />

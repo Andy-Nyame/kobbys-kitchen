@@ -1,3 +1,5 @@
+import { APPROVED_REVIEW_CATEGORIES } from "@/lib/validation/review";
+
 export const businessData = {
   name: "Kobby’s Kitchen",
   tagline: "Tasty and satisfying meals in Tema Community Two",
@@ -66,7 +68,7 @@ export const businessData = {
 export const reviewFormFields = [
   {
     id: "review-name",
-    name: "name",
+    name: "displayName",
     label: "Display name",
     type: "text",
     placeholder: "Your name",
@@ -78,10 +80,11 @@ export const reviewFormFields = [
     id: "review-category",
     name: "category",
     label: "Category",
-    type: "text",
-    placeholder: "Dine-in, takeaway or event order",
+    type: "select",
+    placeholder: "Select a category",
+    options: APPROVED_REVIEW_CATEGORIES,
     required: true,
-    errorMessage: "Please enter a review category.",
+    errorMessage: "Please select an approved review category.",
   },
   {
     id: "review-contact",
@@ -115,6 +118,14 @@ export const reviewConsentField = {
   label: "I confirm that this review may be reviewed before publication.",
   required: true,
   errorMessage: "Please confirm the review consent checkbox.",
+};
+
+export const reviewHoneypotField = {
+  id: "review-website",
+  name: "website",
+  label: "Website",
+  type: "text",
+  autoComplete: "off",
 };
 
 export const suggestionFormFields = [
