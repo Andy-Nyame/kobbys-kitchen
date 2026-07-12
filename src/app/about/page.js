@@ -2,7 +2,6 @@ import Image from "next/image";
 
 import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
-import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
 import PageIntro from "@/components/ui/PageIntro";
 import { businessData } from "@/data/businessData";
 
@@ -93,27 +92,6 @@ export default function AboutPage() {
           title="Chef Message"
           description={businessData.chefMessage}
         />
-
-        <ContentSection
-          title="Gallery"
-          description="A few glimpses of the Kobby’s Kitchen experience."
-        >
-          <div className="gallery-grid">
-            {businessData.galleryLabels.map((label) => (
-              <article key={label} className="gallery-card">
-                <ImagePlaceholder
-                  className="gallery-card__placeholder"
-                  label={label}
-                />
-                <h3>{label}</h3>
-              </article>
-            ))}
-          </div>
-
-          <p className="section-note">
-            More photos from Kobby’s Kitchen will be added soon.
-          </p>
-        </ContentSection>
 
         <ContentSection
           title="Contact Kobby’s Kitchen"

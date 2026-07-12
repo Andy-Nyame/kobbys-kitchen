@@ -328,7 +328,6 @@ textarea:focus-visible {
 .content-section h2,
 .cta-panel h2,
 .meal-card h3,
-.gallery-card h3,
 .card h3 {
   margin: 0;
 }
@@ -343,7 +342,6 @@ textarea:focus-visible {
 .content-section__header p,
 .card p,
 .meal-card p,
-.gallery-card p,
 .form-card__hint,
 .site-footer__copy,
 .hero__description,
@@ -543,21 +541,18 @@ textarea:focus-visible {
 }
 
 .card-grid,
-.meal-grid,
-.gallery-grid {
+.meal-grid {
   display: grid;
   gap: 1rem;
 }
 
 .card-grid,
-.meal-grid,
-.gallery-grid {
+.meal-grid {
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
 }
 
 .card,
 .meal-card,
-.gallery-card,
 .location-card {
   border: 1px solid var(--color-border);
   border-radius: 1.25rem;
@@ -590,8 +585,7 @@ textarea:focus-visible {
 }
 
 .card h3,
-.meal-card h3,
-.gallery-card h3 {
+.meal-card h3 {
   margin-bottom: 0.6rem;
   font-size: 1.1rem;
 }
@@ -623,22 +617,18 @@ textarea:focus-visible {
   overflow: hidden;
 }
 
-.meal-card__media,
-.gallery-card__placeholder,
-.gallery-card__image {
+.meal-card__media {
   min-height: 13rem;
 }
 
-.meal-card__image,
-.gallery-card__image {
+.meal-card__image {
   width: 100%;
   height: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
 }
 
-.meal-card .image-placeholder,
-.gallery-card .image-placeholder {
+.meal-card .image-placeholder {
   min-height: 13rem;
   border: 0;
   border-radius: 0;
@@ -680,16 +670,6 @@ textarea:focus-visible {
 .meal-card__price {
   color: var(--color-brand-orange);
   font-size: 1rem;
-}
-
-.gallery-card {
-  overflow: hidden;
-  text-align: center;
-}
-
-.gallery-card h3 {
-  margin: 0;
-  padding: 1rem 1rem 1.1rem;
 }
 
 .section-note,

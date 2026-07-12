@@ -48,7 +48,6 @@ export const businessData = {
     "Phone and WhatsApp Orders",
     "Event and Large-Quantity Orders",
   ],
-  galleryLabels: ["Food", "Preparation", "Events"],
   reviewEmptyState:
     "No customer reviews have been published yet. Be the first to share your experience.",
   finalCta:

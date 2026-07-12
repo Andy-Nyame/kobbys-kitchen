@@ -1,6 +1,5 @@
 import Image from "next/image";
 
-import GalleryPreview from "@/components/home/GalleryPreview";
 import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
 import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
@@ -156,13 +155,6 @@ export default function Home() {
             ))}
           </ul>
         </ContentSection>
-
-        <GalleryPreview
-          title="Gallery"
-          description="A quick look at the Kobby’s Kitchen experience."
-          emptyState="More photos from Kobby’s Kitchen will be added soon."
-          items={businessData.galleryLabels.map((label) => ({ title: label }))}
-        />
 
         <ContentSection
           title="Find Us"
