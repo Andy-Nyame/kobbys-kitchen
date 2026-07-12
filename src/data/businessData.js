@@ -21,7 +21,7 @@ export const businessData = {
     display: "felixcudjoe1738@gmail.com",
     href: "mailto:felixcudjoe1738@gmail.com",
   },
-  googleMapsLink: "", // Pending.
+  googleMapsLink: "https://maps.app.goo.gl/bFeUYFkXDc4XYiQ5A",
   socialLinks: {
     tiktok:
       "https://www.tiktok.com/@kobbyskitchen0?_r=1&_t=ZS-97wx2cMRNzg",

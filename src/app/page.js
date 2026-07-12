@@ -2,7 +2,6 @@ import Image from "next/image";
 
 import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
-import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
 import MealCard from "@/components/ui/MealCard";
 import { businessData } from "@/data/businessData";
 import { menuItems } from "@/data/menuData";
@@ -49,9 +48,15 @@ export default function Home() {
 
             <div className="hero__visual">
               <div className="hero__visual-card">
-                <ImagePlaceholder
-                  className="hero__visual-placeholder"
-                  label="Fresh meals and takeaway"
+                <Image
+                  alt="Fresh meals and takeaway from Kobby’s Kitchen"
+                  className="hero__visual-image"
+                  priority
+                  quality={90}
+                  sizes="(min-width: 900px) 40vw, 100vw"
+                  src="/images/food/fresh-meals-and-takeaway.png"
+                  width={1254}
+                  height={1254}
                 />
                 <div className="hero__visual-caption">
                   <span>Fast-food</span>

@@ -496,12 +496,15 @@ textarea:focus-visible {
   padding: 1.5rem;
 }
 
-.hero__visual-placeholder {
-  min-height: 24rem;
-  border-color: rgba(255, 255, 255, 0.08);
-  background:
-    radial-gradient(circle at top right, rgba(255, 208, 0, 0.2), transparent 25%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+.hero__visual-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.35rem;
+  object-fit: cover;
+  object-position: center;
 }
 
 .image-placeholder__label {
@@ -510,10 +513,6 @@ textarea:focus-visible {
   font-size: 1.05rem;
   font-weight: 700;
   line-height: 1.3;
-}
-
-.hero__visual-placeholder .image-placeholder__label {
-  color: var(--color-white);
 }
 
 .content-section {
