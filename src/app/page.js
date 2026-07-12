@@ -1,5 +1,6 @@
 import Image from "next/image";
 
+import HomeReviewSummary from "@/components/reviews/HomeReviewSummary";
 import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
 import MealCard from "@/components/ui/MealCard";
@@ -11,6 +12,8 @@ export const metadata = {
   description:
     "Tasty and satisfying meals from Kobby’s Kitchen in Tema Community Two, with takeaway, WhatsApp orders and event meals.",
 };
+
+export const dynamic = "force-dynamic";
 
 export default function Home() {
   const featuredMeals = menuItems.filter((item) => item.featured);
@@ -180,15 +183,8 @@ export default function Home() {
           </div>
         </ContentSection>
 
-        <ContentSection title="Reviews" description={businessData.reviewEmptyState}>
-          <div className="section-actions">
-            <ButtonLink href="/reviews" variant="primary">
-              Share Your Experience
-            </ButtonLink>
-            <ButtonLink href="/reviews" variant="secondary">
-              Read Reviews
-            </ButtonLink>
-          </div>
+        <ContentSection title="Reviews">
+          <HomeReviewSummary />
         </ContentSection>
 
         <section className="cta-panel">

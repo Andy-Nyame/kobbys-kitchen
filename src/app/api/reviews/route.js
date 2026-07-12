@@ -62,6 +62,22 @@ function normalizePublicReview(review) {
   };
 }
 
+function getFeaturedReview(reviews) {
+  const featuredReviews = reviews.filter((review) => review.featured === true);
+
+  if (featuredReviews.length === 0) {
+    return null;
+  }
+
+  if (featuredReviews.length > 1) {
+    console.warn("[reviews-get] multiple_featured_approved_reviews", {
+      count: featuredReviews.length,
+    });
+  }
+
+  return normalizePublicReview(featuredReviews[0]);
+}
+
 function buildReviewSummary(reviews) {
   const totalReviews = reviews.length;
   const ratingDistribution = createRatingDistribution();
@@ -101,7 +117,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("reviews")
-    .select("id, display_name, rating, category, comment, created_at")
+    .select("id, display_name, rating, category, comment, featured, created_at")
     .eq("status", "approved")
     .order("created_at", { ascending: false });
 
@@ -113,12 +129,14 @@ export async function GET() {
     return createReviewLoadErrorResponse();
   }
 
-  const reviews = (data || []).map(normalizePublicReview);
+  const approvedReviews = data || [];
+  const reviews = approvedReviews.map(normalizePublicReview);
 
   return NextResponse.json(
     {
       ok: true,
       reviews,
+      featuredReview: getFeaturedReview(approvedReviews),
       summary: buildReviewSummary(reviews),
     },
     { status: 200 }

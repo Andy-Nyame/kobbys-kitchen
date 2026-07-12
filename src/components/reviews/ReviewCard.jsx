@@ -6,7 +6,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   year: "numeric",
 });
 
-export default function ReviewCard({ review }) {
+export default function ReviewCard({ review, showDate = true }) {
   const formattedDate = review.createdAt
     ? dateFormatter.format(new Date(review.createdAt))
     : "";
@@ -40,7 +40,9 @@ export default function ReviewCard({ review }) {
       </div>
 
       <p className="review-card__comment">{review.comment}</p>
-      {formattedDate ? <p className="review-card__date">{formattedDate}</p> : null}
+      {showDate && formattedDate ? (
+        <p className="review-card__date">{formattedDate}</p>
+      ) : null}
     </article>
   );
 }
