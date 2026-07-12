@@ -6,7 +6,7 @@ export const menuItems = [
     description:
       "A flavourful rice meal available on the Kobby’s Kitchen menu.",
     priceLabel: "From GH₵30",
-    image: "",
+    image: "/images/food/jollof-rice.png",
     featured: true,
     available: true,
   },
@@ -17,7 +17,7 @@ export const menuItems = [
     description:
       "A satisfying fried rice meal available on the Kobby’s Kitchen menu.",
     priceLabel: "From GH₵30",
-    image: "",
+    image: "/images/food/fried-rice.png",
     featured: true,
     available: true,
   },
@@ -28,7 +28,7 @@ export const menuItems = [
     description:
       "A tasty noodle option available on the Kobby’s Kitchen menu.",
     priceLabel: "From GH₵30",
-    image: "",
+    image: "/images/food/indomie-instant-noodles.png",
     featured: false,
     available: true,
   },
@@ -39,7 +39,7 @@ export const menuItems = [
     description:
       "A satisfying spaghetti meal available on the Kobby’s Kitchen menu.",
     priceLabel: "From GH₵25",
-    image: "",
+    image: "/images/food/spaghetti.png",
     featured: false,
     available: true,
   },
@@ -49,7 +49,7 @@ export const menuItems = [
     category: "Sides and Snacks",
     description: "Crispy spring rolls available on the Kobby’s Kitchen menu.",
     priceLabel: "From GH₵20 per package",
-    image: "",
+    image: "/images/food/spring-rolls.png",
     featured: true,
     available: true,
   },

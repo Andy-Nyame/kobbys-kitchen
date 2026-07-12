@@ -51,7 +51,10 @@ export default function SiteFooter() {
               rel="noopener noreferrer"
               target="_blank"
             >
-              WhatsApp: {whatsapp.display}
+              <span className="icon-link">
+                <InlineIcon name="whatsapp" />
+                <span>WhatsApp: {whatsapp.display}</span>
+              </span>
             </a>
             <a
               aria-label={`Email Kobby’s Kitchen at ${email.display}`}

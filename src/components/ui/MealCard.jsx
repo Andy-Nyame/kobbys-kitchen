@@ -1,15 +1,22 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 
 import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
 
 export default function MealCard({ item, showPopular = false }) {
+  const [failedImage, setFailedImage] = useState("");
+  const showImage = Boolean(item.image) && failedImage !== item.image;
+
   return (
     <article className="meal-card">
       <div className="meal-card__media">
-        {item.image ? (
+        {showImage ? (
           <Image
             alt={item.name}
             className="meal-card__image"
+            onError={() => setFailedImage(item.image)}
             src={item.image}
             width={1200}
             height={900}

@@ -57,9 +57,43 @@ function EmailIcon() {
   );
 }
 
+function WhatsAppIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="inline-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12 4.25C7.86 4.25 4.5 7.52 4.5 11.57C4.5 12.99 4.91 14.37 5.69 15.56L4.75 19.25L8.56 18.35C9.65 19.03 10.81 19.38 12 19.38C16.14 19.38 19.5 16.11 19.5 12.06C19.5 8.01 16.14 4.25 12 4.25Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.72 8.98C9.53 8.56 9.34 8.55 9.16 8.54L8.69 8.52C8.52 8.52 8.24 8.58 8.02 8.83C7.8 9.08 7.17 9.66 7.17 10.84C7.17 12.02 8.04 13.15 8.16 13.31C8.28 13.47 9.85 15.95 12.23 16.88C14.2 17.65 14.6 17.49 15.05 17.45C15.5 17.4 16.48 16.89 16.68 16.29C16.88 15.69 16.88 15.18 16.82 15.08C16.75 14.97 16.58 14.91 16.31 14.78L14.83 14.07C14.57 13.96 14.38 13.92 14.21 14.16L13.55 14.97C13.4 15.15 13.24 15.17 12.99 15.05C12.74 14.93 11.94 14.67 10.99 13.83C10.25 13.17 9.75 12.36 9.6 12.12C9.45 11.88 9.58 11.74 9.7 11.62L10.23 11C10.39 10.82 10.45 10.69 10.53 10.52C10.61 10.36 10.57 10.2 10.51 10.08L9.72 8.98Z"
+        fill="currentColor"
+      />
+      <path
+        d="M10.48 9.61C10.35 9.32 10.18 9.29 10.03 9.29"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function InlineIcon({ name }) {
   if (name === "phone") {
     return <PhoneIcon />;
+  }
+
+  if (name === "whatsapp") {
+    return <WhatsAppIcon />;
   }
 
   if (name === "email") {

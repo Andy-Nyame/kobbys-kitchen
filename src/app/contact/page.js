@@ -39,7 +39,10 @@ export default function ContactPage() {
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                {whatsapp.display}
+                <span className="icon-link">
+                  <InlineIcon name="whatsapp" />
+                  <span>{whatsapp.display}</span>
+                </span>
               </a>
             </div>
             <div className="contact-methods__item">
