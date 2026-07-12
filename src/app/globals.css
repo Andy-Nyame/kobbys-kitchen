@@ -853,6 +853,87 @@ textarea:focus-visible {
   resize: vertical;
 }
 
+.rating-field {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rating-field legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.rating-field__description,
+.rating-field__selection,
+.review-card__rating-text,
+.review-card__meta p,
+.review-card__date {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.rating-field__inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rating-field__option {
+  position: relative;
+  display: inline-flex;
+}
+
+.rating-field__input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.rating-field__star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.95rem;
+  background-color: var(--color-surface);
+  color: #b8b1a6;
+  font-size: 1.35rem;
+  line-height: 1;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.rating-field__option:hover .rating-field__star,
+.rating-field__input:focus-visible + .rating-field__star {
+  border-color: var(--color-brand-orange);
+}
+
+.rating-field__option--selected .rating-field__star {
+  background-color: #fff6cc;
+  color: var(--color-brand-yellow-hover);
+}
+
+.form-card__error,
+.form-card__message {
+  margin: 0;
+  font-weight: 600;
+}
+
+.form-card__error {
+  color: #a63b0f;
+}
+
+.form-card__message {
+  color: var(--color-text-secondary);
+}
+
 .form-card__footer {
   display: flex;
   flex-wrap: wrap;
@@ -873,6 +954,46 @@ textarea:focus-visible {
 .form-card__footer button[disabled] {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+.review-card {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.25rem;
+  background-color: var(--color-surface);
+  padding: 1.25rem;
+}
+
+.review-card__rating,
+.review-card__meta {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.review-card__stars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.review-card__star {
+  color: #b8b1a6;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.review-card__star--selected {
+  color: var(--color-brand-yellow-hover);
+}
+
+.review-card__meta h3,
+.review-card__comment {
+  margin: 0;
+}
+
+.review-card__meta h3 {
+  font-size: 1.05rem;
 }
 
 .cta-panel {

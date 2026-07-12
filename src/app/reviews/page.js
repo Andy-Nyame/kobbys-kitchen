@@ -6,6 +6,7 @@ import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
 import {
   reviewFormFields,
+  reviewRatingField,
   reviewTextareaField,
   businessData,
 } from "@/data/businessData";
@@ -35,6 +36,7 @@ export default function ReviewsPage() {
             buttonLabel="Submit Review"
             fields={reviewFormFields}
             hintText="Please read our"
+            ratingField={reviewRatingField}
             textarea={reviewTextareaField}
           />
         </ContentSection>

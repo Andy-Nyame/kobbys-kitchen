@@ -87,6 +87,13 @@ export const reviewTextareaField = {
   placeholder: "Share your feedback here.",
 };
 
+export const reviewRatingField = {
+  id: "review-rating",
+  name: "rating",
+  label: "Rating",
+  description: "Select a rating from 1 to 5 stars.",
+};
+
 export const suggestionFormFields = [
   {
     id: "suggestion-name",
