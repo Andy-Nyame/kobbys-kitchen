@@ -58,7 +58,6 @@ export default function Home() {
                   alt="Fresh meals and takeaway from Kobby’s Kitchen"
                   className="hero__visual-image"
                   priority
-                  quality={90}
                   sizes="(min-width: 900px) 40vw, 100vw"
                   src="/images/food/fresh-meals-and-takeaway.png"
                   width={1254}
