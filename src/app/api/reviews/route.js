@@ -188,8 +188,8 @@ export async function POST(request) {
   } catch (error) {
     console.error("[reviews-post] rate_limit_error", {
       code: error?.code || null,
-      reason: error?.reason || "unknown",
-      usedFallbackIdentifier: Boolean(error?.usedFallbackIdentifier),
+      category: error?.category || "rate_limit_internal_error",
+      contractMismatchCategory: error?.contractMismatchCategory || "none",
     });
 
     return createServerErrorResponse();

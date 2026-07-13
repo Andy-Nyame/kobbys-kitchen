@@ -2,10 +2,60 @@ create table if not exists public.submission_rate_limits (
   id bigint generated always as identity primary key,
   identifier_hash text not null,
   action text not null,
-  created_at timestamptz not null default timezone('utc'::text, now())
+  created_at timestamptz not null default now()
 );
+
+do $$
+begin
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'submission_rate_limits'
+      and column_name = 'identifier_hash'
+      and data_type = 'text'
+      and is_nullable = 'NO'
+  ) then
+    raise exception 'submission_rate_limits.identifier_hash must be non-null text';
+  end if;
+
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'submission_rate_limits'
+      and column_name = 'action'
+      and data_type = 'text'
+      and is_nullable = 'NO'
+  ) then
+    raise exception 'submission_rate_limits.action must be non-null text';
+  end if;
+
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'submission_rate_limits'
+      and column_name = 'created_at'
+      and data_type = 'timestamp with time zone'
+      and is_nullable = 'NO'
+  ) then
+    raise exception 'submission_rate_limits.created_at must be non-null timestamptz';
+  end if;
+end
+$$;
+
+alter table public.submission_rate_limits
+  alter column created_at set default now();
 
 create index if not exists submission_rate_limits_identifier_action_created_at_idx
   on public.submission_rate_limits (identifier_hash, action, created_at desc);
 
 alter table public.submission_rate_limits enable row level security;
+
+revoke all on table public.submission_rate_limits from anon, authenticated;
+grant select, insert on table public.submission_rate_limits to service_role;
+revoke all on sequence public.submission_rate_limits_id_seq from anon, authenticated;
+grant usage, select on sequence public.submission_rate_limits_id_seq to service_role;
+
+notify pgrst, 'reload schema';
