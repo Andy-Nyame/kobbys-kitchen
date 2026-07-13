@@ -56,11 +56,7 @@ export default async function HomeReviewSummary() {
 
   try {
     payload = await getHomeReviewData();
-  } catch (error) {
-    console.error("[home-reviews] load_error", {
-      message: error?.message || "unknown",
-    });
-
+  } catch {
     return (
       <div className="home-review-summary">
         <p className="review-status review-status--error">

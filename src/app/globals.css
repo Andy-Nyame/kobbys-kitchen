@@ -496,6 +496,7 @@ textarea:focus-visible {
   border-radius: 999px;
   font-weight: 700;
   line-height: 1;
+  text-align: center;
 }
 
 .button-link--primary {
@@ -660,6 +661,7 @@ textarea:focus-visible {
   border-radius: 1.25rem;
   background-color: #fffaf0;
   padding: 1rem;
+  overflow-wrap: anywhere;
 }
 
 .contact-methods__item h3 {
@@ -1167,6 +1169,7 @@ textarea:focus-visible {
 .review-card__meta h3,
 .review-card__comment {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .review-card__meta h3 {
@@ -1229,6 +1232,11 @@ textarea:focus-visible {
 
 .footer-link {
   color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.site-footer__meta .icon-link {
+  align-items: flex-start;
 }
 
 .footer-link--current {
@@ -1328,6 +1336,13 @@ textarea:focus-visible {
   .button-row,
   .section-actions {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 479px) {
+  .hours-list__item {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 

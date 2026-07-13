@@ -15,7 +15,7 @@ import {
 } from "@/data/businessData";
 
 export const metadata = {
-  title: "Reviews",
+  title: "Customer Reviews | Kobby’s Kitchen",
   description:
     "Read customer review updates or share your experience with Kobby’s Kitchen.",
 };

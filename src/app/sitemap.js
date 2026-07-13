@@ -1,19 +1,8 @@
 import { footerSupportNavigation, primaryNavigation } from "@/data/navigation";
-
-function getSiteUrl() {
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL;
-  }
-
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
-  }
-
-  return null;
-}
+import { getPublicSiteUrl } from "@/lib/site";
 
 export default function sitemap() {
-  const siteUrl = getSiteUrl();
+  const siteUrl = getPublicSiteUrl();
 
   if (!siteUrl) {
     return [];

@@ -14,12 +14,17 @@ const RESPONSE_BY_REASON = {
 
 function createHealthResponse(reason) {
   const response = RESPONSE_BY_REASON[reason] || RESPONSE_BY_REASON.unexpected_database_error;
+  const isProduction = process.env.NODE_ENV === "production";
 
   return NextResponse.json(
-    {
-      ok: response.ok,
-      reason,
-    },
+    isProduction
+      ? {
+          ok: response.ok,
+        }
+      : {
+          ok: response.ok,
+          reason,
+        },
     { status: response.status }
   );
 }

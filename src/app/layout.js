@@ -1,21 +1,38 @@
 import SiteFooter from "@/components/layout/SiteFooter";
 import SiteHeader from "@/components/layout/SiteHeader";
+import { getMetadataBaseUrl } from "@/lib/site";
 
 import "./globals.css";
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : undefined);
+const metadataBaseUrl = getMetadataBaseUrl();
 
 export const metadata = {
-  metadataBase: siteUrl ? new URL(siteUrl) : undefined,
-  title: {
-    default: "Kobby’s Kitchen",
-    template: "%s | Kobby’s Kitchen",
-  },
+  metadataBase: new URL(metadataBaseUrl),
+  title: "Kobby’s Kitchen",
   description: "Tasty and satisfying meals in Tema Community Two.",
+  openGraph: {
+    type: "website",
+    siteName: "Kobby’s Kitchen",
+    title: "Kobby’s Kitchen | Fast Food in Tema Community Two",
+    description: "Tasty and satisfying meals in Tema Community Two.",
+    images: [
+      {
+        url: "/images/food/fresh-meals-and-takeaway.png",
+        alt: "Fresh meals and takeaway from Kobby’s Kitchen",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kobby’s Kitchen | Fast Food in Tema Community Two",
+    description: "Tasty and satisfying meals in Tema Community Two.",
+    images: ["/images/food/fresh-meals-and-takeaway.png"],
+  },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/images/brand/kobbys-logo.png",
+  },
 };
 
 export default function RootLayout({ children }) {

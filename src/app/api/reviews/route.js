@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 
+import { enforceReviewSubmissionRateLimit } from "@/lib/rate-limit/reviewSubmission";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   REVIEW_INVALID_JSON_MESSAGE,
+  REVIEW_RATE_LIMIT_MESSAGE,
   REVIEW_RATING_OPTIONS,
   REVIEW_LOAD_ERROR_MESSAGE,
   REVIEW_SERVER_ERROR_MESSAGE,
@@ -29,6 +31,24 @@ function createServerErrorResponse() {
       message: REVIEW_SERVER_ERROR_MESSAGE,
     },
     { status: 500 }
+  );
+}
+
+function createRateLimitResponse(retryAfterSeconds) {
+  return NextResponse.json(
+    {
+      ok: false,
+      message: REVIEW_RATE_LIMIT_MESSAGE,
+    },
+    {
+      status: 429,
+      headers:
+        typeof retryAfterSeconds === "number"
+          ? {
+              "Retry-After": String(retryAfterSeconds),
+            }
+          : undefined,
+    }
   );
 }
 
@@ -144,6 +164,37 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  let supabase;
+
+  try {
+    supabase = createSupabaseAdminClient();
+  } catch (error) {
+    console.error("[reviews-post] admin_client_error", {
+      reason: error?.reason || "unknown",
+    });
+
+    return createServerErrorResponse();
+  }
+
+  try {
+    const rateLimitResult = await enforceReviewSubmissionRateLimit({
+      request,
+      supabase,
+    });
+
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult.retryAfterSeconds);
+    }
+  } catch (error) {
+    console.error("[reviews-post] rate_limit_error", {
+      code: error?.code || null,
+      reason: error?.reason || "unknown",
+      usedFallbackIdentifier: Boolean(error?.usedFallbackIdentifier),
+    });
+
+    return createServerErrorResponse();
+  }
+
   let payload;
 
   try {
@@ -172,18 +223,6 @@ export async function POST(request) {
 
   if (Object.keys(validationResult.errors).length > 0) {
     return createValidationErrorResponse(validationResult.errors);
-  }
-
-  let supabase;
-
-  try {
-    supabase = createSupabaseAdminClient();
-  } catch (error) {
-    console.error("[reviews-post] admin_client_error", {
-      reason: error?.reason || "unknown",
-    });
-
-    return createServerErrorResponse();
   }
 
   const { data } = validationResult;

@@ -20,9 +20,23 @@ export const REVIEW_LOAD_ERROR_MESSAGE =
   "Customer reviews could not be loaded right now.";
 export const REVIEW_RATING_ERROR =
   "Please select a rating from 1 to 5 stars.";
+export const REVIEW_RATE_LIMIT_MESSAGE =
+  "Too many reviews have been submitted recently. Please try again later.";
 
-function getTrimmedString(value) {
-  return typeof value === "string" ? value.trim() : "";
+function sanitizeTextValue(value, { preserveLineBreaks = false } = {}) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const controlCharactersPattern = preserveLineBreaks
+    ? /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g
+    : /[\u0000-\u001F\u007F-\u009F]/g;
+
+  const normalizedValue = preserveLineBreaks
+    ? value.replace(/\r\n?/g, "\n")
+    : value;
+
+  return normalizedValue.replace(controlCharactersPattern, "").trim();
 }
 
 export function parseReviewRating(value) {
@@ -44,12 +58,14 @@ export function parseReviewRating(value) {
 
 export function validateReviewSubmission(payload) {
   const errors = {};
-  const displayName = getTrimmedString(payload?.displayName);
-  const category = getTrimmedString(payload?.category);
-  const comment = getTrimmedString(payload?.comment);
+  const displayName = sanitizeTextValue(payload?.displayName);
+  const category = sanitizeTextValue(payload?.category);
+  const comment = sanitizeTextValue(payload?.comment, {
+    preserveLineBreaks: true,
+  });
   const contactValue = payload?.contact;
-  const contact = getTrimmedString(contactValue);
-  const website = getTrimmedString(payload?.website);
+  const contact = sanitizeTextValue(contactValue);
+  const website = sanitizeTextValue(payload?.website);
   const rating = parseReviewRating(payload?.rating);
 
   if (website) {

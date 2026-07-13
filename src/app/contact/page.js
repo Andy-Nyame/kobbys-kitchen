@@ -5,7 +5,7 @@ import PageIntro from "@/components/ui/PageIntro";
 import { businessData } from "@/data/businessData";
 
 export const metadata = {
-  title: "Contact",
+  title: "Contact Kobby’s Kitchen",
   description:
     "Call, WhatsApp or email Kobby’s Kitchen in Tema Community Two for takeaway questions and event orders.",
 };

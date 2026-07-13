@@ -1,23 +1,16 @@
-function getSiteUrl() {
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL;
-  }
-
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
-  }
-
-  return null;
-}
+import { getPublicSiteUrl } from "@/lib/site";
 
 export default function robots() {
-  const siteUrl = getSiteUrl();
+  const siteUrl = getPublicSiteUrl();
 
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-    },
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: ["/api/"],
+      },
+    ],
     sitemap: siteUrl ? `${siteUrl}/sitemap.xml` : undefined,
   };
 }

@@ -6,7 +6,7 @@ import { businessData } from "@/data/businessData";
 import { menuItems } from "@/data/menuData";
 
 export const metadata = {
-  title: "Menu",
+  title: "Menu | Kobby’s Kitchen",
   description:
     "Browse the meals available from Kobby’s Kitchen in Tema Community Two and confirm current availability before ordering.",
 };

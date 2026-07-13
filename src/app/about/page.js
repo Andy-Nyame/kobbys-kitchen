@@ -6,7 +6,7 @@ import PageIntro from "@/components/ui/PageIntro";
 import { businessData } from "@/data/businessData";
 
 export const metadata = {
-  title: "About",
+  title: "About Kobby’s Kitchen",
   description:
     "Learn about Kobby’s Kitchen, our services and Felix Papa Kwasi Cudjoe, the owner and chef.",
 };

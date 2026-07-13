@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Image from "next/image";
 
 import HomeReviewSummary from "@/components/reviews/HomeReviewSummary";
@@ -8,7 +9,7 @@ import { businessData } from "@/data/businessData";
 import { menuItems } from "@/data/menuData";
 
 export const metadata = {
-  title: "Home",
+  title: "Kobby’s Kitchen | Fast Food in Tema Community Two",
   description:
     "Tasty and satisfying meals from Kobby’s Kitchen in Tema Community Two, with takeaway, WhatsApp orders and event meals.",
 };
@@ -184,7 +185,13 @@ export default function Home() {
         </ContentSection>
 
         <ContentSection title="Reviews">
-          <HomeReviewSummary />
+          <Suspense
+            fallback={
+              <p className="review-status">Loading customer reviews...</p>
+            }
+          >
+            <HomeReviewSummary />
+          </Suspense>
         </ContentSection>
 
         <section className="cta-panel">
