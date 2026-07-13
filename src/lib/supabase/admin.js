@@ -8,11 +8,11 @@ function createSupabaseConfigurationError(reason) {
   return error;
 }
 
-function getLegacyJwtRole(key) {
+function isLegacyServiceRoleKey(key) {
   const parts = key.split(".");
 
   if (parts.length !== 3) {
-    return null;
+    return false;
   }
 
   try {
@@ -20,38 +20,29 @@ function getLegacyJwtRole(key) {
       Buffer.from(parts[1], "base64url").toString("utf8")
     );
 
-    return typeof payload?.role === "string" ? payload.role : null;
+    return payload?.role === "service_role";
   } catch {
-    return null;
+    return false;
   }
 }
 
-function isSupabaseServerSecret(key) {
-  if (key.startsWith("sb_secret_")) {
-    return true;
-  }
-
-  if (key.startsWith("sb_publishable_")) {
-    return false;
-  }
-
-  return getLegacyJwtRole(key) === "service_role";
+function isSupportedSecretKey(key) {
+  return (
+    (key.startsWith("sb_secret_") && key.length > "sb_secret_".length) ||
+    isLegacyServiceRoleKey(key)
+  );
 }
 
 export function createSupabaseAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
 
-  if (!supabaseUrl || !supabaseSecretKey) {
-    throw createSupabaseConfigurationError(
-      "missing_server_supabase_configuration"
-    );
+  if (!supabaseUrl) {
+    throw createSupabaseConfigurationError("missing_supabase_url");
   }
 
-  if (!isSupabaseServerSecret(supabaseSecretKey)) {
-    throw createSupabaseConfigurationError(
-      "supabase_secret_key_is_not_server_key"
-    );
+  if (!supabaseSecretKey) {
+    throw createSupabaseConfigurationError("missing_supabase_secret_key");
   }
 
   let parsedSupabaseUrl;
@@ -63,18 +54,29 @@ export function createSupabaseAdminClient() {
   }
 
   if (
-    !["http:", "https:"].includes(parsedSupabaseUrl.protocol) ||
-    parsedSupabaseUrl.pathname.startsWith("/rest/") ||
-    parsedSupabaseUrl.pathname.startsWith("/auth/")
+    parsedSupabaseUrl.protocol !== "https:" ||
+    !parsedSupabaseUrl.hostname.endsWith(".supabase.co") ||
+    parsedSupabaseUrl.username ||
+    parsedSupabaseUrl.password
   ) {
     throw createSupabaseConfigurationError("invalid_supabase_url");
   }
 
-  return createClient(supabaseUrl, supabaseSecretKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
-  });
+  if (!isSupportedSecretKey(supabaseSecretKey)) {
+    throw createSupabaseConfigurationError("invalid_supabase_secret_key_format");
+  }
+
+  try {
+    return createClient(supabaseUrl, supabaseSecretKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    });
+  } catch {
+    throw createSupabaseConfigurationError(
+      "supabase_admin_client_creation_error"
+    );
+  }
 }

@@ -11,6 +11,80 @@ import {
   validateReviewSubmission,
 } from "@/lib/validation/review";
 
+const REVIEW_TABLE_MISSING_CODES = new Set(["42P01", "PGRST205"]);
+const REVIEW_COLUMN_MISMATCH_CODES = new Set(["42703", "PGRST204"]);
+const REVIEW_CONSTRAINT_CODES = new Set([
+  "22P02",
+  "23502",
+  "23503",
+  "23505",
+  "23514",
+  "23P01",
+]);
+const REVIEW_PERMISSION_CODES = new Set(["42501"]);
+const ADMIN_AUTH_CODES = new Set(["28000", "28P01", "PGRST301", "PGRST302"]);
+
+function classifyReviewInsertError(error, status) {
+  const code = error?.code || null;
+  const message = typeof error?.message === "string" ? error.message : "";
+  const hint = typeof error?.hint === "string" ? error.hint : "";
+  const columnMismatch = REVIEW_COLUMN_MISMATCH_CODES.has(code);
+  const constraintMismatch = REVIEW_CONSTRAINT_CODES.has(code);
+
+  let category = "review_insert_error";
+
+  if (
+    ADMIN_AUTH_CODES.has(code) ||
+    status === 401 ||
+    /invalid api key|invalid jwt|jwt expired|unauthorized/i.test(
+      `${message} ${hint}`
+    )
+  ) {
+    category = "admin_auth_error";
+  } else if (
+    status === 0 ||
+    /fetch failed|failed to fetch|networkerror|enotfound|econnrefused|timeout/i.test(
+      `${message} ${hint}`
+    )
+  ) {
+    category = "supabase_network_error";
+  } else if (REVIEW_TABLE_MISSING_CODES.has(code)) {
+    category = "review_table_missing";
+  } else if (columnMismatch) {
+    category = "review_column_mismatch";
+  } else if (constraintMismatch) {
+    category = "review_constraint_violation";
+  } else if (REVIEW_PERMISSION_CODES.has(code) || status === 403) {
+    category = "review_permission_error";
+  }
+
+  return {
+    code,
+    category,
+    configurationMissing: false,
+    columnMismatch,
+    constraintMismatch,
+  };
+}
+
+function logReviewPostFailure({ operation, category, code = null }) {
+  console.error("[reviews-post]", {
+    operation,
+    category,
+    code,
+  });
+}
+
+function logUnexpectedException(error) {
+  logReviewPostFailure({
+    operation: "unexpected_exception",
+    category:
+      typeof error?.name === "string" && error.name
+        ? error.name
+        : "unknown_error",
+  });
+}
+
 function createValidationErrorResponse(errors) {
   return NextResponse.json(
     {
@@ -161,7 +235,14 @@ export async function POST(request) {
     );
   }
 
-  const validationResult = validateReviewSubmission(payload);
+  let validationResult;
+
+  try {
+    validationResult = validateReviewSubmission(payload);
+  } catch (error) {
+    logUnexpectedException(error);
+    return createServerErrorResponse();
+  }
 
   if (validationResult.isSpam) {
     return NextResponse.json(
@@ -181,33 +262,45 @@ export async function POST(request) {
 
   try {
     supabase = createSupabaseAdminClient();
-  } catch {
-    console.error("[reviews-post]", {
-      category: "supabase_admin_client_error",
-      code: null,
+  } catch (error) {
+    logReviewPostFailure({
+      operation: "create_admin_client",
+      category: error?.reason || "supabase_admin_client_creation_error",
     });
 
     return createServerErrorResponse();
   }
 
   const { data } = validationResult;
-  const { error } = await supabase
-    .schema("public")
-    .from("reviews")
-    .insert({
-      display_name: data.displayName,
-      rating: data.rating,
-      category: data.category,
-      comment: data.comment,
-      contact: data.contact,
-      status: "pending",
-      featured: false,
-    });
+  let insertResult;
+
+  try {
+    insertResult = await supabase
+      .schema("public")
+      .from("reviews")
+      .insert({
+        display_name: data.displayName,
+        rating: data.rating,
+        category: data.category,
+        comment: data.comment,
+        contact: data.contact,
+        status: "pending",
+        featured: false,
+      });
+  } catch (error) {
+    logUnexpectedException(error);
+    return createServerErrorResponse();
+  }
+
+  const { error, status } = insertResult;
 
   if (error) {
-    console.error("[reviews-post]", {
-      category: "review_insert_error",
-      code: error.code || null,
+    const diagnostic = classifyReviewInsertError(error, status);
+
+    logReviewPostFailure({
+      operation: "insert_review",
+      category: diagnostic.category,
+      code: diagnostic.code,
     });
 
     return createServerErrorResponse();
