@@ -9,56 +9,82 @@ const UNKNOWN_IDENTIFIER_PREFIX = "unknown-ip";
 const TABLE_MISMATCH_CODES = new Set(["42P01", "PGRST205"]);
 const COLUMN_MISMATCH_CODES = new Set(["42703", "PGRST204"]);
 const PERMISSION_ERROR_CODES = new Set(["42501"]);
+const AUTHENTICATION_ERROR_CODES = new Set([
+  "28000",
+  "28P01",
+  "PGRST301",
+  "PGRST302",
+]);
 
-function createRateLimitError({
-  category,
-  code = null,
-  contractMismatchCategory = "none",
-}) {
-  const error = new Error(category);
-  error.category = category;
-  error.code = code;
-  error.contractMismatchCategory = contractMismatchCategory;
+function createRateLimitError({ operation, diagnostic }) {
+  const error = new Error(diagnostic.category);
+  error.operation = operation;
+  Object.assign(error, diagnostic);
   return error;
 }
 
-function classifySupabaseError(error, operation) {
+export function classifyRateLimitError(error) {
   const code = error?.code || null;
   const message = typeof error?.message === "string" ? error.message : "";
+  const hint = typeof error?.hint === "string" ? error.hint : "";
+  const status = Number.isInteger(error?.status) ? error.status : null;
+  const tableAppearsMissing = TABLE_MISMATCH_CODES.has(code);
+  const columnAppearsMissing = COLUMN_MISMATCH_CODES.has(code);
+  const authenticationFailed =
+    AUTHENTICATION_ERROR_CODES.has(code) ||
+    status === 401 ||
+    /invalid api key|invalid jwt|jwt expired|unauthorized/i.test(
+      `${message} ${hint}`
+    );
 
-  if (TABLE_MISMATCH_CODES.has(code)) {
-    return createRateLimitError({
-      category: "rate_limit_database_schema_error",
-      code,
-      contractMismatchCategory: "table",
-    });
+  let category = "database_error";
+  let hintCategory = "no_safe_hint";
+
+  if (tableAppearsMissing) {
+    category = "schema_error";
+    hintCategory = "table_missing";
+  } else if (columnAppearsMissing) {
+    category = "schema_error";
+    hintCategory = "column_missing";
+  } else if (authenticationFailed) {
+    category = "authentication_error";
+    hintCategory = "admin_auth_failed";
+  } else if (PERMISSION_ERROR_CODES.has(code) || status === 403) {
+    category = "permission_error";
+    hintCategory = "permission_denied";
+  } else if (/fetch failed|network|timeout|econn|enotfound/i.test(message)) {
+    category = "connectivity_error";
+    hintCategory = "upstream_unreachable";
   }
 
-  if (COLUMN_MISMATCH_CODES.has(code)) {
-    return createRateLimitError({
-      category: "rate_limit_database_schema_error",
-      code,
-      contractMismatchCategory: "column",
-    });
-  }
-
-  if (PERMISSION_ERROR_CODES.has(code)) {
-    return createRateLimitError({
-      category: "rate_limit_database_permission_error",
-      code,
-    });
-  }
-
-  if (/fetch failed|network|timeout|econn|enotfound/i.test(message)) {
-    return createRateLimitError({
-      category: "rate_limit_database_connectivity_error",
-      code,
-    });
-  }
-
-  return createRateLimitError({
-    category: `rate_limit_database_${operation}_error`,
+  return {
     code,
+    category,
+    hintCategory,
+    tableAppearsMissing,
+    columnAppearsMissing,
+    authenticationFailed,
+  };
+}
+
+function createRateLimitDatabaseError(error, operation) {
+  return createRateLimitError({
+    operation,
+    diagnostic: classifyRateLimitError(error),
+  });
+}
+
+function createRateLimitInternalError(operation, hintCategory) {
+  return createRateLimitError({
+    operation,
+    diagnostic: {
+      code: null,
+      category: "internal_error",
+      hintCategory,
+      tableAppearsMissing: false,
+      columnAppearsMissing: false,
+      authenticationFailed: false,
+    },
   });
 }
 
@@ -126,9 +152,10 @@ function getIdentifierHash(identifier) {
   const rateLimitSalt = process.env.RATE_LIMIT_SALT;
 
   if (!rateLimitSalt) {
-    throw createRateLimitError({
-      category: "rate_limit_configuration_error",
-    });
+    throw createRateLimitInternalError(
+      "hash_client_identifier",
+      "missing_rate_limit_salt"
+    );
   }
 
   return createHash("sha256")
@@ -143,16 +170,27 @@ function createRetryAfterSeconds(oldestCreatedAt) {
   return Math.max(1, Math.ceil(retryAfterInMs / 1000));
 }
 
-function queryRecentAttempts({ supabase, identifierHash, windowStart }) {
+function countRecentAttempts({ supabase, identifierHash, windowStart }) {
   return supabase
     .schema("public")
     .from("submission_rate_limits")
-    .select("created_at", { count: "exact" })
+    .select("id", { count: "exact", head: true })
+    .eq("identifier_hash", identifierHash)
+    .eq("action", RATE_LIMIT_ACTION)
+    .gte("created_at", windowStart);
+}
+
+function readOldestAttempt({ supabase, identifierHash, windowStart }) {
+  return supabase
+    .schema("public")
+    .from("submission_rate_limits")
+    .select("created_at")
     .eq("identifier_hash", identifierHash)
     .eq("action", RATE_LIMIT_ACTION)
     .gte("created_at", windowStart)
     .order("created_at", { ascending: true })
-    .limit(RATE_LIMIT_MAX_ATTEMPTS);
+    .limit(1)
+    .maybeSingle();
 }
 
 export async function enforceReviewSubmissionRateLimit({ request, supabase }) {
@@ -160,17 +198,17 @@ export async function enforceReviewSubmissionRateLimit({ request, supabase }) {
   const identifierHash = getIdentifierHash(clientIdentifier);
   const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_IN_MS).toISOString();
 
-  let queryResult = await queryRecentAttempts({
+  let countResult = await countRecentAttempts({
     supabase,
     identifierHash,
     windowStart,
   });
 
-  if (queryResult.error) {
-    const classifiedError = classifySupabaseError(queryResult.error, "query");
+  if (countResult.error) {
+    const diagnostic = classifyRateLimitError(countResult.error);
 
-    if (classifiedError.category === "rate_limit_database_connectivity_error") {
-      queryResult = await queryRecentAttempts({
+    if (diagnostic.category === "connectivity_error") {
+      countResult = await countRecentAttempts({
         supabase,
         identifierHash,
         windowStart,
@@ -178,30 +216,44 @@ export async function enforceReviewSubmissionRateLimit({ request, supabase }) {
     }
   }
 
-  const { data, count, error } = queryResult;
+  const { count, error: countError } = countResult;
 
-  if (error) {
-    throw classifySupabaseError(error, "query");
+  if (countError) {
+    throw createRateLimitDatabaseError(countError, "count_recent_attempts");
   }
 
-  const attempts = data || [];
-
   if (!Number.isInteger(count) || count < 0) {
-    throw createRateLimitError({
-      category: "rate_limit_database_query_error",
-    });
+    throw createRateLimitInternalError(
+      "count_recent_attempts",
+      "invalid_count_result"
+    );
   }
 
   if (count >= RATE_LIMIT_MAX_ATTEMPTS) {
-    if (!attempts[0]?.created_at) {
-      throw createRateLimitError({
-        category: "rate_limit_database_query_error",
+    const { data: oldestAttempt, error: oldestAttemptError } =
+      await readOldestAttempt({
+        supabase,
+        identifierHash,
+        windowStart,
       });
+
+    if (oldestAttemptError) {
+      throw createRateLimitDatabaseError(
+        oldestAttemptError,
+        "read_oldest_attempt"
+      );
+    }
+
+    if (!oldestAttempt?.created_at) {
+      throw createRateLimitInternalError(
+        "read_oldest_attempt",
+        "missing_oldest_attempt"
+      );
     }
 
     return {
       allowed: false,
-      retryAfterSeconds: createRetryAfterSeconds(attempts[0].created_at),
+      retryAfterSeconds: createRetryAfterSeconds(oldestAttempt.created_at),
       usedFallbackIdentifier: usedFallback,
     };
   }
@@ -215,7 +267,7 @@ export async function enforceReviewSubmissionRateLimit({ request, supabase }) {
     });
 
   if (insertError) {
-    throw classifySupabaseError(insertError, "insert");
+    throw createRateLimitDatabaseError(insertError, "record_attempt");
   }
 
   return {

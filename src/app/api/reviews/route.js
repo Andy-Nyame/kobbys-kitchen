@@ -186,10 +186,14 @@ export async function POST(request) {
       return createRateLimitResponse(rateLimitResult.retryAfterSeconds);
     }
   } catch (error) {
-    console.error("[reviews-post] rate_limit_error", {
+    console.error("[review-rate-limit]", {
+      operation: error?.operation || "unknown",
       code: error?.code || null,
-      category: error?.category || "rate_limit_internal_error",
-      contractMismatchCategory: error?.contractMismatchCategory || "none",
+      category: error?.category || "internal_error",
+      hintCategory: error?.hintCategory || "no_safe_hint",
+      tableAppearsMissing: Boolean(error?.tableAppearsMissing),
+      columnAppearsMissing: Boolean(error?.columnAppearsMissing),
+      authenticationFailed: Boolean(error?.authenticationFailed),
     });
 
     return createServerErrorResponse();
