@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { enforceReviewSubmissionRateLimit } from "@/lib/rate-limit/reviewSubmission";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   REVIEW_INVALID_JSON_MESSAGE,
-  REVIEW_RATE_LIMIT_MESSAGE,
   REVIEW_RATING_OPTIONS,
   REVIEW_LOAD_ERROR_MESSAGE,
   REVIEW_SERVER_ERROR_MESSAGE,
@@ -31,24 +29,6 @@ function createServerErrorResponse() {
       message: REVIEW_SERVER_ERROR_MESSAGE,
     },
     { status: 500 }
-  );
-}
-
-function createRateLimitResponse(retryAfterSeconds) {
-  return NextResponse.json(
-    {
-      ok: false,
-      message: REVIEW_RATE_LIMIT_MESSAGE,
-    },
-    {
-      status: 429,
-      headers:
-        typeof retryAfterSeconds === "number"
-          ? {
-              "Retry-After": String(retryAfterSeconds),
-            }
-          : undefined,
-    }
   );
 }
 
@@ -127,23 +107,26 @@ export async function GET() {
 
   try {
     supabase = createSupabaseAdminClient();
-  } catch (error) {
-    console.error("[reviews-get] admin_client_error", {
-      reason: error?.reason || "unknown",
+  } catch {
+    console.error("[reviews-get]", {
+      category: "supabase_admin_client_error",
+      code: null,
     });
 
     return createReviewLoadErrorResponse();
   }
 
   const { data, error } = await supabase
+    .schema("public")
     .from("reviews")
     .select("id, display_name, rating, category, comment, featured, created_at")
     .eq("status", "approved")
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("[reviews-get] select_error", {
-      code: error.code || "unknown",
+    console.error("[reviews-get]", {
+      category: "approved_review_select_error",
+      code: error.code || null,
     });
 
     return createReviewLoadErrorResponse();
@@ -164,41 +147,6 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  let supabase;
-
-  try {
-    supabase = createSupabaseAdminClient();
-  } catch (error) {
-    console.error("[reviews-post] admin_client_error", {
-      reason: error?.reason || "unknown",
-    });
-
-    return createServerErrorResponse();
-  }
-
-  try {
-    const rateLimitResult = await enforceReviewSubmissionRateLimit({
-      request,
-      supabase,
-    });
-
-    if (!rateLimitResult.allowed) {
-      return createRateLimitResponse(rateLimitResult.retryAfterSeconds);
-    }
-  } catch (error) {
-    console.error("[review-rate-limit]", {
-      operation: error?.operation || "unknown",
-      code: error?.code || null,
-      category: error?.category || "internal_error",
-      hintCategory: error?.hintCategory || "no_safe_hint",
-      tableAppearsMissing: Boolean(error?.tableAppearsMissing),
-      columnAppearsMissing: Boolean(error?.columnAppearsMissing),
-      authenticationFailed: Boolean(error?.authenticationFailed),
-    });
-
-    return createServerErrorResponse();
-  }
-
   let payload;
 
   try {
@@ -229,20 +177,37 @@ export async function POST(request) {
     return createValidationErrorResponse(validationResult.errors);
   }
 
+  let supabase;
+
+  try {
+    supabase = createSupabaseAdminClient();
+  } catch {
+    console.error("[reviews-post]", {
+      category: "supabase_admin_client_error",
+      code: null,
+    });
+
+    return createServerErrorResponse();
+  }
+
   const { data } = validationResult;
-  const { error } = await supabase.from("reviews").insert({
-    display_name: data.displayName,
-    rating: data.rating,
-    category: data.category,
-    comment: data.comment,
-    contact: data.contact,
-    status: "pending",
-    featured: false,
-  });
+  const { error } = await supabase
+    .schema("public")
+    .from("reviews")
+    .insert({
+      display_name: data.displayName,
+      rating: data.rating,
+      category: data.category,
+      comment: data.comment,
+      contact: data.contact,
+      status: "pending",
+      featured: false,
+    });
 
   if (error) {
-    console.error("[reviews-post] insert_error", {
-      code: error.code || "unknown",
+    console.error("[reviews-post]", {
+      category: "review_insert_error",
+      code: error.code || null,
     });
 
     return createServerErrorResponse();

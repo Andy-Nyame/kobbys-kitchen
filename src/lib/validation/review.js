@@ -20,8 +20,6 @@ export const REVIEW_LOAD_ERROR_MESSAGE =
   "Customer reviews could not be loaded right now.";
 export const REVIEW_RATING_ERROR =
   "Please select a rating from 1 to 5 stars.";
-export const REVIEW_RATE_LIMIT_MESSAGE =
-  "Too many reviews have been submitted recently. Please try again later.";
 
 function sanitizeTextValue(value, { preserveLineBreaks = false } = {}) {
   if (typeof value !== "string") {

@@ -11,7 +11,6 @@ Next.js App Router website for Kobby’s Kitchen, built with JavaScript, JSX, an
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
-RATE_LIMIT_SALT=
 NEXT_PUBLIC_SITE_URL=
 ```
 
@@ -27,11 +26,6 @@ npm run dev
 
 - Reviews are submitted through the server-only Supabase admin client.
 - Public reviews are loaded through the Next.js API routes.
-- Review submission rate limiting depends on the SQL migration in:
-
-`supabase/migrations/20260713_create_submission_rate_limits.sql`
-
-Run that SQL in Supabase before enabling public preview review submissions.
 
 ## Checks
 
@@ -49,5 +43,4 @@ Add these variables in Vercel for preview and production deployments:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_SECRET_KEY`
-- `RATE_LIMIT_SALT`
 - `NEXT_PUBLIC_SITE_URL`
