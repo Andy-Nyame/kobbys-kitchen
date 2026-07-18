@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import SiteFooter from "@/components/layout/SiteFooter";
 import SiteHeader from "@/components/layout/SiteHeader";
 import { getMetadataBaseUrl } from "@/lib/site";
@@ -44,6 +45,7 @@ export default function RootLayout({ children }) {
           <div className="site-main">{children}</div>
           <SiteFooter />
         </div>
+        <Analytics />
       </body>
     </html>
   );
