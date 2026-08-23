@@ -36,6 +36,9 @@ export function summarizeOrderMetrics({ orders = [], payments = [] } = {}) {
   let paidRevenueMinor = 0;
   let paidOrderCount = 0;
   let unpaidCashValueMinor = 0;
+  let cashUnpaidCount = 0;
+  let pendingElectronicCount = 0;
+  let failedElectronicCount = 0;
 
   for (const payment of payments) {
     if (seenPaymentOrderIds.has(payment.order_id)) {
@@ -64,6 +67,21 @@ export function summarizeOrderMetrics({ orders = [], payments = [] } = {}) {
       orderStatusById.get(payment.order_id) !== ORDER_STATUS.CANCELLED
     ) {
       unpaidCashValueMinor += payment.amount_minor;
+      cashUnpaidCount += 1;
+    }
+
+    if (
+      payment.method !== PAYMENT_METHOD.CASH &&
+      payment.status === PAYMENT_STATUS.PENDING
+    ) {
+      pendingElectronicCount += 1;
+    }
+
+    if (
+      payment.method !== PAYMENT_METHOD.CASH &&
+      payment.status === PAYMENT_STATUS.FAILED
+    ) {
+      failedElectronicCount += 1;
     }
   }
 
@@ -74,9 +92,64 @@ export function summarizeOrderMetrics({ orders = [], payments = [] } = {}) {
     paidRevenueMinor,
     revenueByPaymentMethodMinor,
     unpaidCashValueMinor,
+    paymentSummary: {
+      cashPaidMinor: revenueByPaymentMethodMinor.CASH,
+      cashUnpaidMinor: unpaidCashValueMinor,
+      cashUnpaidCount,
+      mobileMoneyPaidMinor: revenueByPaymentMethodMinor.MOBILE_MONEY,
+      cardPaidMinor: revenueByPaymentMethodMinor.CARD,
+      pendingElectronicCount,
+      failedElectronicCount,
+    },
     averagePaidOrderValueMinor:
       paidOrderCount === 0
         ? 0
         : Math.round(paidRevenueMinor / paidOrderCount),
+  };
+}
+
+export function normalizeOrderMetricsRecord(record = {}) {
+  const orderStatusCounts = record.order_status_counts || {};
+  const revenueByMethod = record.revenue_by_payment_method_minor || {};
+  const paymentSummary = record.payment_summary || {};
+
+  return {
+    totalOrders: Number(record.total_orders || 0),
+    orderStatusCounts: Object.fromEntries(
+      Object.values(ORDER_STATUS).map((status) => [
+        status,
+        Number(orderStatusCounts[status] || 0),
+      ])
+    ),
+    paidOrderCount: Number(record.paid_order_count || 0),
+    paidRevenueMinor: Number(record.paid_revenue_minor || 0),
+    revenueByPaymentMethodMinor: Object.fromEntries(
+      Object.values(PAYMENT_METHOD).map((method) => [
+        method,
+        Number(revenueByMethod[method] || 0),
+      ])
+    ),
+    unpaidCashValueMinor: Number(record.unpaid_cash_value_minor || 0),
+    averagePaidOrderValueMinor: Number(
+      record.average_paid_order_value_minor || 0
+    ),
+    paymentSummary: {
+      cashPaidMinor: Number(paymentSummary.cash_paid_minor || 0),
+      cashUnpaidMinor: Number(paymentSummary.cash_unpaid_minor || 0),
+      cashUnpaidCount: Number(paymentSummary.cash_unpaid_count || 0),
+      mobileMoneyPaidMinor: Number(
+        paymentSummary.mobile_money_paid_minor || 0
+      ),
+      cardPaidMinor: Number(paymentSummary.card_paid_minor || 0),
+      pendingElectronicCount: Number(
+        paymentSummary.pending_electronic_count || 0
+      ),
+      failedElectronicCount: Number(
+        paymentSummary.failed_electronic_count || 0
+      ),
+    },
+    orderCountByDay: record.order_count_by_day || [],
+    revenueByDay: record.revenue_by_day || [],
+    topItems: record.top_items || [],
   };
 }

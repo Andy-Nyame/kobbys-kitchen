@@ -1,7 +1,10 @@
 import Link from "next/link";
 
+import AdminNavigation from "@/components/admin/AdminNavigation";
 import ThemeControl from "@/components/theme/ThemeControl";
 import { requireAdmin } from "@/lib/auth/guards";
+
+export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }) {
   await requireAdmin();
@@ -15,20 +18,7 @@ export default async function AdminLayout({ children }) {
             <span className="admin-header__tagline">Kobby&rsquo;s Kitchen</span>
           </Link>
 
-          <nav className="admin-navigation" aria-label="Admin navigation">
-            <ul className="admin-navigation__list">
-              <li>
-                <Link href="/admin" className="admin-navigation__link">
-                  Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin/orders" className="admin-navigation__link">
-                  Orders
-                </Link>
-              </li>
-            </ul>
-          </nav>
+          <AdminNavigation />
 
           <div className="admin-header__actions">
             <span className="admin-header__role">Admin</span>

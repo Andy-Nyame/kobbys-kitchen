@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
+import { getAdminAuthorization } from "@/lib/auth/authorization";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 export async function requireAuthenticatedUser() {
   const user = await getAuthenticatedUser();
@@ -36,16 +38,17 @@ export async function requireCustomer() {
   return user;
 }
 
-export async function requireAdmin() {
-  const user = await requireAuthenticatedUser();
-  const role = await getUserRole(user.id);
+export const requireAdmin = cache(async function requireAdmin() {
+  const user = await getAuthenticatedUser();
+  const role = user ? await getUserRole(user.id) : null;
+  const authorization = getAdminAuthorization(user, role);
 
-  if (role !== "ADMIN") {
-    redirect("/");
+  if (!authorization.allowed) {
+    redirect(authorization.redirectTo);
   }
 
   return user;
-}
+});
 
 export async function getUserRole(userId) {
   const supabase = await createClient();
