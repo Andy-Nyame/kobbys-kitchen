@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 const RESPONSE_BY_REASON = {
   connected: { ok: true, status: 200 },
@@ -91,7 +91,7 @@ function getReasonFromSupabaseError(error, status) {
 
 export async function GET() {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = createClient();
     const { error, status } = await supabase
       .from("reviews")
       .select("id")

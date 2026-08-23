@@ -1,6 +1,7 @@
 import "server-only";
 
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 function createSupabaseConfigurationError(reason) {
   const error = new Error(reason);
@@ -8,7 +9,7 @@ function createSupabaseConfigurationError(reason) {
   return error;
 }
 
-export function createServerSupabaseClient() {
+export async function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabasePublishableKey =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -33,7 +34,19 @@ export function createServerSupabaseClient() {
     throw createSupabaseConfigurationError("invalid_supabase_url");
   }
 
-  return createClient(supabaseUrl, supabasePublishableKey, {
+  const cookieStore = await cookies();
+
+  return createServerClient(supabaseUrl, supabasePublishableKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          cookieStore.set(name, value, options);
+        });
+      },
+    },
     auth: {
       persistSession: false,
       autoRefreshToken: false,
