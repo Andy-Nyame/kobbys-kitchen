@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import ThemeControl from "@/components/theme/ThemeControl";
 import { requireCustomer } from "@/lib/auth/guards";
 
 export default async function CustomerLayout({ children }) {
@@ -44,6 +45,7 @@ export default async function CustomerLayout({ children }) {
           </nav>
 
           <div className="account-header__actions">
+            <ThemeControl compact />
             <form action="/api/auth/logout" method="POST">
               <button
                 type="submit"

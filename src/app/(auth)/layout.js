@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import ThemeControl from "@/components/theme/ThemeControl";
+
 export default function AuthLayout({ children }) {
   return (
     <div className="auth-shell">
@@ -9,6 +11,9 @@ export default function AuthLayout({ children }) {
             <span className="auth-header__name">Kobby&rsquo;s Kitchen</span>
             <span className="auth-header__tagline">Tema Community Two</span>
           </Link>
+          <div className="auth-header__theme">
+            <ThemeControl />
+          </div>
         </header>
         <main className="auth-main">{children}</main>
         <footer className="auth-footer">

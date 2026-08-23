@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import ThemeControl from "@/components/theme/ThemeControl";
 import { requireAdmin } from "@/lib/auth/guards";
 
 export default async function AdminLayout({ children }) {
@@ -31,6 +32,7 @@ export default async function AdminLayout({ children }) {
 
           <div className="admin-header__actions">
             <span className="admin-header__role">Admin</span>
+            <ThemeControl compact />
             <form action="/api/auth/logout" method="POST">
               <button
                 type="submit"

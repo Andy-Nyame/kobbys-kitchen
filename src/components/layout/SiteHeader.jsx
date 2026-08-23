@@ -4,6 +4,7 @@ import Link from "next/link";
 import DesktopNavigation from "@/components/navigation/DesktopNavigation";
 import MobileNavigation from "@/components/navigation/MobileNavigation";
 import ButtonLink from "@/components/ui/ButtonLink";
+import ThemeControl from "@/components/theme/ThemeControl";
 import { businessData } from "@/data/businessData";
 
 export default function SiteHeader() {
@@ -26,6 +27,7 @@ export default function SiteHeader() {
 
         <div className="site-header__desktop-actions">
           <DesktopNavigation />
+          <ThemeControl compact />
           <ButtonLink
             ariaLabel="Order on WhatsApp"
             className="site-header__whatsapp"

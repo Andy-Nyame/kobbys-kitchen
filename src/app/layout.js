@@ -1,5 +1,27 @@
 import "./globals.css";
 
+import { THEME_STORAGE_KEY } from "@/lib/theme";
+
+const themeInitializationScript = `(() => {
+  const root = document.documentElement;
+  let preference = "system";
+
+  try {
+    const savedPreference = window.localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});
+    if (["system", "light", "dark"].includes(savedPreference)) {
+      preference = savedPreference;
+    }
+  } catch {}
+
+  const resolvedTheme = preference === "system"
+    ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+    : preference;
+
+  root.dataset.themePreference = preference;
+  root.dataset.theme = resolvedTheme;
+  root.style.colorScheme = resolvedTheme;
+})();`;
+
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: {
@@ -34,7 +56,10 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitializationScript }} />
+      </head>
       <body>{children}</body>
     </html>
   );
