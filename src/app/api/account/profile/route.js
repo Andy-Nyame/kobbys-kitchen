@@ -1,10 +1,25 @@
 import { NextResponse } from "next/server";
 
-import { requireCustomer } from "@/lib/auth/guards";
+import { getAuthenticatedUser, getUserRole } from "@/lib/auth/guards";
+import { createClient } from "@/lib/supabase/server";
 import { validateProfileUpdatePayload } from "@/lib/validation/auth";
 
 export async function PATCH(request) {
-  const { user } = await requireCustomer();
+  const user = await getAuthenticatedUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { ok: false, message: "Authentication required.", errors: {} },
+      { status: 401 }
+    );
+  }
+
+  if ((await getUserRole(user.id)) !== "CUSTOMER") {
+    return NextResponse.json(
+      { ok: false, message: "Access denied.", errors: {} },
+      { status: 403 }
+    );
+  }
 
   let payload;
 
@@ -21,14 +36,18 @@ export async function PATCH(request) {
 
   if (Object.keys(validation.errors).length > 0) {
     return NextResponse.json(
-      { ok: false, message: "Please check the highlighted information.", errors: validation.errors },
+      {
+        ok: false,
+        message: "Please check the highlighted information.",
+        errors: validation.errors,
+      },
       { status: 400 }
     );
   }
 
   const { displayName, phone } = validation.data;
 
-  const supabase = await (await import("@/lib/supabase/server")).createClient();
+  const supabase = await createClient();
 
   const { error } = await supabase
     .from("profiles")
@@ -41,7 +60,7 @@ export async function PATCH(request) {
   if (error) {
     console.error("[account-profile-update]", error);
     return NextResponse.json(
-      { ok: false, message: "Something went wrong.", errors: { profile: error.message } },
+      { ok: false, message: "Something went wrong.", errors: {} },
       { status: 500 }
     );
   }

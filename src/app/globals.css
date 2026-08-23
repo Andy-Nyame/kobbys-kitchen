@@ -1371,7 +1371,7 @@ textarea:focus-visible {
 }
 
 .auth-shell__inner {
-  width: min(100% - 2rem, 28rem);
+  width: min(100%, 28rem);
   display: grid;
   gap: 1.5rem;
 }
@@ -1492,50 +1492,28 @@ textarea:focus-visible {
    CUSTOMER SHELL
    ============================================ */
 
-.site-header {
-  position: sticky;
-  top: 0;
-  z-index: var(--z-header);
-  isolation: isolate;
-  border-bottom: 1px solid rgba(231, 221, 195, 0.85);
-  background-color: rgba(255, 253, 247, 0.92);
-  backdrop-filter: blur(12px);
+.account-header__inner {
+  flex-wrap: wrap;
 }
 
-.site-header__inner {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 0;
-}
-
-.site-header__desktop-actions {
+.account-header__actions {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.85rem;
-  flex: 0 1 auto;
-  min-width: 0;
-  color: var(--color-text-primary);
-  text-decoration: none;
+.account-navigation {
+  order: 3;
+  width: 100%;
+  overflow-x: auto;
 }
 
-.brand__name {
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1.1;
+.account-navigation .navigation-list {
+  flex-wrap: nowrap;
 }
 
-.brand__tagline {
-  color: var(--color-text-secondary);
-  font-size: 0.92rem;
+.account-header__actions .button-link {
+  width: auto;
 }
 
 /* ============================================
@@ -1558,6 +1536,7 @@ textarea:focus-visible {
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 0;
+  flex-wrap: wrap;
 }
 
 .admin-header__brand {
@@ -1580,12 +1559,14 @@ textarea:focus-visible {
 }
 
 .admin-navigation {
-  display: none;
+  order: 3;
+  width: 100%;
+  overflow-x: auto;
 }
 
 .admin-navigation__list {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.35rem;
   list-style: none;
@@ -1693,12 +1674,16 @@ textarea:focus-visible {
    ============================================ */
 
 @media (min-width: 900px) {
-  .admin-navigation {
-    display: block;
+  .account-header__inner,
+  .admin-header__inner {
+    flex-wrap: nowrap;
   }
 
-  .site-header__desktop-actions {
-    display: flex;
+  .account-navigation,
+  .admin-navigation {
+    order: initial;
+    width: auto;
+    overflow: visible;
   }
 }
 

@@ -23,8 +23,3 @@ export function getPublicSiteUrl() {
   const siteUrl = candidates.find(isValidHttpUrl);
   return normalizeSiteUrl(siteUrl || null);
 }
-
-export function getMetadataBaseUrl() {
-  const siteUrl = getPublicSiteUrl();
-  return siteUrl || "http://localhost:3000";
-}

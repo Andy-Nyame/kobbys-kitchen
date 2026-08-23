@@ -7,9 +7,3 @@ export function isOrderingEnabled() {
 
   return flag.toLowerCase() === "true";
 }
-
-export function getOrderingSettings() {
-  return {
-    orderingEnabled: isOrderingEnabled(),
-  };
-}

@@ -31,9 +31,11 @@ export async function POST(request) {
 
   const { email } = validation.data;
   const supabase = await createClient();
+  const siteOrigin =
+    process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/reset-password`,
+    redirectTo: `${siteOrigin.replace(/\/$/, "")}/auth/callback?next=/reset-password`,
   });
 
   if (error) {
@@ -46,7 +48,7 @@ export async function POST(request) {
       {
         ok: false,
         message: AUTH_SERVER_ERROR_MESSAGE,
-        errors: { auth: error.message },
+        errors: {},
       },
       { status: 400 }
     );

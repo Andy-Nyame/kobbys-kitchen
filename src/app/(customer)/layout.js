@@ -1,22 +1,20 @@
 import Link from "next/link";
 
-import { createClient } from "@/lib/supabase/server";
-import { getAuthenticatedUser, getUserProfile } from "@/lib/auth/guards";
+import { requireCustomer } from "@/lib/auth/guards";
 
 export default async function CustomerLayout({ children }) {
-  const user = await getAuthenticatedUser();
-  const profile = user ? await getUserProfile(user.id) : null;
+  await requireCustomer();
 
   return (
     <>
-      <header className="site-header">
-        <div className="container site-header__inner">
+      <header className="site-header account-header">
+        <div className="container site-header__inner account-header__inner">
           <Link className="brand" href="/">
             <span className="brand__name">Kobby&rsquo;s Kitchen</span>
             <span className="brand__tagline">Tema Community Two</span>
           </Link>
 
-          <nav className="desktop-navigation" aria-label="Account navigation">
+          <nav className="account-navigation" aria-label="Account navigation">
             <ul className="navigation-list">
               <li>
                 <Link
@@ -45,7 +43,7 @@ export default async function CustomerLayout({ children }) {
             </ul>
           </nav>
 
-          <div className="site-header__desktop-actions">
+          <div className="account-header__actions">
             <form action="/api/auth/logout" method="POST">
               <button
                 type="submit"
@@ -59,9 +57,7 @@ export default async function CustomerLayout({ children }) {
       </header>
 
       <main className="page">
-        <div className="container content-stack">
-          {children}
-        </div>
+        <div className="container content-stack">{children}</div>
       </main>
 
       <footer className="site-footer">

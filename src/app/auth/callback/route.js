@@ -1,31 +1,31 @@
 import { NextResponse } from "next/server";
 
+import { getSafeRedirectPath } from "@/lib/auth/redirects";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next") || "/account";
+  const next = getSafeRedirectPath(requestUrl.searchParams.get("next"));
 
-  if (code) {
-    const supabase = await createClient();
-
-    await supabase.auth.exchangeCodeForSession(code);
+  if (!code) {
+    return NextResponse.redirect(
+      new URL("/login?error=auth_callback", request.url)
+    );
   }
 
-  // Validate next to prevent open redirects
-  const allowedOrigins = [
-    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-  ].filter(Boolean);
+  const supabase = await createClient();
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-  let safeNext = "/account";
-
-  if (next && next.startsWith("/")) {
-    safeNext = next;
-  } else if (next && allowedOrigins.some((origin) => next.startsWith(origin))) {
-    const url = new URL(next);
-    safeNext = url.pathname + url.search;
+  if (error) {
+    console.error("[auth-callback]", {
+      message: error.message,
+      code: error.code,
+    });
+    return NextResponse.redirect(
+      new URL("/login?error=auth_callback", request.url)
+    );
   }
 
-  return NextResponse.redirect(new URL(safeNext, request.url));
+  return NextResponse.redirect(new URL(next, request.url));
 }

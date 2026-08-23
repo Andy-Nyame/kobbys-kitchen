@@ -53,7 +53,7 @@ export async function POST(request) {
       {
         ok: false,
         message: AUTH_SERVER_ERROR_MESSAGE,
-        errors: { auth: error.message },
+        errors: {},
       },
       { status: 400 }
     );
@@ -62,55 +62,6 @@ export async function POST(request) {
   if (!data.user) {
     return NextResponse.json(
       { ok: false, message: AUTH_SERVER_ERROR_MESSAGE, errors: {} },
-      { status: 500 }
-    );
-  }
-
-  // Create profile with CUSTOMER role
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .insert({
-      user_id: data.user.id,
-      display_name: displayName,
-      phone: phone,
-    });
-
-  if (profileError) {
-    console.error("[auth-signup-profile]", {
-      message: profileError.message,
-      code: profileError.code,
-    });
-
-    return NextResponse.json(
-      {
-        ok: false,
-        message: AUTH_SERVER_ERROR_MESSAGE,
-        errors: { profile: profileError.message },
-      },
-      { status: 500 }
-    );
-  }
-
-  // Assign CUSTOMER role - never allow public to choose admin
-  const { error: roleError } = await supabase
-    .from("user_roles")
-    .insert({
-      user_id: data.user.id,
-      role: "CUSTOMER",
-    });
-
-  if (roleError) {
-    console.error("[auth-signup-role]", {
-      message: roleError.message,
-      code: roleError.code,
-    });
-
-    return NextResponse.json(
-      {
-        ok: false,
-        message: AUTH_SERVER_ERROR_MESSAGE,
-        errors: { role: roleError.message },
-      },
       { status: 500 }
     );
   }

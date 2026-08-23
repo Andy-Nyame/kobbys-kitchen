@@ -1,11 +1,9 @@
 import Link from "next/link";
 
-import { createClient } from "@/lib/supabase/server";
-import { getAuthenticatedUser, getUserRole } from "@/lib/auth/guards";
+import { requireAdmin } from "@/lib/auth/guards";
 
 export default async function AdminLayout({ children }) {
-  const user = await getAuthenticatedUser();
-  const role = user ? await getUserRole(user.id) : null;
+  await requireAdmin();
 
   return (
     <>
@@ -32,7 +30,7 @@ export default async function AdminLayout({ children }) {
           </nav>
 
           <div className="admin-header__actions">
-            <span className="admin-header__role">{role || "Unknown"}</span>
+            <span className="admin-header__role">Admin</span>
             <form action="/api/auth/logout" method="POST">
               <button
                 type="submit"

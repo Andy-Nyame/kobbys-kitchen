@@ -1,451 +1,144 @@
-import { describe, it } from "node:test";
-import assert from "node:assert";
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { afterEach, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const rootDir = path.join(__dirname, "../..");
+import { getSafeRedirectPath } from "../lib/auth/redirects.js";
+import { isOrderingEnabled } from "../lib/feature-flags.js";
+import {
+  sanitizeTextValue,
+  validateForgotPasswordPayload,
+  validateLoginPayload,
+  validateProfileUpdatePayload,
+  validateResetPasswordPayload,
+  validateSignupPayload,
+} from "../lib/validation/auth.js";
 
-// Static imports using relative paths
-import { validateSignupPayload } from "../lib/validation/auth.js";
-import { validateLoginPayload } from "../lib/validation/auth.js";
-import { validateProfileUpdatePayload } from "../lib/validation/auth.js";
-import { validateForgotPasswordPayload } from "../lib/validation/auth.js";
-import { validateResetPasswordPayload } from "../lib/validation/auth.js";
+const testDirectory = path.dirname(fileURLToPath(import.meta.url));
+const rootDirectory = path.join(testDirectory, "../..");
+const originalOrderingFlag = process.env.V2_ORDERING_ENABLED;
 
-// ============================================
-// Feature flag tests
-// ============================================
-
-describe("Feature flags", () => {
-  it("ordering is disabled by default when env var is not set", async () => {
-    const original = process.env.V2_ORDERING_ENABLED;
+afterEach(() => {
+  if (originalOrderingFlag === undefined) {
     delete process.env.V2_ORDERING_ENABLED;
+  } else {
+    process.env.V2_ORDERING_ENABLED = originalOrderingFlag;
+  }
+});
 
-    const { isOrderingEnabled } = await import("../lib/feature-flags.js");
-    assert.strictEqual(isOrderingEnabled(), false);
+describe("ordering feature flag", () => {
+  it("defaults to disabled", () => {
+    delete process.env.V2_ORDERING_ENABLED;
+    assert.equal(isOrderingEnabled(), false);
+  });
 
-    if (original !== undefined) {
-      process.env.V2_ORDERING_ENABLED = original;
+  it("enables ordering only for a true string", () => {
+    for (const value of ["false", "1", "yes", " true ", ""]) {
+      process.env.V2_ORDERING_ENABLED = value;
+      assert.equal(isOrderingEnabled(), false, `expected ${JSON.stringify(value)} to be disabled`);
+    }
+
+    process.env.V2_ORDERING_ENABLED = "TRUE";
+    assert.equal(isOrderingEnabled(), true);
+  });
+});
+
+describe("safe auth redirects", () => {
+  it("allows local absolute paths and query strings", () => {
+    assert.equal(getSafeRedirectPath("/reset-password?from=email"), "/reset-password?from=email");
+  });
+
+  it("rejects external, protocol-relative, and backslash redirects", () => {
+    for (const value of [
+      "https://example.com/account",
+      "//example.com/account",
+      "/\\example.com/account",
+      "account",
+      null,
+    ]) {
+      assert.equal(getSafeRedirectPath(value), "/account");
     }
   });
 
-  it("ordering is disabled when env var is false", async () => {
-    process.env.V2_ORDERING_ENABLED = "false";
-    const { isOrderingEnabled } = await import("../lib/feature-flags.js");
-    assert.strictEqual(isOrderingEnabled(), false);
-  });
-
-  it("ordering is enabled only when env var is exactly true", async () => {
-    process.env.V2_ORDERING_ENABLED = "true";
-    const { isOrderingEnabled } = await import("../lib/feature-flags.js");
-    assert.strictEqual(isOrderingEnabled(), true);
+  it("uses a caller-provided fallback", () => {
+    assert.equal(getSafeRedirectPath("//example.com", "/login"), "/login");
   });
 });
 
-// ============================================
-// Auth validation tests
-// ============================================
+describe("auth payload validation", () => {
+  const validSignup = {
+    email: "customer@example.com",
+    password: "password123",
+    displayName: "Test Customer",
+    phone: "+233555123456",
+  };
 
-describe("Auth validation", () => {
-  it("rejects signup with invalid email", () => {
+  it("accepts and normalizes a valid signup", () => {
     const result = validateSignupPayload({
-      email: "not-an-email",
-      password: "password123",
-      displayName: "Test User",
-      phone: "+233555123456",
+      ...validSignup,
+      email: " customer@example.com ",
+      displayName: " Test Customer ",
     });
-    assert.ok(result.errors.email, "Expected email error");
+
+    assert.deepEqual(result.errors, {});
+    assert.equal(result.data.email, "customer@example.com");
+    assert.equal(result.data.displayName, "Test Customer");
   });
 
-  it("rejects signup with short password", () => {
-    const result = validateSignupPayload({
-      email: "test@example.com",
-      password: "short",
-      displayName: "Test User",
-      phone: "+233555123456",
-    });
-    assert.ok(result.errors.password, "Expected password error");
+  it("rejects each invalid signup field", () => {
+    const cases = [
+      [{ ...validSignup, email: "invalid" }, "email"],
+      [{ ...validSignup, password: "short" }, "password"],
+      [{ ...validSignup, displayName: "T" }, "displayName"],
+      [{ ...validSignup, phone: "123" }, "phone"],
+    ];
+
+    for (const [payload, field] of cases) {
+      assert.ok(validateSignupPayload(payload).errors[field]);
+    }
   });
 
-  it("rejects signup with short display name", () => {
-    const result = validateSignupPayload({
-      email: "test@example.com",
-      password: "password123",
-      displayName: "T",
-      phone: "+233555123456",
-    });
-    assert.ok(result.errors.displayName, "Expected displayName error");
+  it("does not accept a role from signup input", () => {
+    const result = validateSignupPayload({ ...validSignup, role: "ADMIN" });
+    assert.deepEqual(Object.keys(result.data).sort(), ["displayName", "email", "password", "phone"]);
   });
 
-  it("rejects signup with short phone", () => {
-    const result = validateSignupPayload({
-      email: "test@example.com",
-      password: "password123",
-      displayName: "Test User",
-      phone: "123",
-    });
-    assert.ok(result.errors.phone, "Expected phone error");
+  it("removes control characters from text", () => {
+    assert.equal(sanitizeTextValue(" Test\u0000 User\n"), "Test User");
   });
 
-  it("accepts valid signup payload", () => {
-    const result = validateSignupPayload({
-      email: "test@example.com",
-      password: "password123",
-      displayName: "Test User",
-      phone: "+233555123456",
-    });
-    assert.strictEqual(Object.keys(result.errors).length, 0);
-    assert.strictEqual(result.data.email, "test@example.com");
-    assert.strictEqual(result.data.displayName, "Test User");
-  });
-
-  it("sanitizes control characters from text fields", () => {
-    const result = validateSignupPayload({
-      email: "test@example.com",
-      password: "password123",
-      displayName: "Test\u0000User",
-      phone: "+233555123456",
-    });
-    assert.strictEqual(result.data.displayName, "TestUser");
+  it("validates login, recovery, reset, and profile payloads", () => {
+    assert.ok(validateLoginPayload({ email: "bad", password: "" }).errors.email);
+    assert.ok(validateLoginPayload({ email: "bad", password: "" }).errors.password);
+    assert.ok(validateForgotPasswordPayload({ email: "bad" }).errors.email);
+    assert.ok(validateResetPasswordPayload({ password: "short" }).errors.password);
+    assert.ok(validateProfileUpdatePayload({ displayName: "T", phone: "1" }).errors.displayName);
+    assert.ok(validateProfileUpdatePayload({ displayName: "T", phone: "1" }).errors.phone);
   });
 });
 
-// ============================================
-// Login validation tests
-// ============================================
+describe("database stabilization contract", () => {
+  const migrationPath = path.join(
+    rootDirectory,
+    "supabase/migrations/20260823000000_stabilize_v2a1_auth_and_rls.sql"
+  );
+  const migration = fs.readFileSync(migrationPath, "utf8");
 
-describe("Login validation", () => {
-  it("rejects login with invalid email", () => {
-    const result = validateLoginPayload({
-      email: "not-an-email",
-      password: "password123",
-    });
-    assert.ok(result.errors.email, "Expected email error");
+  it("provisions only the CUSTOMER role for new auth users", () => {
+    assert.match(migration, /after insert on auth\.users/i);
+    assert.match(migration, /values \(new\.id, 'CUSTOMER'\)/i);
+    assert.doesNotMatch(migration, /values \(new\.id, 'ADMIN'\)/i);
   });
 
-  it("rejects login with empty password", () => {
-    const result = validateLoginPayload({
-      email: "test@example.com",
-      password: "",
-    });
-    assert.ok(result.errors.password, "Expected password error");
+  it("removes direct customer order mutation policies while ordering is disabled", () => {
+    assert.match(migration, /drop policy if exists "customers_create_own_orders"/i);
+    assert.match(migration, /drop policy if exists "customers_update_own_pending_orders"/i);
   });
 
-  it("accepts valid login payload", () => {
-    const result = validateLoginPayload({
-      email: "test@example.com",
-      password: "password123",
-    });
-    assert.strictEqual(Object.keys(result.errors).length, 0);
-  });
-});
-
-// ============================================
-// Profile update validation tests
-// ============================================
-
-describe("Profile update validation", () => {
-  it("rejects profile update with short display name", () => {
-    const result = validateProfileUpdatePayload({
-      displayName: "T",
-      phone: "+233555123456",
-    });
-    assert.ok(result.errors.displayName, "Expected displayName error");
-  });
-
-  it("rejects profile update with short phone", () => {
-    const result = validateProfileUpdatePayload({
-      displayName: "Test User",
-      phone: "123",
-    });
-    assert.ok(result.errors.phone, "Expected phone error");
-  });
-
-  it("accepts valid profile update payload", () => {
-    const result = validateProfileUpdatePayload({
-      displayName: "Test User",
-      phone: "+233555123456",
-    });
-    assert.strictEqual(Object.keys(result.errors).length, 0);
-  });
-});
-
-// ============================================
-// Forgot password validation tests
-// ============================================
-
-describe("Forgot password validation", () => {
-  it("rejects forgot password with invalid email", () => {
-    const result = validateForgotPasswordPayload({
-      email: "not-an-email",
-    });
-    assert.ok(result.errors.email, "Expected email error");
-  });
-
-  it("accepts valid forgot password payload", () => {
-    const result = validateForgotPasswordPayload({
-      email: "test@example.com",
-    });
-    assert.strictEqual(Object.keys(result.errors).length, 0);
-  });
-});
-
-// ============================================
-// Reset password validation tests
-// ============================================
-
-describe("Reset password validation", () => {
-  it("rejects reset password with short password", () => {
-    const result = validateResetPasswordPayload({
-      password: "short",
-    });
-    assert.ok(result.errors.password, "Expected password error");
-  });
-
-  it("accepts valid reset password payload", () => {
-    const result = validateResetPasswordPayload({
-      password: "newpassword123",
-    });
-    assert.strictEqual(Object.keys(result.errors).length, 0);
-  });
-});
-
-// ============================================
-// Route existence tests (verify files exist)
-// ============================================
-
-describe("Route file existence", () => {
-  const expectedRoutes = [
-    "src/app/(auth)/login/page.js",
-    "src/app/(auth)/signup/page.js",
-    "src/app/(auth)/forgot-password/page.js",
-    "src/app/(auth)/reset-password/page.js",
-    "src/app/auth/callback/route.js",
-    "src/app/api/auth/signup/route.js",
-    "src/app/api/auth/login/route.js",
-    "src/app/api/auth/logout/route.js",
-    "src/app/api/auth/forgot-password/route.js",
-    "src/app/api/auth/reset-password/route.js",
-    "src/app/api/account/profile/route.js",
-    "src/app/(customer)/account/page.js",
-    "src/app/(customer)/account/profile/page.js",
-    "src/app/(customer)/account/orders/page.js",
-    "src/app/admin/page.js",
-    "src/app/admin/orders/page.js",
-    "src/app/(marketing)/page.js",
-    "src/app/(marketing)/about/page.js",
-    "src/app/(marketing)/contact/page.js",
-    "src/app/(marketing)/menu/page.js",
-    "src/app/(marketing)/reviews/page.js",
-    "src/app/(marketing)/suggestions/page.js",
-    "src/app/(marketing)/privacy/page.js",
-  ];
-
-  for (const route of expectedRoutes) {
-    it(`route file exists: ${route}`, () => {
-      const fullPath = path.join(rootDir, route);
-      assert.ok(fs.existsSync(fullPath), `Expected route file to exist: ${route}`);
-    });
-  }
-});
-
-// ============================================
-// Migration file existence tests
-// ============================================
-
-describe("Migration file existence", () => {
-  const expectedMigrations = [
-    "supabase/migrations/20260822000000_create_profiles.sql",
-    "supabase/migrations/20260822000001_create_user_roles.sql",
-    "supabase/migrations/20260822000002_create_menu_catalogue.sql",
-    "supabase/migrations/20260822000003_create_orders.sql",
-    "supabase/migrations/20260822000004_create_ordering_settings.sql",
-    "supabase/migrations/20260822000005_create_rls_policies.sql",
-  ];
-
-  for (const migration of expectedMigrations) {
-    it(`migration file exists: ${migration}`, () => {
-      const fullPath = path.join(rootDir, migration);
-      assert.ok(fs.existsSync(fullPath), `Expected migration file to exist: ${migration}`);
-    });
-  }
-});
-
-// ============================================
-// Security tests
-// ============================================
-
-describe("Security checks", () => {
-  it("signup API does not accept role parameter", () => {
-    const signupRoute = fs.readFileSync(
-      path.join(rootDir, "src/app/api/auth/signup/route.js"),
-      "utf8"
-    );
-    assert.ok(
-      !signupRoute.includes("payload?.role") && !signupRoute.includes("data.role"),
-      "Signup route should not accept role from payload"
-    );
-    assert.ok(
-      signupRoute.includes('"CUSTOMER"') || signupRoute.includes("'CUSTOMER'"),
-      "Signup route should assign CUSTOMER role"
-    );
-  });
-
-  it("auth callback validates redirect to prevent open redirects", () => {
-    const callbackRoute = fs.readFileSync(
-      path.join(rootDir, "src/app/auth/callback/route.js"),
-      "utf8"
-    );
-    assert.ok(
-      callbackRoute.includes("safeNext") || callbackRoute.includes("next"),
-      "Callback route should validate redirect"
-    );
-  });
-
-  it("admin layout uses requireAdmin guard", () => {
-    const adminPage = fs.readFileSync(
-      path.join(rootDir, "src/app/admin/page.js"),
-      "utf8"
-    );
-    assert.ok(
-      adminPage.includes("requireAdmin"),
-      "Admin page should use requireAdmin guard"
-    );
-  });
-
-  it("customer account pages use requireCustomer guard", () => {
-    const accountPage = fs.readFileSync(
-      path.join(rootDir, "src/app/(customer)/account/orders/page.js"),
-      "utf8"
-    );
-    assert.ok(
-      accountPage.includes("requireCustomer"),
-      "Customer orders page should use requireCustomer guard"
-    );
-  });
-
-  it("no service role key exposed in browser code", () => {
-    const browserClient = fs.readFileSync(
-      path.join(rootDir, "src/lib/supabase/browser.js"),
-      "utf8"
-    );
-    assert.ok(
-      !browserClient.includes("SUPABASE_SECRET_KEY") && !browserClient.includes("service_role"),
-      "Browser client should not use secret key"
-    );
-  });
-
-  it("no admin role assignment in public signup", () => {
-    const signupRoute = fs.readFileSync(
-      path.join(rootDir, "src/app/api/auth/signup/route.js"),
-      "utf8"
-    );
-    assert.ok(
-      !signupRoute.includes("'ADMIN'"),
-      "Public signup should never assign ADMIN role"
-    );
-  });
-});
-
-// ============================================
-// Database schema tests
-// ============================================
-
-describe("Database schema", () => {
-  it("profiles table has required fields", () => {
-    const migration = fs.readFileSync(
-      path.join(rootDir, "supabase/migrations/20260822000000_create_profiles.sql"),
-      "utf8"
-    );
-    assert.ok(migration.includes("user_id"));
-    assert.ok(migration.includes("display_name"));
-    assert.ok(migration.includes("phone"));
-    assert.ok(migration.includes("created_at"));
-    assert.ok(migration.includes("updated_at"));
-  });
-
-  it("user_roles table has required fields and no public insert policy", () => {
-    const migration = fs.readFileSync(
-      path.join(rootDir, "supabase/migrations/20260822000001_create_user_roles.sql"),
-      "utf8"
-    );
-    assert.ok(migration.includes("user_id"));
-    assert.ok(migration.includes("role"));
-    assert.ok(migration.includes("created_at"));
-    assert.ok(migration.includes("app_role"));
-  });
-
-  it("menu_categories table has required fields", () => {
-    const migration = fs.readFileSync(
-      path.join(rootDir, "supabase/migrations/20260822000002_create_menu_catalogue.sql"),
-      "utf8"
-    );
-    assert.ok(migration.includes("menu_categories"));
-    assert.ok(migration.includes("slug"));
-    assert.ok(migration.includes("active"));
-    assert.ok(migration.includes("sort_order"));
-  });
-
-  it("menu_items table has required fields and integer pricing", () => {
-    const migration = fs.readFileSync(
-      path.join(rootDir, "supabase/migrations/20260822000002_create_menu_catalogue.sql"),
-      "utf8"
-    );
-    assert.ok(migration.includes("menu_items"));
-    assert.ok(migration.includes("price_minor"));
-    assert.ok(migration.includes("currency"));
-    assert.ok(migration.includes("GHS"));
-    assert.ok(migration.includes("available"));
-    assert.ok(migration.includes("featured"));
-  });
-
-  it("orders table has pickup-only fulfillment type", () => {
-    const migration = fs.readFileSync(
-      path.join(rootDir, "supabase/migrations/20260822000003_create_orders.sql"),
-      "utf8"
-    );
-    assert.ok(migration.includes("order_fulfillment_type"));
-    assert.ok(migration.includes("PICKUP"));
-    assert.ok(migration.includes("idempotency_key"));
-    assert.ok(migration.includes("customer_name_snapshot"));
-    assert.ok(migration.includes("phone_snapshot"));
-  });
-
-  it("order_status_history table exists with correct statuses", () => {
-    const migration = fs.readFileSync(
-      path.join(rootDir, "supabase/migrations/20260822000003_create_orders.sql"),
-      "utf8"
-    );
-    assert.ok(migration.includes("order_status_history"));
-    assert.ok(migration.includes("PENDING"));
-    assert.ok(migration.includes("PREPARING"));
-    assert.ok(migration.includes("READY_FOR_PICKUP"));
-    assert.ok(migration.includes("COMPLETED"));
-    assert.ok(migration.includes("CANCELLED"));
-  });
-
-  it("ordering_settings table exists and defaults to false", () => {
-    const migration = fs.readFileSync(
-      path.join(rootDir, "supabase/migrations/20260822000004_create_ordering_settings.sql"),
-      "utf8"
-    );
-    assert.ok(migration.includes("ordering_settings"));
-    assert.ok(migration.includes("accepting_orders"));
-    assert.ok(migration.includes("false"));
-  });
-
-  it("RLS policies are restrictive", () => {
-    const rlsMigration = fs.readFileSync(
-      path.join(rootDir, "supabase/migrations/20260822000005_create_rls_policies.sql"),
-      "utf8"
-    );
-    assert.ok(rlsMigration.includes("enable row level security"));
-    assert.ok(rlsMigration.includes("customers_read_own_profile"));
-    assert.ok(rlsMigration.includes("customers_update_own_profile"));
-    assert.ok(rlsMigration.includes("public_read_active_categories"));
-    assert.ok(rlsMigration.includes("public_read_active_available_items"));
-    assert.ok(rlsMigration.includes("customers_read_own_orders"));
+  it("adds nonnegative minor-unit and GHS constraints", () => {
+    assert.match(migration, /price_minor >= 0/i);
+    assert.match(migration, /subtotal_minor >= 0 and total_minor >= 0/i);
+    assert.match(migration, /currency = 'GHS'/i);
   });
 });

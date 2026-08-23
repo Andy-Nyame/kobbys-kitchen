@@ -91,7 +91,7 @@ function getReasonFromSupabaseError(error, status) {
 
 export async function GET() {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { error, status } = await supabase
       .from("reviews")
       .select("id")

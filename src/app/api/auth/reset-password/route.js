@@ -46,7 +46,7 @@ export async function POST(request) {
       {
         ok: false,
         message: AUTH_SERVER_ERROR_MESSAGE,
-        errors: { auth: error.message },
+        errors: {},
       },
       { status: 400 }
     );
