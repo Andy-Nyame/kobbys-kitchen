@@ -1806,6 +1806,7 @@ select:focus-visible {
   font-weight: 700;
 }
 
+.order-status--awaiting_payment,
 .order-status--pending {
   background-color: var(--color-warning-background);
   color: var(--color-warning-text);
