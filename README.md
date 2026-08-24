@@ -11,6 +11,7 @@ Next.js App Router website for Kobby’s Kitchen, built with JavaScript, JSX, an
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
+PRIMARY_ADMIN_EMAIL=
 NEXT_PUBLIC_SITE_URL=
 ```
 
@@ -26,6 +27,24 @@ npm run dev
 
 - Reviews are submitted through the server-only Supabase admin client.
 - Public reviews are loaded through the Next.js API routes.
+
+## Primary admin bootstrap
+
+First create the trusted owner through the normal signup flow and confirm the
+email address. Confirm that the target Supabase project is the intended
+environment and that the repository migrations have been applied there. Then
+set `PRIMARY_ADMIN_EMAIL` in `.env.local` to that existing user's email and run:
+
+```bash
+npm run provision:primary-admin
+```
+
+The command runs only from the server-side development environment. It uses the
+Supabase secret key to locate the existing Auth user, fails if that user does
+not exist, verifies that `public.user_roles` is available, and idempotently
+assigns the existing `ADMIN` role. It does not create an Auth user or accept a
+password. Remove `PRIMARY_ADMIN_EMAIL` from the environment after provisioning
+if it is no longer needed.
 
 ## Checks
 

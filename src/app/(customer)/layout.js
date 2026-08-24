@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import AccountNavigation from "@/components/account/AccountNavigation";
 import ThemeControl from "@/components/theme/ThemeControl";
 import { requireCustomer } from "@/lib/auth/guards";
 
@@ -15,34 +16,7 @@ export default async function CustomerLayout({ children }) {
             <span className="brand__tagline">Tema Community Two</span>
           </Link>
 
-          <nav className="account-navigation" aria-label="Account navigation">
-            <ul className="navigation-list">
-              <li>
-                <Link
-                  href="/account"
-                  className="navigation-link"
-                >
-                  Account
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/account/profile"
-                  className="navigation-link"
-                >
-                  Profile
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/account/orders"
-                  className="navigation-link"
-                >
-                  Orders
-                </Link>
-              </li>
-            </ul>
-          </nav>
+          <AccountNavigation />
 
           <div className="account-header__actions">
             <ThemeControl compact />

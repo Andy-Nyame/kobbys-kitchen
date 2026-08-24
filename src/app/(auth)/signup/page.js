@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import Link from "next/link";
+import { authCrossLinks } from "@/data/navigation";
 
 export default function SignupPage() {
   const [displayName, setDisplayName] = useState("");
@@ -168,8 +169,10 @@ export default function SignupPage() {
       </form>
 
       <p className="auth-card__footer">
-        <span>Already have an account?</span>
-        <Link href="/login">Sign In</Link>
+        <span>{authCrossLinks.signup.prompt}</span>
+        <Link href={authCrossLinks.signup.href}>
+          {authCrossLinks.signup.label}
+        </Link>
       </p>
     </div>
   );

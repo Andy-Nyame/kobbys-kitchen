@@ -1,4 +1,4 @@
-import { APPROVED_REVIEW_CATEGORIES } from "@/lib/validation/review";
+import { APPROVED_REVIEW_CATEGORIES } from "../lib/validation/review.js";
 
 export const businessData = {
   name: "Kobby’s Kitchen",

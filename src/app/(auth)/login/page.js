@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import Link from "next/link";
+import { authCrossLinks } from "@/data/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -103,11 +104,17 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <p className="auth-card__footer">
-        <Link href="/forgot-password">Forgot password?</Link>
-        <span className="auth-card__footer-separator">|</span>
-        <Link href="/signup">Create an account</Link>
-      </p>
+      <div className="auth-card__footer-group">
+        <p className="auth-card__footer">
+          <Link href="/forgot-password">Forgot password?</Link>
+        </p>
+        <p className="auth-card__footer">
+          <span>{authCrossLinks.login.prompt}</span>
+          <Link href={authCrossLinks.login.href}>
+            {authCrossLinks.login.label}
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

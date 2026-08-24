@@ -1,10 +1,10 @@
+import HeaderAuthNavigation from "@/components/navigation/HeaderAuthNavigation";
 import NavigationLink from "@/components/navigation/NavigationLink";
 import ButtonLink from "@/components/ui/ButtonLink";
 import ThemeControl from "@/components/theme/ThemeControl";
-import { businessData } from "@/data/businessData";
-import { primaryNavigation } from "@/data/navigation";
+import { orderingNavigation, primaryNavigation } from "@/data/navigation";
 
-export default function MobileNavigation() {
+export default function MobileNavigation({ authNavigation }) {
   return (
     <details className="mobile-navigation">
       <summary
@@ -45,19 +45,18 @@ export default function MobileNavigation() {
               </NavigationLink>
             </li>
           ))}
+          <HeaderAuthNavigation mobile navigation={authNavigation} />
         </ul>
 
         <div className="mobile-navigation__actions">
           <ThemeControl className="mobile-navigation__theme" />
           <ButtonLink
-            ariaLabel="Order on WhatsApp"
-            className="mobile-navigation__whatsapp"
-            href={businessData.whatsapp.href}
-            rel="noopener noreferrer"
-            target="_blank"
+            ariaLabel={orderingNavigation.label}
+            className="mobile-navigation__order"
+            href={orderingNavigation.href}
             variant="primary"
           >
-            Order on WhatsApp
+            {orderingNavigation.label}
           </ButtonLink>
         </div>
       </nav>

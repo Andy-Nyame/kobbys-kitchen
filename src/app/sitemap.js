@@ -1,4 +1,8 @@
-import { footerSupportNavigation, primaryNavigation } from "@/data/navigation";
+import {
+  footerSupportNavigation,
+  orderingNavigation,
+  primaryNavigation,
+} from "@/data/navigation";
 import { getPublicSiteUrl } from "@/lib/site";
 
 export default function sitemap() {
@@ -10,6 +14,7 @@ export default function sitemap() {
 
   const routes = [
     ...primaryNavigation.map((item) => item.href),
+    orderingNavigation.href,
     ...footerSupportNavigation.map((item) => item.href),
   ];
 

@@ -27,7 +27,7 @@ export async function getAuthenticatedUser() {
   return user;
 }
 
-export async function requireCustomer() {
+export const requireCustomer = cache(async function requireCustomer() {
   const user = await requireAuthenticatedUser();
   const role = await getUserRole(user.id);
 
@@ -36,7 +36,7 @@ export async function requireCustomer() {
   }
 
   return user;
-}
+});
 
 export const requireAdmin = cache(async function requireAdmin() {
   const user = await getAuthenticatedUser();
@@ -69,7 +69,7 @@ export async function getUserProfile(userId) {
   const supabase = await createClient();
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select("display_name, phone")
     .eq("user_id", userId)
     .single();
 

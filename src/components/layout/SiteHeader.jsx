@@ -6,8 +6,25 @@ import MobileNavigation from "@/components/navigation/MobileNavigation";
 import ButtonLink from "@/components/ui/ButtonLink";
 import ThemeControl from "@/components/theme/ThemeControl";
 import { businessData } from "@/data/businessData";
+import { orderingNavigation } from "@/data/navigation";
+import { getHeaderAuthNavigation } from "@/lib/auth/header-navigation";
+import { getAuthenticatedUser, getUserRole } from "@/lib/auth/guards";
 
-export default function SiteHeader() {
+export default async function SiteHeader() {
+  let user = null;
+  let role = null;
+
+  try {
+    user = await getAuthenticatedUser();
+    role = user ? await getUserRole(user.id) : null;
+  } catch (error) {
+    if (error?.reason) {
+      console.error("[site-header-auth]", { reason: error.reason });
+    }
+  }
+
+  const authNavigation = getHeaderAuthNavigation(user, role);
+
   return (
     <header className="site-header">
       <div className="container site-header__inner">
@@ -26,21 +43,19 @@ export default function SiteHeader() {
         </Link>
 
         <div className="site-header__desktop-actions">
-          <DesktopNavigation />
+          <DesktopNavigation authNavigation={authNavigation} />
           <ThemeControl compact />
           <ButtonLink
-            ariaLabel="Order on WhatsApp"
-            className="site-header__whatsapp"
-            href={businessData.whatsapp.href}
-            rel="noopener noreferrer"
-            target="_blank"
+            ariaLabel={orderingNavigation.label}
+            className="site-header__order"
+            href={orderingNavigation.href}
             variant="primary"
           >
-            Order on WhatsApp
+            {orderingNavigation.label}
           </ButtonLink>
         </div>
 
-        <MobileNavigation />
+        <MobileNavigation authNavigation={authNavigation} />
       </div>
     </header>
   );

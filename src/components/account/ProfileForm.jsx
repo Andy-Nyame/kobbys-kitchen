@@ -3,74 +3,127 @@
 import { useState } from "react";
 
 import ButtonLink from "@/components/ui/ButtonLink";
+import { validateProfileUpdatePayload } from "@/lib/validation/auth";
 
 export default function ProfileForm({ initialProfile }) {
-  const [displayName, setDisplayName] = useState(initialProfile.display_name);
+  const [displayName, setDisplayName] = useState(initialProfile.displayName);
   const [phone, setPhone] = useState(initialProfile.phone);
+  const [savedProfile, setSavedProfile] = useState(initialProfile);
   const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [feedback, setFeedback] = useState({ type: "idle", message: "" });
+  const isSaving = feedback.type === "saving";
+  const isDirty =
+    displayName !== savedProfile.displayName || phone !== savedProfile.phone;
+
+  function updateField(field, value) {
+    if (field === "displayName") {
+      setDisplayName(value);
+    } else {
+      setPhone(value);
+    }
+
+    setErrors((currentErrors) => ({ ...currentErrors, [field]: undefined }));
+    setFeedback({ type: "idle", message: "" });
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
+
+    if (isSaving) {
+      return;
+    }
+
+    const validation = validateProfileUpdatePayload({ displayName, phone });
+
+    if (Object.keys(validation.errors).length > 0) {
+      setErrors(validation.errors);
+      setFeedback({
+        type: "error",
+        message: "Please check the highlighted information.",
+      });
+      return;
+    }
+
     setErrors({});
-    setServerError("");
-    setSuccess(false);
-    setLoading(true);
+    setFeedback({ type: "saving", message: "Saving your profile…" });
 
     try {
       const response = await fetch("/api/account/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ displayName, phone }),
+        body: JSON.stringify(validation.data),
       });
-      const result = await response.json();
+      const result = await response.json().catch(() => null);
 
-      if (!response.ok || !result.ok) {
-        setErrors(result.errors || {});
-        setServerError(result.message || "Something went wrong.");
+      if (!response.ok || !result?.ok) {
+        setErrors(result?.errors || {});
+        setFeedback({
+          type: "error",
+          message:
+            result?.message ||
+            "Your profile could not be saved. Please try again.",
+        });
         return;
       }
 
-      setSuccess(true);
+      const savedValues = {
+        displayName: result.profile.display_name,
+        phone: result.profile.phone,
+      };
+      setDisplayName(savedValues.displayName);
+      setPhone(savedValues.phone);
+      setSavedProfile(savedValues);
+      setFeedback({
+        type: "success",
+        message: result.message || "Profile updated successfully.",
+      });
     } catch {
-      setServerError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+      setFeedback({
+        type: "error",
+        message: "A network error prevented saving. Please try again.",
+      });
     }
   }
 
   return (
-    <>
-      {serverError ? (
+    <form
+      className="profile-form"
+      onSubmit={handleSubmit}
+      noValidate
+      aria-busy={isSaving}
+    >
+      {feedback.type === "error" ? (
         <p className="auth-card__error" role="alert">
-          {serverError}
+          {feedback.message}
         </p>
       ) : null}
-      {success ? (
-        <p className="form-success" role="status">
-          Profile updated successfully.
+      {feedback.type === "success" ? (
+        <p className="form-success" role="status" aria-live="polite">
+          {feedback.message}
         </p>
       ) : null}
 
-      <form onSubmit={handleSubmit} noValidate>
+      <div className="profile-form__fields">
         <div className="form-field">
           <label htmlFor="displayName">Display Name</label>
           <input
             id="displayName"
             type="text"
             value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
+            onChange={(event) => updateField("displayName", event.target.value)}
             required
+            minLength="2"
+            maxLength="80"
             autoComplete="name"
+            disabled={isSaving}
             aria-invalid={Boolean(errors.displayName)}
-            aria-describedby={
-              errors.displayName ? "displayName-error" : undefined
-            }
+            aria-describedby={`displayName-help${errors.displayName ? " displayName-error" : ""}`}
           />
+          <p id="displayName-help" className="form-field__help">
+            Use the name staff should recognize for pickup.
+          </p>
           {errors.displayName ? (
-            <p id="displayName-error" className="form-field__error">
+            <p id="displayName-error" className="form-field__error" role="alert">
               {errors.displayName}
             </p>
           ) : null}
@@ -82,32 +135,39 @@ export default function ProfileForm({ initialProfile }) {
             id="phone"
             type="tel"
             value={phone}
-            onChange={(event) => setPhone(event.target.value)}
+            onChange={(event) => updateField("phone", event.target.value)}
             required
+            maxLength="40"
             autoComplete="tel"
+            inputMode="tel"
+            placeholder="020 123 4567"
+            disabled={isSaving}
             aria-invalid={Boolean(errors.phone)}
-            aria-describedby={errors.phone ? "phone-error" : undefined}
+            aria-describedby={`phone-help${errors.phone ? " phone-error" : ""}`}
           />
+          <p id="phone-help" className="form-field__help">
+            Ghana local and +233 formats are accepted.
+          </p>
           {errors.phone ? (
-            <p id="phone-error" className="form-field__error">
+            <p id="phone-error" className="form-field__error" role="alert">
               {errors.phone}
             </p>
           ) : null}
         </div>
+      </div>
 
-        <div className="section-actions">
-          <button
-            type="submit"
-            className="button-link button-link--primary"
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Save Changes"}
-          </button>
-          <ButtonLink href="/account" variant="secondary">
-            Cancel
-          </ButtonLink>
-        </div>
-      </form>
-    </>
+      <div className="section-actions profile-form__actions">
+        <button
+          type="submit"
+          className="button-link button-link--primary"
+          disabled={isSaving || !isDirty}
+        >
+          {isSaving ? "Saving…" : "Save Changes"}
+        </button>
+        <ButtonLink href="/account" variant="secondary">
+          Back to Account
+        </ButtonLink>
+      </div>
+    </form>
   );
 }

@@ -7,7 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "provision:primary-admin": "node --env-file-if-exists=.env.local scripts/provision-primary-admin.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
