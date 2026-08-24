@@ -3,6 +3,7 @@ import {
   PAYMENT_METHOD,
   PAYMENT_STATUS,
 } from "../orders/domain.js";
+import { REVIEW_STATUS } from "../reviews/moderation.js";
 
 export const ADMIN_PAGE_SIZE = 25;
 
@@ -169,6 +170,34 @@ export function parseAnalyticsFilters(params = {}) {
 
   return {
     values: normalizeDateRange(params, errors),
+    errors,
+  };
+}
+
+export function parseReviewFilters(params = {}) {
+  const errors = {};
+  const featured = getSingleValue(params.featured);
+  let normalizedFeatured = "";
+
+  if (featured) {
+    if (featured === "true") {
+      normalizedFeatured = "true";
+    } else {
+      errors.featured = "Unsupported featured filter ignored.";
+    }
+  }
+
+  return {
+    values: {
+      status: normalizeEnum(
+        params.status,
+        Object.values(REVIEW_STATUS),
+        "status",
+        errors
+      ),
+      featured: normalizedFeatured,
+      page: normalizePage(params.page, errors),
+    },
     errors,
   };
 }

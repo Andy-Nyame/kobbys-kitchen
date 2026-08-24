@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
-import { provisionPrimaryAdmin } from "../src/lib/auth/primary-admin.js";
+import {
+  assertDevelopmentAdminBootstrap,
+  provisionPrimaryAdmin,
+} from "../src/lib/auth/primary-admin.js";
 
 function getRequiredEnvironmentValue(name) {
   const value = process.env[name]?.trim();
@@ -56,6 +59,8 @@ function validateServerConfiguration(supabaseUrl, supabaseSecretKey) {
 }
 
 async function main() {
+  assertDevelopmentAdminBootstrap(process.env.APP_ENV);
+
   const supabaseUrl = getRequiredEnvironmentValue("NEXT_PUBLIC_SUPABASE_URL");
   const supabaseSecretKey = getRequiredEnvironmentValue("SUPABASE_SECRET_KEY");
   const primaryAdminEmail = getRequiredEnvironmentValue("PRIMARY_ADMIN_EMAIL");
@@ -97,7 +102,7 @@ async function main() {
     },
   });
 
-  console.log(`Primary admin provisioned for ${result.email} with role ${result.role}.`);
+  console.log(`Primary admin provisioned with role ${result.role}.`);
 }
 
 main().catch((error) => {

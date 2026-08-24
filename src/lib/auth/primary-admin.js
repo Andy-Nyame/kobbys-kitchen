@@ -2,6 +2,15 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERS_PER_PAGE = 200;
 const MAX_USER_PAGES = 1000;
 
+export function assertDevelopmentAdminBootstrap(value) {
+  if (value !== "development") {
+    throw createBootstrapError(
+      "unsafe_admin_bootstrap_environment",
+      "Primary admin provisioning is restricted to the confirmed development environment."
+    );
+  }
+}
+
 function createBootstrapError(code, message) {
   const error = new Error(message);
   error.code = code;

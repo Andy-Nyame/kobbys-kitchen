@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { accountNavigation } from "../data/navigation.js";
 import { getHeaderAuthNavigation } from "../lib/auth/header-navigation.js";
 import {
+  assertDevelopmentAdminBootstrap,
   normalizePrimaryAdminEmail,
   provisionPrimaryAdmin,
 } from "../lib/auth/primary-admin.js";
@@ -53,6 +54,14 @@ describe("shared desktop and mobile auth navigation policy", () => {
 });
 
 describe("primary admin bootstrap domain", () => {
+  it("refuses to run outside the explicit development environment", () => {
+    assert.doesNotThrow(() => assertDevelopmentAdminBootstrap("development"));
+    assert.throws(
+      () => assertDevelopmentAdminBootstrap("production"),
+      { code: "unsafe_admin_bootstrap_environment" }
+    );
+  });
+
   it("normalizes the trusted email and rejects invalid values", () => {
     assert.equal(
       normalizePrimaryAdminEmail(" Owner@Example.com "),

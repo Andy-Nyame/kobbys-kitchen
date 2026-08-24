@@ -2286,6 +2286,10 @@ select:focus-visible {
   min-width: 68rem;
 }
 
+.admin-table--reviews {
+  min-width: 72rem;
+}
+
 .admin-table--compact {
   min-width: 32rem;
 }
@@ -2364,6 +2368,49 @@ select:focus-visible {
 .admin-status--payment-refunded {
   background-color: var(--color-info-background);
   color: var(--color-info-text);
+}
+
+.admin-status--review-pending {
+  background-color: var(--color-warning-background);
+  color: var(--color-warning-text);
+}
+
+.admin-status--review-approved {
+  background-color: var(--color-success-background);
+  color: var(--color-success-text);
+}
+
+.admin-status--review-hidden {
+  background-color: var(--color-danger-background);
+  color: var(--color-danger-text);
+}
+
+.admin-review-comment {
+  max-width: 34rem;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.admin-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 13rem;
+}
+
+.admin-review-actions .button-link {
+  width: auto;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.75rem;
+}
+
+.admin-review-actions__status {
+  width: 100%;
+  color: var(--color-success-text);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .admin-pagination {
@@ -2513,6 +2560,7 @@ select:focus-visible {
 
   .admin-table,
   .admin-table--payments,
+  .admin-table--reviews,
   .admin-table--compact,
   .admin-table tbody,
   .admin-table tr,
