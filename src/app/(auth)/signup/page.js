@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import Link from "next/link";
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 import { authCrossLinks } from "@/data/navigation";
 
 export default function SignupPage() {
@@ -167,6 +168,11 @@ export default function SignupPage() {
           {loading ? "Creating Account..." : "Create Account"}
         </button>
       </form>
+
+      <div className="auth-divider" role="separator">
+        <span>or</span>
+      </div>
+      <GoogleAuthButton />
 
       <p className="auth-card__footer">
         <span>{authCrossLinks.signup.prompt}</span>

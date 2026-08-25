@@ -136,7 +136,6 @@ export default function ProfileForm({ initialProfile }) {
             type="tel"
             value={phone}
             onChange={(event) => updateField("phone", event.target.value)}
-            required
             maxLength="40"
             autoComplete="tel"
             inputMode="tel"
@@ -146,7 +145,7 @@ export default function ProfileForm({ initialProfile }) {
             aria-describedby={`phone-help${errors.phone ? " phone-error" : ""}`}
           />
           <p id="phone-help" className="form-field__help">
-            Ghana local and +233 formats are accepted.
+            Optional for now. Ghana local and +233 formats are accepted.
           </p>
           {errors.phone ? (
             <p id="phone-error" className="form-field__error" role="alert">

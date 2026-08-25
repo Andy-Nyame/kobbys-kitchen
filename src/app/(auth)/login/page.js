@@ -3,13 +3,25 @@
 import { useState } from "react";
 
 import Link from "next/link";
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 import { authCrossLinks } from "@/data/navigation";
+import { getSafeCustomerRedirectPath } from "@/lib/auth/redirects";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useState(() => {
+    if (typeof window === "undefined") {
+      return "";
+    }
+
+    const authError = new URLSearchParams(window.location.search).get("error");
+
+    return authError === "oauth_unavailable" || authError === "auth_callback"
+      ? "We could not complete that authentication request. Please try again."
+      : "";
+  });
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event) {
@@ -36,7 +48,8 @@ export default function LoginPage() {
         return;
       }
 
-      window.location.href = "/account";
+      const requestedPath = new URLSearchParams(window.location.search).get("next");
+      window.location.assign(getSafeCustomerRedirectPath(requestedPath));
     } catch {
       setServerError("Something went wrong. Please try again.");
       setLoading(false);
@@ -104,9 +117,17 @@ export default function LoginPage() {
         </button>
       </form>
 
+      <div className="auth-divider" role="separator">
+        <span>or</span>
+      </div>
+      <GoogleAuthButton />
+
       <div className="auth-card__footer-group">
         <p className="auth-card__footer">
-          <Link href="/forgot-password">Forgot password?</Link>
+          <Link href="/forgot-password">Forgot password for email sign-in?</Link>
+        </p>
+        <p className="auth-card__footer auth-card__footer--hint">
+          Use Continue with Google if that is how you created your account.
         </p>
         <p className="auth-card__footer">
           <span>{authCrossLinks.login.prompt}</span>

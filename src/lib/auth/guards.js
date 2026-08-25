@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAdminAuthorization } from "@/lib/auth/authorization";
+import { getCustomerLoginPath } from "@/lib/auth/redirects";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
@@ -27,9 +28,21 @@ export async function getAuthenticatedUser() {
   return user;
 }
 
-export const requireCustomer = cache(async function requireCustomer() {
-  const user = await requireAuthenticatedUser();
-  const role = await getUserRole(user.id);
+export const getCustomerAccess = cache(async function getCustomerAccess() {
+  const user = await getAuthenticatedUser();
+  const role = user ? await getUserRole(user.id) : null;
+
+  return { user, role };
+});
+
+export const requireCustomer = cache(async function requireCustomer(
+  intendedPath = "/account"
+) {
+  const { user, role } = await getCustomerAccess();
+
+  if (!user) {
+    redirect(getCustomerLoginPath(intendedPath));
+  }
 
   if (role !== "CUSTOMER") {
     redirect("/");

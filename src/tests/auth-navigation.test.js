@@ -19,13 +19,27 @@ describe("shared desktop and mobile auth navigation policy", () => {
   it("shows one Login entry when signed out", () => {
     assert.deepEqual(getHeaderAuthNavigation(null, null), {
       links: [{ label: "Login", href: "/login" }],
+      accountMenu: null,
       showSignOut: false,
     });
   });
 
-  it("shows My Account to customers without public auth or admin actions", () => {
-    assert.deepEqual(getHeaderAuthNavigation({ id: "customer" }, "CUSTOMER"), {
-      links: [{ label: "My Account", href: "/account" }],
+  it("shows a focused account menu to customers without public admin actions", () => {
+    assert.deepEqual(getHeaderAuthNavigation(
+      { id: "customer" },
+      "CUSTOMER",
+      { display_name: "Ama Mensah" }
+    ), {
+      links: [],
+      accountMenu: {
+        label: "My Account",
+        displayName: "Ama Mensah",
+        links: [
+          { label: "Account Overview", href: "/account" },
+          { label: "Profile", href: "/account/profile" },
+          { label: "My Orders", href: "/account/orders" },
+        ],
+      },
       showSignOut: false,
     });
   });
@@ -33,6 +47,7 @@ describe("shared desktop and mobile auth navigation policy", () => {
   it("keeps administration undiscoverable in the public header", () => {
     assert.deepEqual(getHeaderAuthNavigation({ id: "admin" }, "ADMIN"), {
       links: [],
+      accountMenu: null,
       showSignOut: false,
     });
   });
@@ -40,6 +55,7 @@ describe("shared desktop and mobile auth navigation policy", () => {
   it("fails closed for an authenticated identity with no trusted role", () => {
     assert.deepEqual(getHeaderAuthNavigation({ id: "unprovisioned" }, null), {
       links: [],
+      accountMenu: null,
       showSignOut: true,
     });
   });

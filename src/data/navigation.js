@@ -14,7 +14,7 @@ export const footerSupportNavigation = [
 export const accountNavigation = [
   { href: "/account", label: "Overview" },
   { href: "/account/profile", label: "Profile" },
-  { href: "/account/orders", label: "Orders" },
+  { href: "/account/orders", label: "My Orders" },
 ];
 
 export const orderingNavigation = {

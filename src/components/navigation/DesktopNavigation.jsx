@@ -1,8 +1,7 @@
-import HeaderAuthNavigation from "@/components/navigation/HeaderAuthNavigation";
 import NavigationLink from "@/components/navigation/NavigationLink";
 import { primaryNavigation } from "@/data/navigation";
 
-export default function DesktopNavigation({ authNavigation }) {
+export default function DesktopNavigation() {
   return (
     <nav className="desktop-navigation" aria-label="Primary navigation">
       <ul className="navigation-list">
@@ -17,7 +16,6 @@ export default function DesktopNavigation({ authNavigation }) {
             </NavigationLink>
           </li>
         ))}
-        <HeaderAuthNavigation navigation={authNavigation} />
       </ul>
     </nav>
   );

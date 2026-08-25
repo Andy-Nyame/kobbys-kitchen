@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 export default async function OrdersPage() {
-  const user = await requireCustomer();
+  const user = await requireCustomer("/account/orders");
 
   const supabase = await createClient();
   const { data: orders, error } = await supabase

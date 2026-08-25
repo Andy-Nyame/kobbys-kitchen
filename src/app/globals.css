@@ -198,6 +198,15 @@ select:focus-visible {
   display: none;
 }
 
+.site-header__auth-actions,
+.site-header__account-actions {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .site-header__order {
   white-space: nowrap;
 }
@@ -289,6 +298,137 @@ select:focus-visible {
 .navigation-link--auth:hover,
 .navigation-link--auth:focus-visible {
   border-color: var(--color-brand-orange);
+}
+
+.customer-account-menu {
+  position: relative;
+}
+
+.customer-account-menu__toggle {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background-color: var(--color-surface);
+  color: var(--color-text-strong);
+  padding: 0.55rem 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  list-style: none;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.customer-account-menu__toggle::-webkit-details-marker {
+  display: none;
+}
+
+.customer-account-menu__toggle:hover,
+.customer-account-menu__toggle:focus-visible,
+.customer-account-menu[open] .customer-account-menu__toggle {
+  border-color: var(--color-brand-orange);
+  background-color: var(--color-surface-secondary);
+}
+
+.customer-account-menu__icon,
+.customer-account-menu__icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+}
+
+.customer-account-menu__icon svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.customer-account-menu__chevron {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  transition: transform 160ms ease;
+}
+
+.customer-account-menu[open] .customer-account-menu__chevron {
+  transform: rotate(180deg);
+}
+
+.customer-account-menu__panel {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  z-index: var(--z-mobile-menu);
+  width: min(18rem, calc(100vw - 2rem));
+  border: 1px solid var(--color-border);
+  border-radius: 1.15rem;
+  background-color: var(--color-surface-elevated);
+  box-shadow: var(--shadow-soft);
+  padding: 0.75rem;
+  animation: mobile-navigation-menu-in 160ms ease forwards;
+}
+
+.customer-account-menu__identity {
+  min-width: 0;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.35rem 0.45rem 0.75rem;
+}
+
+.customer-account-menu__identity span,
+.customer-account-menu__identity strong {
+  display: block;
+}
+
+.customer-account-menu__identity span {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+}
+
+.customer-account-menu__identity strong {
+  margin-top: 0.1rem;
+  overflow-wrap: anywhere;
+  color: var(--color-text-strong);
+}
+
+.customer-account-menu__list {
+  display: grid;
+  gap: 0.2rem;
+  margin-block: 0.55rem;
+  list-style: none;
+}
+
+.customer-account-menu__link,
+.customer-account-menu__sign-out {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  border: 0;
+  border-radius: 0.75rem;
+  background-color: transparent;
+  color: var(--color-text-strong);
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+}
+
+.customer-account-menu__link:hover,
+.customer-account-menu__link:focus-visible,
+.customer-account-menu__link--current,
+.customer-account-menu__sign-out:hover,
+.customer-account-menu__sign-out:focus-visible {
+  background-color: var(--color-surface-secondary);
+}
+
+.customer-account-menu__panel form {
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.55rem;
 }
 
 .navigation-link--button,
@@ -445,6 +585,10 @@ select:focus-visible {
 .mobile-navigation__link--current {
   background-color: var(--color-surface-secondary);
   color: var(--color-text-strong);
+}
+
+.mobile-navigation__link--account {
+  border-left: 3px solid var(--color-brand-orange);
 }
 
 .mobile-navigation__link--button {
@@ -1476,7 +1620,7 @@ select:focus-visible {
   }
 }
 
-@media (min-width: 1120px) {
+@media (min-width: 1024px) {
   .mobile-navigation {
     display: none;
   }
@@ -1505,7 +1649,7 @@ select:focus-visible {
   }
 }
 
-@media (max-width: 1119px) {
+@media (max-width: 1023px) {
   .brand__tagline {
     display: none;
   }
@@ -1783,6 +1927,56 @@ select:focus-visible {
   margin-top: 0.5rem;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background-color: var(--color-border);
+}
+
+.auth-oauth-button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background-color: var(--color-surface-elevated);
+  color: var(--color-text-strong);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.auth-oauth-button:hover,
+.auth-oauth-button:focus-visible {
+  border-color: var(--color-brand-orange);
+  background-color: var(--color-surface-secondary);
+}
+
+.auth-oauth-button svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex-shrink: 0;
+}
+
 .auth-card__footer {
   display: flex;
   flex-wrap: wrap;
@@ -1802,6 +1996,11 @@ select:focus-visible {
 
 .auth-card__footer-group .auth-card__footer {
   margin-top: 0;
+}
+
+.auth-card__footer--hint {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
 }
 
 .auth-card__footer a {
@@ -1969,6 +2168,75 @@ select:focus-visible {
   padding: 0.25rem 0.75rem;
   font-size: 0.85rem;
   font-weight: 800;
+}
+
+.account-overview-grid {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.account-overview-card {
+  height: 100%;
+}
+
+.account-summary-list {
+  display: grid;
+  gap: 0.8rem;
+  margin: 0;
+}
+
+.account-summary-list > div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.4fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.8rem;
+}
+
+.account-summary-list > div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.account-summary-list dt {
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.account-summary-list dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text-strong);
+  font-weight: 700;
+}
+
+.account-ordering-state {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-brand-yellow);
+  border-radius: var(--radius-medium);
+  background-color: var(--color-surface-warm);
+  padding: 1rem;
+}
+
+.account-ordering-state__label {
+  color: var(--color-brand-orange);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.account-ordering-state p {
+  margin: 0;
+  color: var(--color-text-secondary);
 }
 
 /* ============================================
@@ -2760,6 +3028,10 @@ select:focus-visible {
   .profile-page-grid {
     grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
   }
+
+  .account-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 1024px) {
@@ -2899,6 +3171,11 @@ select:focus-visible {
 }
 
 @media (max-width: 479px) {
+  .account-summary-list > div {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+
   .admin-mobile-header {
     padding-inline: 0.75rem;
   }

@@ -35,6 +35,30 @@ export function getSafeAdminRedirectPath(value, fallback = "/admin") {
   return fallback;
 }
 
+export function getSafeCustomerRedirectPath(value, fallback = "/account") {
+  const safePath = getSafeRedirectPath(value, fallback);
+
+  if (
+    safePath === "/account" ||
+    safePath.startsWith("/account/") ||
+    safePath.startsWith("/account?")
+  ) {
+    return safePath;
+  }
+
+  return fallback;
+}
+
+export function getCustomerLoginPath(intendedPath = "/account") {
+  const safePath = getSafeCustomerRedirectPath(intendedPath);
+
+  if (safePath === "/account") {
+    return "/login";
+  }
+
+  return `/login?next=${encodeURIComponent(safePath)}`;
+}
+
 export function getAdminLoginPath(intendedPath = "/admin") {
   const safePath = getSafeAdminRedirectPath(intendedPath);
 

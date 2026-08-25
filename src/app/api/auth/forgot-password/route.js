@@ -7,6 +7,7 @@ import {
   AUTH_VALIDATION_MESSAGE,
   validateForgotPasswordPayload,
 } from "@/lib/validation/auth";
+import { getPasswordRecoveryRedirectUrl } from "@/lib/auth/password-recovery";
 
 export async function POST(request) {
   let payload;
@@ -31,11 +32,23 @@ export async function POST(request) {
 
   const { email } = validation.data;
   const supabase = await createClient();
-  const siteOrigin =
-    process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
+  let redirectTo;
+
+  try {
+    redirectTo = getPasswordRecoveryRedirectUrl({ requestUrl: request.url });
+  } catch (error) {
+    console.error("[auth-forgot-password-redirect]", {
+      reason: error.message,
+    });
+
+    return NextResponse.json(
+      { ok: false, message: AUTH_SERVER_ERROR_MESSAGE, errors: {} },
+      { status: 500 }
+    );
+  }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteOrigin.replace(/\/$/, "")}/auth/callback?next=/reset-password`,
+    redirectTo,
   });
 
   if (error) {
@@ -44,13 +57,22 @@ export async function POST(request) {
       code: error.status,
     });
 
+    // Supabase deliberately gives no account-existence signal. Preserve that
+    // contract for provider-side 4xx responses too (including rate limits).
+    if (error.status >= 400 && error.status < 500) {
+      return NextResponse.json(
+        {
+          ok: true,
+          message:
+            "If an account exists with that email, a reset link has been sent.",
+        },
+        { status: 200 }
+      );
+    }
+
     return NextResponse.json(
-      {
-        ok: false,
-        message: AUTH_SERVER_ERROR_MESSAGE,
-        errors: {},
-      },
-      { status: 400 }
+      { ok: false, message: AUTH_SERVER_ERROR_MESSAGE, errors: {} },
+      { status: 500 }
     );
   }
 

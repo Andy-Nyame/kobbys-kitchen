@@ -10,7 +10,7 @@ export const metadata = {
 };
 
 export default async function ProfilePage() {
-  const user = await requireCustomer();
+  const user = await requireCustomer("/account/profile");
   const profile = await getUserProfile(user.id);
 
   if (!profile) {
@@ -35,7 +35,7 @@ export default async function ProfilePage() {
           <ProfileForm
             initialProfile={{
               displayName: profile.display_name,
-              phone: profile.phone,
+              phone: profile.phone || "",
             }}
           />
         </section>

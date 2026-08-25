@@ -1,11 +1,20 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import AccountNavigation from "@/components/account/AccountNavigation";
 import ThemeControl from "@/components/theme/ThemeControl";
-import { requireCustomer } from "@/lib/auth/guards";
+import { getCustomerAccess } from "@/lib/auth/guards";
 
 export default async function CustomerLayout({ children }) {
-  await requireCustomer();
+  const { user, role } = await getCustomerAccess();
+
+  if (user && role !== "CUSTOMER") {
+    redirect("/");
+  }
+
+  if (!user) {
+    return children;
+  }
 
   return (
     <>
@@ -39,7 +48,7 @@ export default async function CustomerLayout({ children }) {
       <footer className="site-footer">
         <div className="container site-footer__bottom">
           <p className="site-footer__copy">
-            &copy; {new Date().getFullYear()} Kobby&rsquo;s Kitchen. All rights reserved.
+            &copy; {new Date().getFullYear()}{" "}Kobby&rsquo;s Kitchen. All rights reserved.
           </p>
         </div>
       </footer>

@@ -83,6 +83,14 @@ function validatePhone(value, errors) {
   return phone;
 }
 
+function validateOptionalPhone(value, errors) {
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  return validatePhone(value, errors);
+}
+
 export function sanitizeTextValue(value) {
   if (typeof value !== "string") {
     return "";
@@ -168,11 +176,17 @@ export function validateResetPasswordPayload(payload) {
   const errors = {};
 
   const password = typeof payload?.password === "string" ? payload.password : "";
+  const confirmPassword =
+    typeof payload?.confirmPassword === "string" ? payload.confirmPassword : "";
 
   if (!password || password.length < 8) {
     errors.password = "Password must be at least 8 characters.";
   } else if (password.length > 128) {
     errors.password = "Password must be 128 characters or fewer.";
+  }
+
+  if (password && password !== confirmPassword) {
+    errors.confirmPassword = "Passwords do not match.";
   }
 
   if (Object.keys(errors).length > 0) {
@@ -189,7 +203,7 @@ export function validateProfileUpdatePayload(payload) {
   const errors = {};
 
   const displayName = validateDisplayName(payload?.displayName, errors);
-  const phone = validatePhone(payload?.phone, errors);
+  const phone = validateOptionalPhone(payload?.phone, errors);
 
   if (Object.keys(errors).length > 0) {
     return { data: null, errors };

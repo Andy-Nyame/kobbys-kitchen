@@ -46,6 +46,16 @@ describe("customer profile validation", () => {
     }
   });
 
+  it("permits an empty phone only while a Google customer completes a profile", () => {
+    const result = validateProfileUpdatePayload({
+      displayName: "Google Customer",
+      phone: "",
+    });
+
+    assert.deepEqual(result.errors, {});
+    assert.equal(result.data.phone, null);
+  });
+
   it("rejects malformed display names and control characters", () => {
     for (const displayName of ["A", "12345", "Ama\nMensah", "\u0000Kobby"]) {
       assert.ok(

@@ -1,15 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Link from "next/link";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [recoveryState, setRecoveryState] = useState("checking");
+
+  useEffect(() => {
+    let active = true;
+
+    async function verifyRecoveryState() {
+      try {
+        const response = await fetch("/api/auth/reset-password", {
+          cache: "no-store",
+        });
+
+        if (!active) {
+          return;
+        }
+
+        setRecoveryState(response.ok ? "valid" : "invalid");
+      } catch {
+        if (active) {
+          setRecoveryState("invalid");
+        }
+      }
+    }
+
+    verifyRecoveryState();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -21,7 +51,7 @@ export default function ResetPasswordPage() {
       const response = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, confirmPassword }),
       });
 
       const result = await response.json();
@@ -57,6 +87,32 @@ export default function ResetPasswordPage() {
     );
   }
 
+  if (recoveryState === "checking") {
+    return (
+      <div className="auth-card" aria-live="polite">
+        <h1>Checking Reset Link</h1>
+        <p className="auth-card__description">
+          Please wait while we securely confirm your password reset link.
+        </p>
+      </div>
+    );
+  }
+
+  if (recoveryState === "invalid") {
+    return (
+      <div className="auth-card">
+        <h1>Reset Link Unavailable</h1>
+        <p className="auth-card__description">
+          This password reset link is invalid or has expired. Request a new
+          link to continue.
+        </p>
+        <p className="auth-card__footer">
+          <Link href="/forgot-password">Request a new reset link</Link>
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="auth-card">
       <h1>Set New Password</h1>
@@ -86,6 +142,27 @@ export default function ResetPasswordPage() {
           {errors.password ? (
             <p id="password-error" className="form-field__error">
               {errors.password}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="confirm-password">Confirm New Password</label>
+          <input
+            id="confirm-password"
+            type="password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            required
+            autoComplete="new-password"
+            aria-invalid={Boolean(errors.confirmPassword)}
+            aria-describedby={
+              errors.confirmPassword ? "confirm-password-error" : undefined
+            }
+          />
+          {errors.confirmPassword ? (
+            <p id="confirm-password-error" className="form-field__error">
+              {errors.confirmPassword}
             </p>
           ) : null}
         </div>
