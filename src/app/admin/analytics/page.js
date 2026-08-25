@@ -44,7 +44,7 @@ function buildDailyRows(metrics) {
 }
 
 export default async function AdminAnalyticsPage({ searchParams }) {
-  await requireAdmin();
+  await requireAdmin("/admin/analytics");
 
   const params = await searchParams;
   const { values: filters, errors } = parseAnalyticsFilters(params);

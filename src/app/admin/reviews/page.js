@@ -17,7 +17,7 @@ export const metadata = {
 };
 
 export default async function AdminReviewsPage({ searchParams }) {
-  await requireAdmin();
+  await requireAdmin("/admin/reviews");
 
   const params = await searchParams;
   const { values: filters, errors } = parseReviewFilters(params);

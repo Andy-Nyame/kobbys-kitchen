@@ -20,16 +20,30 @@ import {
 } from "../lib/orders/domain.js";
 
 describe("admin authorization decisions", () => {
-  it("redirects unauthenticated visitors to login", () => {
+  it("routes unauthenticated visitors through the dedicated admin entry", () => {
     assert.deepEqual(getAdminAuthorization(null, null), {
       allowed: false,
-      redirectTo: "/login",
+      reason: "SIGNED_OUT",
+      redirectTo: "/admin",
     });
+  });
+
+  it("preserves an intended internal admin destination", () => {
+    assert.deepEqual(
+      getAdminAuthorization(null, null, "/admin/reviews?status=PENDING"),
+      {
+        allowed: false,
+        reason: "SIGNED_OUT",
+        redirectTo:
+          "/admin?next=%2Fadmin%2Freviews%3Fstatus%3DPENDING",
+      }
+    );
   });
 
   it("denies customers without revealing an admin destination", () => {
     assert.deepEqual(getAdminAuthorization({ id: "customer" }, "CUSTOMER"), {
       allowed: false,
+      reason: "FORBIDDEN",
       redirectTo: "/",
     });
   });
@@ -37,6 +51,7 @@ describe("admin authorization decisions", () => {
   it("allows only an authenticated ADMIN role", () => {
     assert.deepEqual(getAdminAuthorization({ id: "admin" }, "ADMIN"), {
       allowed: true,
+      reason: null,
       redirectTo: null,
     });
   });

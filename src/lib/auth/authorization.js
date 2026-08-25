@@ -1,11 +1,17 @@
-export function getAdminAuthorization(user, role) {
+import { getAdminLoginPath } from "./redirects.js";
+
+export function getAdminAuthorization(user, role, intendedPath = "/admin") {
   if (!user) {
-    return { allowed: false, redirectTo: "/login" };
+    return {
+      allowed: false,
+      reason: "SIGNED_OUT",
+      redirectTo: getAdminLoginPath(intendedPath),
+    };
   }
 
   if (role !== "ADMIN") {
-    return { allowed: false, redirectTo: "/" };
+    return { allowed: false, reason: "FORBIDDEN", redirectTo: "/" };
   }
 
-  return { allowed: true, redirectTo: null };
+  return { allowed: true, reason: null, redirectTo: null };
 }

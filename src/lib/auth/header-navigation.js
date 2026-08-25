@@ -6,10 +6,6 @@ const CUSTOMER_LINKS = Object.freeze([
   Object.freeze({ label: "My Account", href: "/account" }),
 ]);
 
-const ADMIN_LINKS = Object.freeze([
-  Object.freeze({ label: "Admin Dashboard", href: "/admin" }),
-]);
-
 export function getHeaderAuthNavigation(user, role) {
   if (!user) {
     return {
@@ -27,7 +23,7 @@ export function getHeaderAuthNavigation(user, role) {
 
   if (role === "ADMIN") {
     return {
-      links: ADMIN_LINKS,
+      links: [],
       showSignOut: false,
     };
   }

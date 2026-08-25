@@ -30,9 +30,9 @@ describe("shared desktop and mobile auth navigation policy", () => {
     });
   });
 
-  it("shows Admin Dashboard only to admins", () => {
+  it("keeps administration undiscoverable in the public header", () => {
     assert.deepEqual(getHeaderAuthNavigation({ id: "admin" }, "ADMIN"), {
-      links: [{ label: "Admin Dashboard", href: "/admin" }],
+      links: [],
       showSignOut: false,
     });
   });

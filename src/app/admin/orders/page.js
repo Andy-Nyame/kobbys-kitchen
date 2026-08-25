@@ -21,7 +21,7 @@ export const metadata = {
 };
 
 export default async function AdminOrdersPage({ searchParams }) {
-  await requireAdmin();
+  await requireAdmin("/admin/orders");
 
   const params = await searchParams;
   const { values: filters, errors } = parseOrderFilters(params);

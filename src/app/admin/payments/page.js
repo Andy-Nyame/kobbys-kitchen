@@ -17,7 +17,7 @@ export const metadata = {
 };
 
 export default async function AdminPaymentsPage({ searchParams }) {
-  await requireAdmin();
+  await requireAdmin("/admin/payments");
 
   const params = await searchParams;
   const { values: filters, errors } = parsePaymentFilters(params);

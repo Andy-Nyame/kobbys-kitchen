@@ -4,12 +4,12 @@ const adminNavigation = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/payments", label: "Payments" },
-  { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/reviews", label: "Reviews" },
+  { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/settings", label: "Settings" },
 ];
 
-export default function AdminNavigation() {
+export default function AdminNavigation({ closeDetailsOnClick = false }) {
   return (
     <nav className="admin-navigation" aria-label="Admin navigation">
       <ul className="admin-navigation__list">
@@ -19,6 +19,7 @@ export default function AdminNavigation() {
               href={item.href}
               className="admin-navigation__link"
               activeClassName="admin-navigation__link--current"
+              closeDetailsOnClick={closeDetailsOnClick}
             >
               {item.label}
             </NavigationLink>

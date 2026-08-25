@@ -20,3 +20,27 @@ export function getSafeRedirectPath(value, fallback = "/account") {
     return fallback;
   }
 }
+
+export function getSafeAdminRedirectPath(value, fallback = "/admin") {
+  const safePath = getSafeRedirectPath(value, fallback);
+
+  if (
+    safePath === "/admin" ||
+    safePath.startsWith("/admin/") ||
+    safePath.startsWith("/admin?")
+  ) {
+    return safePath;
+  }
+
+  return fallback;
+}
+
+export function getAdminLoginPath(intendedPath = "/admin") {
+  const safePath = getSafeAdminRedirectPath(intendedPath);
+
+  if (safePath === "/admin") {
+    return "/admin";
+  }
+
+  return `/admin?next=${encodeURIComponent(safePath)}`;
+}

@@ -12,7 +12,7 @@ export const metadata = {
 };
 
 export default async function AdminSettingsPage() {
-  await requireAdmin();
+  await requireAdmin("/admin/settings");
 
   let settings = null;
 

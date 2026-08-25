@@ -38,10 +38,22 @@ export const requireCustomer = cache(async function requireCustomer() {
   return user;
 });
 
-export const requireAdmin = cache(async function requireAdmin() {
+export const getAdminAccess = cache(async function getAdminAccess() {
   const user = await getAuthenticatedUser();
   const role = user ? await getUserRole(user.id) : null;
-  const authorization = getAdminAuthorization(user, role);
+
+  return {
+    user,
+    role,
+    authorization: getAdminAuthorization(user, role),
+  };
+});
+
+export const requireAdmin = cache(async function requireAdmin(
+  intendedPath = "/admin"
+) {
+  const { user, role } = await getAdminAccess();
+  const authorization = getAdminAuthorization(user, role, intendedPath);
 
   if (!authorization.allowed) {
     redirect(authorization.redirectTo);

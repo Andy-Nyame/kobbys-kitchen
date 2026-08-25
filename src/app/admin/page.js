@@ -1,4 +1,5 @@
 import AdminMetricCard from "@/components/admin/AdminMetricCard";
+import AdminLoginForm from "@/components/admin/AdminLoginForm";
 import AdminOrderTable from "@/components/admin/AdminOrderTable";
 import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
@@ -8,7 +9,8 @@ import { getOrderingAvailability } from "@/lib/admin/ordering-status";
 import { formatMoneyMinor } from "@/lib/admin/presentation";
 import { getAdminOrderingSettings } from "@/lib/admin/settings";
 import { getOrderMetrics } from "@/lib/analytics/order-queries";
-import { requireAdmin } from "@/lib/auth/guards";
+import { getAdminAccess } from "@/lib/auth/guards";
+import { getSafeAdminRedirectPath } from "@/lib/auth/redirects";
 import { isOrderingEnabled } from "@/lib/feature-flags";
 import { ORDER_STATUS } from "@/lib/orders/domain";
 
@@ -23,8 +25,18 @@ function logDashboardError(area, result) {
   }
 }
 
-export default async function AdminDashboardPage() {
-  await requireAdmin();
+export default async function AdminDashboardPage({ searchParams }) {
+  const { authorization } = await getAdminAccess();
+
+  if (!authorization.allowed) {
+    const params = await searchParams;
+
+    return (
+      <AdminLoginForm
+        nextPath={getSafeAdminRedirectPath(params?.next)}
+      />
+    );
+  }
 
   const [metricsResult, ordersResult, settingsResult] = await Promise.allSettled([
     getOrderMetrics(),
