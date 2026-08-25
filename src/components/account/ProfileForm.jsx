@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import ButtonLink from "@/components/ui/ButtonLink";
 import { validateProfileUpdatePayload } from "@/lib/validation/auth";
 
 export default function ProfileForm({ initialProfile }) {
@@ -145,7 +144,9 @@ export default function ProfileForm({ initialProfile }) {
             aria-describedby={`phone-help${errors.phone ? " phone-error" : ""}`}
           />
           <p id="phone-help" className="form-field__help">
-            Optional for now. Ghana local and +233 formats are accepted.
+            {phone
+              ? "Ghana local and +233 formats are accepted."
+              : "Not added yet. Add a Ghana phone number for future pickup updates."}
           </p>
           {errors.phone ? (
             <p id="phone-error" className="form-field__error" role="alert">
@@ -163,9 +164,6 @@ export default function ProfileForm({ initialProfile }) {
         >
           {isSaving ? "Saving…" : "Save Changes"}
         </button>
-        <ButtonLink href="/account" variant="secondary">
-          Back to Account
-        </ButtonLink>
       </div>
     </form>
   );

@@ -2,16 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import CustomerAvatar from "@/components/navigation/CustomerAvatar";
 import NavigationLink from "@/components/navigation/NavigationLink";
-
-function AccountIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="12" cy="8" r="3.5" />
-      <path d="M5 20c.5-4 3.2-6 7-6s6.5 2 7 6" />
-    </svg>
-  );
-}
 
 export default function CustomerAccountMenu({ menu }) {
   const detailsRef = useRef(null);
@@ -44,22 +36,17 @@ export default function CustomerAccountMenu({ menu }) {
   return (
     <details className="customer-account-menu" ref={detailsRef}>
       <summary
-        aria-label="Customer account menu"
+        aria-label="Open account menu"
         className="customer-account-menu__toggle"
+        title="Open account menu"
       >
-        <span className="customer-account-menu__icon">
-          <AccountIcon />
-        </span>
-        <span>{menu.label}</span>
-        <span aria-hidden="true" className="customer-account-menu__chevron">
-          ▾
-        </span>
+        <CustomerAvatar avatar={menu.avatar} />
       </summary>
 
       <div className="customer-account-menu__panel">
         <div className="customer-account-menu__identity">
-          <span>Customer account</span>
           <strong>{menu.displayName}</strong>
+          <span className="customer-account-menu__email">{menu.email}</span>
         </div>
         <nav aria-label="Customer account">
           <ul className="customer-account-menu__list">

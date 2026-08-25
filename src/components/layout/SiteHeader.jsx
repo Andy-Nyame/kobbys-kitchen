@@ -10,8 +10,8 @@ import { businessData } from "@/data/businessData";
 import { orderingNavigation } from "@/data/navigation";
 import { getHeaderAuthNavigation } from "@/lib/auth/header-navigation";
 import {
+  ensureCustomerProfile,
   getAuthenticatedUser,
-  getUserProfile,
   getUserRole,
 } from "@/lib/auth/guards";
 
@@ -23,7 +23,7 @@ export default async function SiteHeader() {
   try {
     user = await getAuthenticatedUser();
     role = user ? await getUserRole(user.id) : null;
-    profile = role === "CUSTOMER" ? await getUserProfile(user.id) : null;
+    profile = role === "CUSTOMER" ? await ensureCustomerProfile(user) : null;
   } catch (error) {
     if (error?.reason) {
       console.error("[site-header-auth]", { reason: error.reason });
@@ -51,6 +51,7 @@ export default async function SiteHeader() {
 
         <div className="site-header__desktop-actions">
           <DesktopNavigation />
+          <ThemeControl compact />
           {authNavigation.links.length > 0 ? (
             <ul className="site-header__auth-actions">
               <HeaderAuthNavigation
@@ -59,7 +60,6 @@ export default async function SiteHeader() {
               />
             </ul>
           ) : null}
-          <ThemeControl compact />
           <ButtonLink
             ariaLabel={orderingNavigation.label}
             className="site-header__order"

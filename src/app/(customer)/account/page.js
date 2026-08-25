@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
-import { getUserProfile, requireCustomer } from "@/lib/auth/guards";
+import { ensureCustomerProfile, requireCustomer } from "@/lib/auth/guards";
 
 export const metadata = {
   title: "Account | Kobby's Kitchen",
@@ -12,7 +12,7 @@ export const metadata = {
 
 export default async function AccountPage() {
   const user = await requireCustomer("/account");
-  const profile = await getUserProfile(user.id);
+  const profile = await ensureCustomerProfile(user);
 
   if (!profile) {
     redirect("/");

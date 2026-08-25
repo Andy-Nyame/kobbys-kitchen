@@ -1,9 +1,13 @@
+import {
+  getCustomerAvatar,
+  getCustomerDisplayName,
+} from "./customer-avatar.js";
+
 const SIGNED_OUT_LINKS = Object.freeze([
   Object.freeze({ label: "Login", href: "/login" }),
 ]);
 
 const CUSTOMER_ACCOUNT_LINKS = Object.freeze([
-  Object.freeze({ label: "Account Overview", href: "/account" }),
   Object.freeze({ label: "Profile", href: "/account/profile" }),
   Object.freeze({ label: "My Orders", href: "/account/orders" }),
 ]);
@@ -18,11 +22,14 @@ export function getHeaderAuthNavigation(user, role, profile = null) {
   }
 
   if (role === "CUSTOMER") {
+    const displayName = getCustomerDisplayName(user, profile);
+
     return {
       links: [],
       accountMenu: {
-        label: "My Account",
-        displayName: profile?.display_name || "Customer",
+        displayName,
+        email: user.email || "",
+        avatar: getCustomerAvatar(user, profile),
         links: CUSTOMER_ACCOUNT_LINKS,
       },
       showSignOut: false,

@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { accountNavigation } from "../data/navigation.js";
 import { getHeaderAuthNavigation } from "../lib/auth/header-navigation.js";
 import {
   getCustomerLoginPath,
@@ -16,26 +15,24 @@ describe("customer account navigation", () => {
       { display_name: "Akua" }
     );
 
-    assert.equal(navigation.accountMenu.label, "My Account");
     assert.equal(navigation.accountMenu.displayName, "Akua");
-    assert.ok(
-      navigation.accountMenu.links.some(
-        (link) => link.href === "/account/profile" && link.label === "Profile"
-      )
-    );
-    assert.ok(
-      navigation.accountMenu.links.some(
-        (link) => link.href === "/account/orders" && link.label === "My Orders"
-      )
-    );
-  });
-
-  it("provides the same core destinations in the account shell", () => {
-    assert.deepEqual(accountNavigation, [
-      { href: "/account", label: "Overview" },
+    assert.deepEqual(navigation.accountMenu.links, [
       { href: "/account/profile", label: "Profile" },
       { href: "/account/orders", label: "My Orders" },
     ]);
+  });
+
+  it("keeps the profile and order destinations direct, without an account-home detour", () => {
+    const navigation = getHeaderAuthNavigation(
+      { id: "customer", email: "akua@example.com" },
+      "CUSTOMER",
+      { display_name: "Akua" }
+    );
+
+    assert.equal(
+      navigation.accountMenu.links.some((link) => link.href === "/account"),
+      false
+    );
   });
 
   it("falls back to a safe generic customer identity when profile loading fails", () => {

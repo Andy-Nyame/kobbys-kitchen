@@ -4,7 +4,6 @@ import path from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { accountNavigation } from "../data/navigation.js";
 import { getHeaderAuthNavigation } from "../lib/auth/header-navigation.js";
 import {
   assertDevelopmentAdminBootstrap,
@@ -32,10 +31,10 @@ describe("shared desktop and mobile auth navigation policy", () => {
     ), {
       links: [],
       accountMenu: {
-        label: "My Account",
         displayName: "Ama Mensah",
+        email: "",
+        avatar: { imageUrl: null, initials: "AM" },
         links: [
-          { label: "Account Overview", href: "/account" },
           { label: "Profile", href: "/account/profile" },
           { label: "My Orders", href: "/account/orders" },
         ],
@@ -60,11 +59,45 @@ describe("shared desktop and mobile auth navigation policy", () => {
     });
   });
 
-  it("keeps the customer profile reachable from My Account", () => {
-    assert.ok(
-      accountNavigation.some(
-        (item) => item.href === "/account/profile" && item.label === "Profile"
-      )
+  it("keeps customer menu links limited to direct customer destinations", () => {
+    const navigation = getHeaderAuthNavigation(
+      { id: "customer" },
+      "CUSTOMER",
+      { display_name: "Ama Mensah" }
+    );
+
+    assert.deepEqual(navigation.accountMenu.links, [
+      { label: "Profile", href: "/account/profile" },
+      { label: "My Orders", href: "/account/orders" },
+    ]);
+  });
+
+  it("keeps provider-specific presentation separate from customer navigation", () => {
+    const passwordCustomer = getHeaderAuthNavigation(
+      { id: "password-customer", email: "ama@example.com" },
+      "CUSTOMER",
+      { display_name: "Ama Mensah" }
+    );
+    const googleCustomer = getHeaderAuthNavigation(
+      {
+        id: "google-customer",
+        email: "ama.google@example.com",
+        identities: [
+          {
+            provider: "google",
+            identity_data: { picture: "https://images.example.test/ama.png" },
+          },
+        ],
+      },
+      "CUSTOMER",
+      { display_name: "Ama Mensah" }
+    );
+
+    assert.deepEqual(passwordCustomer.accountMenu.links, googleCustomer.accountMenu.links);
+    assert.equal(passwordCustomer.accountMenu.avatar.initials, "AM");
+    assert.equal(
+      googleCustomer.accountMenu.avatar.imageUrl,
+      "https://images.example.test/ama.png"
     );
   });
 });

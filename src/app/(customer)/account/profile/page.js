@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 
+import CustomerAvatar from "@/components/navigation/CustomerAvatar";
 import ProfileForm from "@/components/account/ProfileForm";
 import PageIntro from "@/components/ui/PageIntro";
-import { getUserProfile, requireCustomer } from "@/lib/auth/guards";
+import { getCustomerAvatar } from "@/lib/auth/customer-avatar";
+import { ensureCustomerProfile, requireCustomer } from "@/lib/auth/guards";
 
 export const metadata = {
   title: "Profile | Kobby's Kitchen",
@@ -11,11 +13,13 @@ export const metadata = {
 
 export default async function ProfilePage() {
   const user = await requireCustomer("/account/profile");
-  const profile = await getUserProfile(user.id);
+  const profile = await ensureCustomerProfile(user);
 
   if (!profile) {
     redirect("/account");
   }
+
+  const avatar = getCustomerAvatar(user, profile);
 
   return (
     <>
@@ -28,9 +32,17 @@ export default async function ProfilePage() {
       <div className="profile-page-grid">
         <section className="profile-card" aria-labelledby="profile-contact-title">
           <header className="profile-card__header">
-            <p className="profile-card__eyebrow">Editable information</p>
-            <h2 id="profile-contact-title">Contact details</h2>
-            <p>These details will be used for future pickup orders.</p>
+            <div className="profile-card__customer">
+              <CustomerAvatar
+                avatar={avatar}
+                className="customer-avatar--profile"
+              />
+              <div>
+                <p className="profile-card__eyebrow">Your customer profile</p>
+                <h2 id="profile-contact-title">{profile.display_name}</h2>
+                <p>Keep your pickup contact details up to date.</p>
+              </div>
+            </div>
           </header>
           <ProfileForm
             initialProfile={{

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAdminAuthorization } from "@/lib/auth/authorization";
+import { getCustomerProfileProvisioningDecision } from "@/lib/auth/customer-profile-provisioning";
 import { getCustomerLoginPath } from "@/lib/auth/redirects";
 import { redirect } from "next/navigation";
 import { cache } from "react";
@@ -103,4 +104,37 @@ export async function getUserProfile(userId) {
   }
 
   return profile;
+}
+
+export async function ensureCustomerProfile(user) {
+  if (!user?.id) {
+    return null;
+  }
+
+  const existingProfile = await getUserProfile(user.id);
+
+  if (existingProfile) {
+    return existingProfile;
+  }
+
+  const role = await getUserRole(user.id);
+  const decision = getCustomerProfileProvisioningDecision({
+    user,
+    role,
+    profile: null,
+  });
+
+  if (decision !== "repair") {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("ensure_current_customer_profile");
+
+  if (error) {
+    console.error("[ensure-customer-profile]", { reason: error.code || "rpc_failed" });
+    return null;
+  }
+
+  return getUserProfile(user.id);
 }
