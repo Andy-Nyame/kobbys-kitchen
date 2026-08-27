@@ -1,111 +1,31 @@
-import { createClient } from "@supabase/supabase-js";
+import { prisma } from "../src/lib/prisma.js";
+import { verifyDevelopmentDatabase } from "./database-safety.js";
 
-import {
-  assertDevelopmentAdminBootstrap,
-  provisionPrimaryAdmin,
-} from "../src/lib/auth/primary-admin.js";
+await verifyDevelopmentDatabase();
 
-function getRequiredEnvironmentValue(name) {
-  const value = process.env[name]?.trim();
+const email = process.env.PRIMARY_ADMIN_EMAIL?.trim().toLowerCase();
 
-  if (!value) {
-    throw new Error(`${name} is required.`);
-  }
-
-  return value;
+if (!email) {
+  throw new Error("PRIMARY_ADMIN_EMAIL is required.");
 }
 
-function isLegacyServiceRoleKey(key) {
-  const parts = key.split(".");
-
-  if (parts.length !== 3) {
-    return false;
-  }
-
-  try {
-    const payload = JSON.parse(
-      Buffer.from(parts[1], "base64url").toString("utf8")
-    );
-
-    return payload?.role === "service_role";
-  } catch {
-    return false;
-  }
-}
-
-function validateServerConfiguration(supabaseUrl, supabaseSecretKey) {
-  let parsedUrl;
-
-  try {
-    parsedUrl = new URL(supabaseUrl);
-  } catch {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL is invalid.");
-  }
-
-  if (
-    !["http:", "https:"].includes(parsedUrl.protocol) ||
-    parsedUrl.username ||
-    parsedUrl.password
-  ) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL is invalid.");
-  }
-
-  if (
-    !supabaseSecretKey.startsWith("sb_secret_") &&
-    !isLegacyServiceRoleKey(supabaseSecretKey)
-  ) {
-    throw new Error("SUPABASE_SECRET_KEY is not a supported server secret key.");
-  }
-}
-
-async function main() {
-  assertDevelopmentAdminBootstrap(process.env.APP_ENV);
-
-  const supabaseUrl = getRequiredEnvironmentValue("NEXT_PUBLIC_SUPABASE_URL");
-  const supabaseSecretKey = getRequiredEnvironmentValue("SUPABASE_SECRET_KEY");
-  const primaryAdminEmail = getRequiredEnvironmentValue("PRIMARY_ADMIN_EMAIL");
-
-  validateServerConfiguration(supabaseUrl, supabaseSecretKey);
-
-  const supabase = createClient(supabaseUrl, supabaseSecretKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
+try {
+  const existing = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, role: true },
   });
 
-  const result = await provisionPrimaryAdmin({
-    email: primaryAdminEmail,
-    loadAuthUsersPage: async ({ page, perPage }) => {
-      const { data, error } = await supabase.auth.admin.listUsers({
-        page,
-        perPage,
-      });
+  if (!existing) {
+    throw new Error("The primary admin Auth.js user does not exist. Create the account through the normal signup flow first.");
+  }
 
-      return { users: data?.users || [], error };
-    },
-    inspectRoleStorage: async () => {
-      const { error } = await supabase
-        .from("user_roles")
-        .select("user_id, role")
-        .limit(0);
-
-      return { error };
-    },
-    assignAdminRole: async (roleAssignment) => {
-      const { error } = await supabase
-        .from("user_roles")
-        .upsert(roleAssignment, { onConflict: "user_id" });
-
-      return { error };
-    },
+  const user = await prisma.user.update({
+    where: { id: existing.id },
+    data: { role: "ADMIN" },
+    select: { role: true },
   });
 
-  console.log(`Primary admin provisioned with role ${result.role}.`);
+  console.log(`Primary admin provisioned with role ${user.role}.`);
+} finally {
+  await prisma.$disconnect();
 }
-
-main().catch((error) => {
-  console.error(`[primary-admin-bootstrap] ${error.message}`);
-  process.exitCode = 1;
-});

@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import {
+  createPasswordResetToken,
+  sendPasswordResetEmail,
+} from "@/lib/auth/password-reset-tokens";
+import { canUsePasswordRecovery } from "@/lib/auth/password-recovery-policy";
+import { prisma } from "@/lib/prisma";
 import {
   AUTH_INVALID_JSON_MESSAGE,
-  AUTH_SERVER_ERROR_MESSAGE,
   AUTH_VALIDATION_MESSAGE,
   validateForgotPasswordPayload,
 } from "@/lib/validation/auth";
-import { getPasswordRecoveryRedirectUrl } from "@/lib/auth/password-recovery";
+
+const GENERIC_MESSAGE =
+  "If an account exists with that email, a reset link has been sent.";
 
 export async function POST(request) {
   let payload;
@@ -30,56 +36,37 @@ export async function POST(request) {
     );
   }
 
-  const { email } = validation.data;
-  const supabase = await createClient();
-  let redirectTo;
-
   try {
-    redirectTo = getPasswordRecoveryRedirectUrl({ requestUrl: request.url });
-  } catch (error) {
-    console.error("[auth-forgot-password-redirect]", {
-      reason: error.message,
+    const email = validation.data.email.toLowerCase();
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        passwordHash: true,
+        accounts: { select: { type: true } },
+      },
     });
 
-    return NextResponse.json(
-      { ok: false, message: AUTH_SERVER_ERROR_MESSAGE, errors: {} },
-      { status: 500 }
-    );
-  }
-
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo,
-  });
-
-  if (error) {
-    console.error("[auth-forgot-password]", {
-      message: error.message,
-      code: error.status,
-    });
-
-    // Supabase deliberately gives no account-existence signal. Preserve that
-    // contract for provider-side 4xx responses too (including rate limits).
-    if (error.status >= 400 && error.status < 500) {
-      return NextResponse.json(
-        {
-          ok: true,
-          message:
-            "If an account exists with that email, a reset link has been sent.",
-        },
-        { status: 200 }
-      );
+    if (canUsePasswordRecovery(user)) {
+      const token = await createPasswordResetToken(user.id);
+      const resetUrl = new URL("/auth/reset", process.env.AUTH_URL || request.url);
+      resetUrl.searchParams.set("token", token);
+      await sendPasswordResetEmail({
+        email: user.email,
+        resetUrl: resetUrl.toString(),
+      });
     }
-
-    return NextResponse.json(
-      { ok: false, message: AUTH_SERVER_ERROR_MESSAGE, errors: {} },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error("[auth-forgot-password]", {
+      category: error?.message || "password_reset_request_failed",
+    });
   }
 
   return NextResponse.json(
     {
       ok: true,
-      message: "If an account exists with that email, a reset link has been sent.",
+      message: GENERIC_MESSAGE,
     },
     { status: 200 }
   );

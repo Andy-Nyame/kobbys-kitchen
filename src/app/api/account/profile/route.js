@@ -5,7 +5,7 @@ import {
   prepareCustomerProfileUpdate,
 } from "@/lib/account/profile-update";
 import { getAuthenticatedUser, getUserRole } from "@/lib/auth/guards";
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 
 export async function PATCH(request) {
   const user = await getAuthenticatedUser();
@@ -35,16 +35,15 @@ export async function PATCH(request) {
     return NextResponse.json(responseBody, { status });
   }
 
-  const supabase = await createClient();
+  let updatedProfile;
 
-  const { data: updatedProfile, error } = await supabase
-    .from("profiles")
-    .update(preparation.values)
-    .eq("user_id", preparation.targetUserId)
-    .select("display_name, phone")
-    .single();
-
-  if (error) {
+  try {
+    updatedProfile = await prisma.profile.update({
+      where: { userId: preparation.targetUserId },
+      data: preparation.values,
+      select: { displayName: true, phone: true },
+    });
+  } catch (error) {
     console.error("[account-profile-update]", error);
     return NextResponse.json(
       { ok: false, message: "Something went wrong.", errors: {} },
@@ -56,7 +55,10 @@ export async function PATCH(request) {
     {
       ok: true,
       message: "Profile updated successfully.",
-      profile: updatedProfile,
+      profile: {
+        display_name: updatedProfile.displayName,
+        phone: updatedProfile.phone,
+      },
     },
     { status: 200 }
   );

@@ -2,19 +2,7 @@ import "server-only";
 
 import { ADMIN_PAGE_SIZE, getDateRangeBounds } from "@/lib/admin/filters";
 import { ORDER_STATUS } from "@/lib/orders/domain";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-
-const ORDER_FIELDS = `
-  reference,
-  customer_name_snapshot,
-  phone_snapshot,
-  total_minor,
-  currency,
-  status,
-  created_at
-`;
-
-const PAYMENT_FIELDS = "method, status";
+import { prisma } from "@/lib/prisma";
 const ACTIVE_ORDER_STATUSES = [
   ORDER_STATUS.AWAITING_PAYMENT,
   ORDER_STATUS.PENDING,
@@ -22,61 +10,54 @@ const ACTIVE_ORDER_STATUSES = [
   ORDER_STATUS.READY_FOR_PICKUP,
 ];
 
-function normalizePayment(payment) {
-  if (Array.isArray(payment)) {
-    return payment[0] || null;
-  }
-
-  return payment || null;
-}
-
 function normalizeOrders(orders) {
   return (orders || []).map((order) => ({
-    ...order,
-    payment: normalizePayment(order.payment),
+    reference: order.reference,
+    customer_name_snapshot: order.customerNameSnapshot,
+    phone_snapshot: order.customerPhoneSnapshot,
+    total_minor: order.totalMinor,
+    currency: order.currency,
+    status: order.status,
+    created_at: order.createdAt,
+    payment: order.payment || null,
   }));
 }
 
-function applyOrderDateRange(query, filters) {
+function getOrderDateWhere(filters) {
   const { fromIso, toExclusiveIso } = getDateRangeBounds(filters);
-  let nextQuery = query;
-
-  if (fromIso) {
-    nextQuery = nextQuery.gte("created_at", fromIso);
-  }
-
-  if (toExclusiveIso) {
-    nextQuery = nextQuery.lt("created_at", toExclusiveIso);
-  }
-
-  return nextQuery;
+  return {
+    ...(fromIso ? { gte: new Date(fromIso) } : {}),
+    ...(toExclusiveIso ? { lt: new Date(toExclusiveIso) } : {}),
+  };
 }
+
+const orderSelect = {
+  reference: true,
+  customerNameSnapshot: true,
+  customerPhoneSnapshot: true,
+  totalMinor: true,
+  currency: true,
+  status: true,
+  createdAt: true,
+  payment: { select: { method: true, status: true } },
+};
 
 export async function getRecentAdminOrders(limit = 8) {
   const safeLimit = Math.min(Math.max(Number(limit) || 8, 1), 20);
-  const supabase = createSupabaseAdminClient();
-  const selectFields = `${ORDER_FIELDS}, payment:payments(${PAYMENT_FIELDS})`;
-  const [activeResult, recentResult] = await Promise.all([
-    supabase
-      .from("orders")
-      .select(selectFields)
-      .in("status", ACTIVE_ORDER_STATUSES)
-      .order("created_at", { ascending: false })
-      .limit(safeLimit),
-    supabase
-      .from("orders")
-      .select(selectFields)
-      .order("created_at", { ascending: false })
-      .limit(safeLimit),
+  const [activeOrders, recentOrders] = await Promise.all([
+    prisma.order.findMany({
+      where: { status: { in: ACTIVE_ORDER_STATUSES } },
+      select: orderSelect,
+      orderBy: { createdAt: "desc" },
+      take: safeLimit,
+    }),
+    prisma.order.findMany({
+      select: orderSelect,
+      orderBy: { createdAt: "desc" },
+      take: safeLimit,
+    }),
   ]);
-
-  if (activeResult.error || recentResult.error) {
-    throw new Error("Unable to load recent admin orders", {
-      cause: activeResult.error || recentResult.error,
-    });
-  }
-
-  const prioritized = [...(activeResult.data || []), ...(recentResult.data || [])];
+  const prioritized = [...activeOrders, ...recentOrders];
   const uniqueOrders = new Map();
 
   for (const order of prioritized) {
@@ -89,50 +70,45 @@ export async function getRecentAdminOrders(limit = 8) {
 }
 
 export async function listAdminOrders(filters) {
-  const supabase = createSupabaseAdminClient();
-  const hasPaymentFilter = Boolean(
-    filters.paymentMethod || filters.paymentStatus
-  );
-  const paymentRelation = hasPaymentFilter
-    ? `payment:payments!inner(${PAYMENT_FIELDS})`
-    : `payment:payments(${PAYMENT_FIELDS})`;
   const start = (filters.page - 1) * ADMIN_PAGE_SIZE;
-  const end = start + ADMIN_PAGE_SIZE - 1;
-  let query = supabase
-    .from("orders")
-    .select(`${ORDER_FIELDS}, ${paymentRelation}`, { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(start, end);
-
-  if (filters.orderStatus) {
-    query = query.eq("status", filters.orderStatus);
-  }
-
-  if (filters.paymentMethod) {
-    query = query.eq("payments.method", filters.paymentMethod);
-  }
-
-  if (filters.paymentStatus) {
-    query = query.eq("payments.status", filters.paymentStatus);
-  }
-
-  if (filters.search) {
-    const pattern = `%${filters.search}%`;
-    query = query.or(
-      `reference.ilike.${pattern},customer_name_snapshot.ilike.${pattern},phone_snapshot.ilike.${pattern}`
-    );
-  }
-
-  query = applyOrderDateRange(query, filters);
-  const { data, error, count } = await query;
-
-  if (error) {
-    throw new Error("Unable to load admin orders", { cause: error });
-  }
+  const dateWhere = getOrderDateWhere(filters);
+  const where = {
+    ...(filters.orderStatus ? { status: filters.orderStatus } : {}),
+    ...(Object.keys(dateWhere).length ? { createdAt: dateWhere } : {}),
+    ...(filters.search
+      ? {
+          OR: [
+            { reference: { contains: filters.search, mode: "insensitive" } },
+            { customerNameSnapshot: { contains: filters.search, mode: "insensitive" } },
+            { customerPhoneSnapshot: { contains: filters.search, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+    ...(filters.paymentMethod || filters.paymentStatus
+      ? {
+          payments: {
+            some: {
+              ...(filters.paymentMethod ? { method: filters.paymentMethod } : {}),
+              ...(filters.paymentStatus ? { status: filters.paymentStatus } : {}),
+            },
+          },
+        }
+      : {}),
+  };
+  const [data, count] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      select: orderSelect,
+      orderBy: { createdAt: "desc" },
+      skip: start,
+      take: ADMIN_PAGE_SIZE,
+    }),
+    prisma.order.count({ where }),
+  ]);
 
   return {
     rows: normalizeOrders(data),
-    total: count || 0,
+    total: count,
     page: filters.page,
     pageSize: ADMIN_PAGE_SIZE,
   };

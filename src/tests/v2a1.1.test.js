@@ -181,10 +181,17 @@ describe("money and revenue semantics", () => {
 });
 
 describe("disabled ordering and database security contracts", () => {
-  const migration = fs.readFileSync(
+  const schema = fs.readFileSync(
     path.join(
       rootDirectory,
-      "supabase/migrations/20260823000001_add_payment_and_order_state_foundation.sql"
+      "prisma/schema.prisma"
+    ),
+    "utf8"
+  );
+  const constraints = fs.readFileSync(
+    path.join(
+      rootDirectory,
+      "prisma/migrations/20260827140000_align_domain_constraints/migration.sql"
     ),
     "utf8"
   );
@@ -194,26 +201,23 @@ describe("disabled ordering and database security contracts", () => {
     assert.equal(isOrderingEnabled(), false);
   });
 
-  it("gives customers read-only access to their logical payments", () => {
-    assert.match(migration, /create policy "customers_read_own_payments"/i);
-    assert.match(migration, /orders\.user_id = auth\.uid\(\)/i);
-    assert.doesNotMatch(migration, /for (insert|update|delete)\s+to authenticated/i);
+  it("keeps payment mutation out of the public application API", () => {
+    assert.equal(
+      fs.existsSync(path.join(rootDirectory, "src/app/api/payments/route.js")),
+      false
+    );
   });
 
-  it("preserves trusted-server-only order creation and mutation", () => {
-    assert.match(
-      migration,
-      /drop policy if exists "customers_create_own_orders"/i
-    );
-    assert.match(
-      migration,
-      /drop policy if exists "customers_update_own_pending_orders"/i
+  it("preserves trusted-server-only order creation", () => {
+    assert.equal(
+      fs.existsSync(path.join(rootDirectory, "src/app/api/orders/route.js")),
+      false
     );
   });
 
   it("enforces one payment per order and unique retry identifiers", () => {
-    assert.match(migration, /order_id uuid not null unique/i);
-    assert.match(migration, /idempotency_key text not null unique/i);
-    assert.match(migration, /payment_attempts_provider_reference_unique/i);
+    assert.match(schema, /orderId\s+String\s+@unique\s+@db\.Uuid/);
+    assert.match(schema, /idempotencyKey\s+String\s+@unique/);
+    assert.match(constraints, /CREATE UNIQUE INDEX "payments_orderId_key"/);
   });
 });

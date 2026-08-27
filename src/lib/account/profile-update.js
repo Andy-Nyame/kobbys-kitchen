@@ -69,7 +69,7 @@ export function prepareCustomerProfileUpdate({ user, role, payload }) {
     status: 200,
     targetUserId: user.id,
     values: {
-      display_name: validation.data.displayName,
+      displayName: validation.data.displayName,
       phone: validation.data.phone,
     },
   };

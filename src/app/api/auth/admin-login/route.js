@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
+import { signIn } from "@/auth";
 import {
   ADMIN_LOGIN_ERROR,
   getAdminLoginDecision,
 } from "@/lib/auth/admin-login";
-import { createClient } from "@/lib/supabase/server";
+import { authenticateCredentials } from "@/lib/auth/credentials";
 import {
   AUTH_INVALID_JSON_MESSAGE,
   AUTH_VALIDATION_MESSAGE,
@@ -43,37 +44,39 @@ export async function POST(request) {
     );
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword(validation.data);
+  const user = await authenticateCredentials({
+    ...validation.data,
+    role: "ADMIN",
+  });
 
-  if (error || !data.user || !data.session) {
+  if (!user) {
     console.error("[admin-login]", {
       category: "authentication_failed",
-      status: error?.status || null,
     });
     return deniedResponse();
   }
 
-  const { data: roleRow, error: roleError } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", data.user.id)
-    .single();
   const decision = getAdminLoginDecision({
-    user: data.user,
-    role: roleError ? null : roleRow?.role,
+    user,
+    role: user.role,
     intendedPath: payload.next,
   });
 
   if (!decision.allowed) {
-    if (decision.clearSession) {
-      await supabase.auth.signOut({ scope: "local" });
-    }
-
     console.error("[admin-login]", {
       category: "authorization_failed",
-      roleLookupFailed: Boolean(roleError),
     });
+    return deniedResponse();
+  }
+
+  try {
+    await signIn("credentials", {
+      ...validation.data,
+      redirect: false,
+      redirectTo: decision.redirectTo,
+    });
+  } catch (error) {
+    console.error("[admin-login]", { category: error?.type || "signin_failed" });
     return deniedResponse();
   }
 

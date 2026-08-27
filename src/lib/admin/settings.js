@@ -1,22 +1,15 @@
 import "server-only";
 
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { prisma } from "@/lib/prisma";
 
 export async function getAdminOrderingSettings() {
-  const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("ordering_settings")
-    .select("accepting_orders, updated_at")
-    .eq("id", 1)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error("Unable to load ordering settings", { cause: error });
-  }
+  const data = await prisma.orderingSetting.findUnique({
+    where: { id: "default" },
+  });
 
   return {
-    acceptingOrders: data?.accepting_orders === true,
-    updatedAt: data?.updated_at || null,
+    acceptingOrders: data?.acceptingOrders === true,
+    updatedAt: data?.updatedAt || null,
     configured: Boolean(data),
   };
 }

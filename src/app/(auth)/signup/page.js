@@ -56,10 +56,9 @@ export default function SignupPage() {
   if (success) {
     return (
       <div className="auth-card">
-        <h1>Check Your Email</h1>
+        <h1>Account Created</h1>
         <p className="auth-card__description">
-          Account created! Please check your email to confirm your account
-          before signing in.
+          Your account is ready. You can now sign in securely.
         </p>
         <p className="auth-card__footer">
           <Link href="/login">Back to Sign In</Link>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { signIn } from "@/auth";
+import { authenticateCredentials } from "@/lib/auth/credentials";
 import {
   AUTH_INVALID_JSON_MESSAGE,
   AUTH_SERVER_ERROR_MESSAGE,
@@ -30,19 +31,9 @@ export async function POST(request) {
   }
 
   const { email, password } = validation.data;
-  const supabase = await createClient();
+  const user = await authenticateCredentials({ email, password });
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) {
-    console.error("[auth-login]", {
-      message: error.message,
-      code: error.status,
-    });
-
+  if (!user) {
     return NextResponse.json(
       {
         ok: false,
@@ -53,7 +44,15 @@ export async function POST(request) {
     );
   }
 
-  if (!data.session) {
+  try {
+    await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+      redirectTo: "/account",
+    });
+  } catch (error) {
+    console.error("[auth-login]", { category: error?.type || "signin_failed" });
     return NextResponse.json(
       { ok: false, message: AUTH_SERVER_ERROR_MESSAGE, errors: {} },
       { status: 500 }
@@ -65,8 +64,8 @@ export async function POST(request) {
       ok: true,
       message: "Signed in successfully.",
       user: {
-        id: data.user.id,
-        email: data.user.email,
+        id: user.id,
+        email: user.email,
       },
     },
     { status: 200 }

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { hashPassword } from "@/lib/auth/credentials";
 import {
-  getPasswordRecoveryCookieOptions,
-  hasValidPasswordRecoveryProof,
-  PASSWORD_RECOVERY_COOKIE,
-} from "@/lib/auth/password-recovery";
+  getPasswordResetCookieOptions,
+  getValidPasswordResetRecord,
+  PASSWORD_RESET_COOKIE,
+} from "@/lib/auth/password-reset-tokens";
+import { prisma } from "@/lib/prisma";
 import {
   AUTH_INVALID_JSON_MESSAGE,
   AUTH_SERVER_ERROR_MESSAGE,
@@ -17,29 +18,15 @@ const INVALID_RECOVERY_MESSAGE =
   "Your password reset link is invalid or has expired. Please request a new one.";
 
 async function getVerifiedRecoveryUser(request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-  const proof = request.cookies.get(PASSWORD_RECOVERY_COOKIE)?.value;
-  const proofIsValid = hasValidPasswordRecoveryProof(
-    proof,
-    user?.id,
-    process.env.SUPABASE_SECRET_KEY
-  );
-
-  if (error || !user || !proofIsValid) {
-    return { supabase, user: null };
-  }
-
-  return { supabase, user };
+  const token = request.cookies.get(PASSWORD_RESET_COOKIE)?.value;
+  const record = await getValidPasswordResetRecord(token);
+  return { token, record };
 }
 
 export async function GET(request) {
-  const { user } = await getVerifiedRecoveryUser(request);
+  const { record } = await getVerifiedRecoveryUser(request);
 
-  if (!user) {
+  if (!record) {
     return NextResponse.json(
       { ok: false, message: INVALID_RECOVERY_MESSAGE },
       { status: 401 }
@@ -71,23 +58,40 @@ export async function POST(request) {
   }
 
   const { password } = validation.data;
-  const { supabase, user } = await getVerifiedRecoveryUser(request);
+  const { record } = await getVerifiedRecoveryUser(request);
 
-  if (!user) {
+  if (!record) {
     return NextResponse.json(
       { ok: false, message: INVALID_RECOVERY_MESSAGE, errors: {} },
       { status: 401 }
     );
   }
 
-  const { error } = await supabase.auth.updateUser({
-    password,
-  });
+  try {
+    const passwordHash = await hashPassword(password);
 
-  if (error) {
+    await prisma.$transaction(async (transaction) => {
+      const claimed = await transaction.passwordResetToken.updateMany({
+        where: {
+          id: record.id,
+          usedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        data: { usedAt: new Date() },
+      });
+
+      if (claimed.count !== 1) {
+        throw new Error("password_reset_token_already_used");
+      }
+
+      await transaction.user.update({
+        where: { id: record.userId },
+        data: { passwordHash },
+      });
+    });
+  } catch (error) {
     console.error("[auth-reset-password]", {
-      message: error.message,
-      code: error.status,
+      category: error?.message || "password_update_failed",
     });
 
     return NextResponse.json(
@@ -100,8 +104,6 @@ export async function POST(request) {
     );
   }
 
-  await supabase.auth.signOut({ scope: "local" });
-
   const response = NextResponse.json(
     {
       ok: true,
@@ -110,8 +112,8 @@ export async function POST(request) {
     { status: 200 }
   );
 
-  response.cookies.set(PASSWORD_RECOVERY_COOKIE, "", {
-    ...getPasswordRecoveryCookieOptions(),
+  response.cookies.set(PASSWORD_RESET_COOKIE, "", {
+    ...getPasswordResetCookieOptions(),
     maxAge: 0,
   });
 

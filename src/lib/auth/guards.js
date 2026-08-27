@@ -1,7 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/auth";
 import { getAdminAuthorization } from "@/lib/auth/authorization";
-import { getCustomerProfileProvisioningDecision } from "@/lib/auth/customer-profile-provisioning";
+import { ensureCustomerAccountById } from "@/lib/auth/provisioning";
 import { getCustomerLoginPath } from "@/lib/auth/redirects";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
@@ -16,17 +17,23 @@ export async function requireAuthenticatedUser() {
 }
 
 export async function getAuthenticatedUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const session = await auth();
+  const userId = session?.user?.id;
 
-  if (error || !user) {
+  if (!userId) {
     return null;
   }
 
-  return user;
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      image: true,
+      role: true,
+    },
+  });
 }
 
 export const getCustomerAccess = cache(async function getCustomerAccess() {
@@ -77,33 +84,29 @@ export const requireAdmin = cache(async function requireAdmin(
 });
 
 export async function getUserRole(userId) {
-  const supabase = await createClient();
-  const { data: roleRow, error } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId)
-    .single();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
 
-  if (error || !roleRow) {
-    return null;
-  }
-
-  return roleRow.role;
+  return user?.role || null;
 }
 
 export async function getUserProfile(userId) {
-  const supabase = await createClient();
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("display_name, phone")
-    .eq("user_id", userId)
-    .single();
+  const profile = await prisma.profile.findUnique({
+    where: { userId },
+    select: { displayName: true, phone: true, imageUrl: true },
+  });
 
-  if (error || !profile) {
+  if (!profile) {
     return null;
   }
 
-  return profile;
+  return {
+    display_name: profile.displayName,
+    phone: profile.phone,
+    image_url: profile.imageUrl,
+  };
 }
 
 export async function ensureCustomerProfile(user) {
@@ -111,30 +114,15 @@ export async function ensureCustomerProfile(user) {
     return null;
   }
 
-  const existingProfile = await getUserProfile(user.id);
+  const result = await ensureCustomerAccountById(user.id);
 
-  if (existingProfile) {
-    return existingProfile;
-  }
-
-  const role = await getUserRole(user.id);
-  const decision = getCustomerProfileProvisioningDecision({
-    user,
-    role,
-    profile: null,
-  });
-
-  if (decision !== "repair") {
+  if (!result?.profile) {
     return null;
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("ensure_current_customer_profile");
-
-  if (error) {
-    console.error("[ensure-customer-profile]", { reason: error.code || "rpc_failed" });
-    return null;
-  }
-
-  return getUserProfile(user.id);
+  return {
+    display_name: result.profile.displayName,
+    phone: result.profile.phone,
+    image_url: result.profile.imageUrl,
+  };
 }

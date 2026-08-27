@@ -119,26 +119,38 @@ describe("auth payload validation", () => {
 });
 
 describe("database stabilization contract", () => {
-  const migrationPath = path.join(
-    rootDirectory,
-    "supabase/migrations/20260823000000_stabilize_v2a1_auth_and_rls.sql"
+  const schema = fs.readFileSync(
+    path.join(rootDirectory, "prisma/schema.prisma"),
+    "utf8"
   );
-  const migration = fs.readFileSync(migrationPath, "utf8");
+  const constraints = fs.readFileSync(
+    path.join(
+      rootDirectory,
+      "prisma/migrations/20260827140000_align_domain_constraints/migration.sql"
+    ),
+    "utf8"
+  );
+  const provisioning = fs.readFileSync(
+    path.join(rootDirectory, "src/lib/auth/provisioning.js"),
+    "utf8"
+  );
 
-  it("provisions only the CUSTOMER role for new auth users", () => {
-    assert.match(migration, /after insert on auth\.users/i);
-    assert.match(migration, /values \(new\.id, 'CUSTOMER'\)/i);
-    assert.doesNotMatch(migration, /values \(new\.id, 'ADMIN'\)/i);
+  it("defaults and provisions public accounts as CUSTOMER only", () => {
+    assert.match(schema, /role\s+AppRole\s+@default\(CUSTOMER\)/);
+    assert.match(provisioning, /role:\s*"CUSTOMER"/);
+    assert.doesNotMatch(provisioning, /role:\s*"ADMIN"/);
   });
 
-  it("removes direct customer order mutation policies while ordering is disabled", () => {
-    assert.match(migration, /drop policy if exists "customers_create_own_orders"/i);
-    assert.match(migration, /drop policy if exists "customers_update_own_pending_orders"/i);
+  it("exposes no customer order-mutation endpoint while ordering is disabled", () => {
+    assert.equal(
+      fs.existsSync(path.join(rootDirectory, "src/app/api/orders/route.js")),
+      false
+    );
   });
 
-  it("adds nonnegative minor-unit and GHS constraints", () => {
-    assert.match(migration, /price_minor >= 0/i);
-    assert.match(migration, /subtotal_minor >= 0 and total_minor >= 0/i);
-    assert.match(migration, /currency = 'GHS'/i);
+  it("adds nonnegative integer-minor-unit constraints", () => {
+    assert.match(constraints, /"priceMinor" >= 0/);
+    assert.match(constraints, /"subtotalMinor" >= 0/);
+    assert.match(constraints, /"totalMinor" >= 0/);
   });
 });

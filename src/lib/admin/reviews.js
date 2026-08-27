@@ -1,51 +1,57 @@
 import "server-only";
 
 import { ADMIN_PAGE_SIZE } from "@/lib/admin/filters";
-import {
-  getReviewModerationUpdate,
-  isReviewId,
-} from "@/lib/reviews/moderation";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getReviewModerationUpdate, isReviewId } from "@/lib/reviews/moderation";
+import { prisma } from "@/lib/prisma";
 
-const REVIEW_FIELDS = `
-  id,
-  display_name,
-  rating,
-  category,
-  comment,
-  status,
-  featured,
-  moderated_at,
-  created_at
-`;
+const databaseStatus = {
+  pending: "PENDING",
+  approved: "APPROVED",
+  hidden: "REJECTED",
+};
+
+const publicStatus = {
+  PENDING: "pending",
+  APPROVED: "approved",
+  REJECTED: "hidden",
+};
 
 export async function listAdminReviews(filters) {
-  const supabase = createSupabaseAdminClient();
   const start = (filters.page - 1) * ADMIN_PAGE_SIZE;
-  const end = start + ADMIN_PAGE_SIZE - 1;
-  let query = supabase
-    .from("reviews")
-    .select(REVIEW_FIELDS, { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(start, end);
-
-  if (filters.status) {
-    query = query.eq("status", filters.status);
-  }
-
-  if (filters.featured) {
-    query = query.eq("featured", true);
-  }
-
-  const { data, error, count } = await query;
-
-  if (error) {
-    throw new Error("Unable to load admin reviews", { cause: error });
-  }
+  const where = {
+    ...(filters.status ? { status: databaseStatus[filters.status] } : {}),
+    ...(filters.featured ? { featured: true } : {}),
+  };
+  const [reviews, count] = await Promise.all([
+    prisma.review.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: start,
+      take: ADMIN_PAGE_SIZE,
+      include: {
+        moderationHistory: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { createdAt: true },
+        },
+      },
+    }),
+    prisma.review.count({ where }),
+  ]);
 
   return {
-    rows: data || [],
-    total: count || 0,
+    rows: reviews.map((review) => ({
+      id: review.id,
+      display_name: review.displayName,
+      rating: review.rating,
+      category: review.category,
+      comment: review.content,
+      status: publicStatus[review.status],
+      featured: review.featured,
+      moderated_at: review.moderationHistory[0]?.createdAt || null,
+      created_at: review.createdAt,
+    })),
+    total: count,
     page: filters.page,
     pageSize: ADMIN_PAGE_SIZE,
   };
@@ -56,35 +62,66 @@ export async function moderateAdminReview({ reviewId, action, adminUserId }) {
     throw new TypeError("A valid review and admin identity are required.");
   }
 
-  const supabase = createSupabaseAdminClient();
-  const { data: currentReview, error: currentError } = await supabase
-    .from("reviews")
-    .select("id, status, featured")
-    .eq("id", reviewId)
-    .single();
+  return prisma.$transaction(async (transaction) => {
+    const [currentReview, admin] = await Promise.all([
+      transaction.review.findUnique({
+        where: { id: reviewId },
+        select: { id: true, status: true, featured: true },
+      }),
+      transaction.user.findUnique({
+        where: { id: adminUserId },
+        select: { role: true },
+      }),
+    ]);
 
-  if (currentError || !currentReview) {
-    throw new Error("The review could not be found.", { cause: currentError });
-  }
+    if (!currentReview) {
+      throw new Error("The review could not be found.");
+    }
 
-  const update = getReviewModerationUpdate(currentReview, action);
-  const { data: updatedReview, error: updateError } = await supabase
-    .from("reviews")
-    .update({
-      ...update,
-      moderated_by: adminUserId,
-    })
-    .eq("id", reviewId)
-    .eq("status", currentReview.status)
-    .eq("featured", currentReview.featured)
-    .select("id, status, featured, moderated_at")
-    .single();
+    if (admin?.role !== "ADMIN") {
+      throw new Error("Admin authorization is required.");
+    }
 
-  if (updateError || !updatedReview) {
-    throw new Error("The review changed before moderation completed.", {
-      cause: updateError,
+    const update = getReviewModerationUpdate(
+      { status: publicStatus[currentReview.status], featured: currentReview.featured },
+      action
+    );
+    const nextStatus = databaseStatus[update.status];
+    const changed = await transaction.review.updateMany({
+      where: {
+        id: reviewId,
+        status: currentReview.status,
+        featured: currentReview.featured,
+      },
+      data: { status: nextStatus, featured: update.featured },
     });
-  }
 
-  return updatedReview;
+    if (changed.count !== 1) {
+      throw new Error("The review changed before moderation completed.");
+    }
+
+    const updatedReview = await transaction.review.findUnique({
+      where: { id: reviewId },
+      select: { id: true, status: true, featured: true, updatedAt: true },
+    });
+
+    await transaction.reviewModeration.create({
+      data: {
+        reviewId,
+        moderatorId: adminUserId,
+        action,
+        previousStatus: currentReview.status,
+        nextStatus,
+        previousFeatured: currentReview.featured,
+        nextFeatured: updatedReview.featured,
+      },
+    });
+
+    return {
+      id: updatedReview.id,
+      status: publicStatus[updatedReview.status],
+      featured: updatedReview.featured,
+      moderated_at: updatedReview.updatedAt,
+    };
+  });
 }

@@ -1,0 +1,328 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AppRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum OrderStatus {
+  AWAITING_PAYMENT
+  PENDING
+  PREPARING
+  READY_FOR_PICKUP
+  COMPLETED
+  CANCELLED
+}
+
+enum FulfillmentType {
+  PICKUP
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  CARD
+}
+
+enum PaymentStatus {
+  UNPAID
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentAttemptStatus {
+  CREATED
+  PENDING
+  SUCCEEDED
+  FAILED
+  ABANDONED
+}
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          AppRole   @default(CUSTOMER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts            Account[]
+  sessions            Session[]
+  profile             Profile?
+  passwordResetTokens PasswordResetToken[]
+  reviews             Review[]
+  moderationEvents    ReviewModeration[] @relation("ReviewModerator")
+  orders              Order[]
+
+  @@index([role])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Profile {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @db.Uuid
+  displayName String
+  phone       String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model MenuCategory {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String     @unique
+  active    Boolean    @default(true)
+  sortOrder Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     MenuItem[]
+
+  @@index([active, sortOrder])
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String       @id @default(uuid()) @db.Uuid
+  categoryId  String       @db.Uuid
+  slug        String       @unique
+  name        String
+  description String
+  imagePath   String?
+  imageAlt    String?
+  priceMinor  Int
+  currency    String       @default("GHS")
+  available   Boolean      @default(true)
+  featured    Boolean      @default(false)
+  active      Boolean      @default(true)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  reviews    Review[]
+  orderItems OrderItem[]
+
+  @@index([categoryId, active, sortOrder])
+  @@index([active, available])
+  @@map("menu_items")
+}
+
+model Review {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String?      @db.Uuid
+  menuItemId  String?      @db.Uuid
+  displayName String
+  contact     String?
+  category    String?
+  rating      Int
+  content     String
+  status      ReviewStatus @default(PENDING)
+  featured    Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user              User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  menuItem          MenuItem?          @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+  moderationHistory ReviewModeration[]
+
+  @@index([status, featured, createdAt])
+  @@index([userId, createdAt])
+  @@map("reviews")
+}
+
+model ReviewModeration {
+  id               String       @id @default(uuid()) @db.Uuid
+  reviewId         String       @db.Uuid
+  moderatorId      String       @db.Uuid
+  action           String
+  previousStatus   ReviewStatus
+  nextStatus       ReviewStatus
+  previousFeatured Boolean
+  nextFeatured     Boolean
+  createdAt        DateTime     @default(now())
+
+  review    Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  moderator User   @relation("ReviewModerator", fields: [moderatorId], references: [id], onDelete: Restrict)
+
+  @@index([reviewId, createdAt])
+  @@index([moderatorId, createdAt])
+  @@map("review_moderation_history")
+}
+
+model OrderingSetting {
+  id              String   @id @default("default")
+  acceptingOrders Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+
+  @@map("ordering_settings")
+}
+
+model Order {
+  id                    String          @id @default(uuid()) @db.Uuid
+  reference             String          @unique
+  userId                String          @db.Uuid
+  status                OrderStatus     @default(AWAITING_PAYMENT)
+  fulfillmentType       FulfillmentType @default(PICKUP)
+  paymentMethod         PaymentMethod
+  paymentStatus         PaymentStatus   @default(UNPAID)
+  customerNameSnapshot  String
+  customerEmailSnapshot String
+  customerPhoneSnapshot String
+  subtotalMinor         Int
+  totalMinor            Int
+  currency              String          @default("GHS")
+  idempotencyKey        String          @unique
+  placedAt              DateTime        @default(now())
+  completedAt           DateTime?
+  cancelledAt           DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items    OrderItem[]
+  payment  Payment?
+
+  @@index([status, placedAt])
+  @@index([userId, placedAt])
+  @@index([paymentStatus, placedAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String   @id @default(uuid()) @db.Uuid
+  orderId        String   @db.Uuid
+  menuItemId     String?  @db.Uuid
+  nameSnapshot   String
+  unitPriceMinor Int
+  quantity       Int
+  lineTotalMinor Int
+  createdAt      DateTime @default(now())
+
+  order    Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Payment {
+  id          String        @id @default(uuid()) @db.Uuid
+  orderId     String        @unique @db.Uuid
+  method      PaymentMethod
+  status      PaymentStatus @default(UNPAID)
+  amountMinor Int
+  currency    String        @default("GHS")
+  provider    String?
+  providerRef String?       @unique
+  paidAt      DateTime?
+  failedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  order    Order            @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  attempts PaymentAttempt[]
+
+  @@index([orderId, status])
+  @@index([status, paidAt])
+  @@map("payments")
+}
+
+model PaymentAttempt {
+  id             String               @id @default(uuid()) @db.Uuid
+  paymentId      String               @db.Uuid
+  provider       String
+  status         PaymentAttemptStatus @default(CREATED)
+  amountMinor    Int
+  currency       String               @default("GHS")
+  providerRef    String?              @unique
+  idempotencyKey String               @unique
+  failureCode    String?
+  failureMessage String?
+  completedAt    DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId, createdAt])
+  @@map("payment_attempts")
+}

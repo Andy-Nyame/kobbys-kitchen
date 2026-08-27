@@ -1,50 +1,32 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { getGoogleOAuthCallbackUrl } from "../lib/auth/google-oauth.js";
+import {
+  getSafeCustomerRedirectPath,
+  getSafeRedirectPath,
+} from "../lib/auth/redirects.js";
 import { getHeaderAuthNavigation } from "../lib/auth/header-navigation.js";
-import { validateSignupPayload } from "../lib/validation/auth.js";
 
-describe("Google customer OAuth boundaries", () => {
-  it("returns OAuth callbacks only to local customer destinations", () => {
-    assert.equal(
-      getGoogleOAuthCallbackUrl(
-        "http://localhost:3000/api/auth/google",
-        "/account/profile"
-      ),
-      "http://localhost:3000/auth/callback?flow=oauth&next=%2Faccount%2Fprofile"
-    );
-    assert.equal(
-      getGoogleOAuthCallbackUrl(
-        "http://localhost:3000/api/auth/google",
-        "https://attacker.example"
-      ),
-      "http://localhost:3000/auth/callback?flow=oauth&next=%2Faccount"
-    );
-    assert.equal(
-      getGoogleOAuthCallbackUrl(
-        "http://localhost:3000/api/auth/google",
-        "/admin"
-      ),
-      "http://localhost:3000/auth/callback?flow=oauth&next=%2Faccount"
-    );
+describe("Auth.js Google customer boundaries", () => {
+  it("accepts only local customer destinations", () => {
+    assert.equal(getSafeCustomerRedirectPath("/account/profile"), "/account/profile");
+    assert.equal(getSafeCustomerRedirectPath("https://attacker.example"), "/account");
+    assert.equal(getSafeCustomerRedirectPath("//attacker.example"), "/account");
+    assert.equal(getSafeCustomerRedirectPath("/admin"), "/account");
   });
 
-  it("does not expose public admin controls after any authenticated role lookup", () => {
-    const adminNavigation = getHeaderAuthNavigation({ id: "admin" }, "ADMIN");
-
-    assert.equal(adminNavigation.accountMenu, null);
-    assert.deepEqual(adminNavigation.links, []);
+  it("preserves safe local callback paths without accepting external origins", () => {
+    assert.equal(getSafeRedirectPath("/account?from=google"), "/account?from=google");
+    assert.equal(getSafeRedirectPath("https://attacker.example", "/login"), "/login");
   });
 
-  it("keeps email/password signup phone validation strict", () => {
-    const result = validateSignupPayload({
-      displayName: "Ama Customer",
-      email: "ama@example.com",
-      password: "secure-password",
-      phone: "",
-    });
+  it("never exposes admin controls from provider presentation metadata", () => {
+    const navigation = getHeaderAuthNavigation(
+      { id: "oauth-user", image: "https://images.example.test/user.png" },
+      "ADMIN"
+    );
 
-    assert.ok(result.errors.phone);
+    assert.equal(navigation.accountMenu, null);
+    assert.deepEqual(navigation.links, []);
   });
 });

@@ -1,66 +1,66 @@
 import "server-only";
 
 import { ADMIN_PAGE_SIZE, getDateRangeBounds } from "@/lib/admin/filters";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { prisma } from "@/lib/prisma";
 
 export async function listAdminPayments(filters) {
-  const supabase = createSupabaseAdminClient();
   const start = (filters.page - 1) * ADMIN_PAGE_SIZE;
-  const end = start + ADMIN_PAGE_SIZE - 1;
   const { fromIso, toExclusiveIso } = getDateRangeBounds(filters);
-  let query = supabase
-    .from("payments")
-    .select(
-      `
-        method,
-        status,
-        amount_minor,
-        currency,
-        provider,
-        provider_reference,
-        paid_at,
-        created_at,
-        order:orders!inner(reference, customer_name_snapshot, status)
-      `,
-      { count: "exact" }
-    )
-    .order("created_at", { ascending: false })
-    .range(start, end);
-
-  if (filters.paymentMethod) {
-    query = query.eq("method", filters.paymentMethod);
-  }
-
-  if (filters.paymentStatus) {
-    query = query.eq("status", filters.paymentStatus);
-  }
-
-  if (filters.search) {
-    query = query.ilike("orders.reference", `%${filters.search}%`);
-  }
-
-  if (fromIso) {
-    query = query.gte("created_at", fromIso);
-  }
-
-  if (toExclusiveIso) {
-    query = query.lt("created_at", toExclusiveIso);
-  }
-
-  const { data, error, count } = await query;
-
-  if (error) {
-    throw new Error("Unable to load admin payments", { cause: error });
-  }
+  const where = {
+    ...(filters.paymentMethod ? { method: filters.paymentMethod } : {}),
+    ...(filters.paymentStatus ? { status: filters.paymentStatus } : {}),
+    ...(fromIso || toExclusiveIso
+      ? {
+          createdAt: {
+            ...(fromIso ? { gte: new Date(fromIso) } : {}),
+            ...(toExclusiveIso ? { lt: new Date(toExclusiveIso) } : {}),
+          },
+        }
+      : {}),
+    ...(filters.search
+      ? { order: { reference: { contains: filters.search, mode: "insensitive" } } }
+      : {}),
+  };
+  const [data, count] = await Promise.all([
+    prisma.payment.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: start,
+      take: ADMIN_PAGE_SIZE,
+      select: {
+        method: true,
+        status: true,
+        amountMinor: true,
+        currency: true,
+        provider: true,
+        providerRef: true,
+        paidAt: true,
+        createdAt: true,
+        order: {
+          select: { reference: true, customerNameSnapshot: true, status: true },
+        },
+      },
+    }),
+    prisma.payment.count({ where }),
+  ]);
 
   return {
-    rows: (data || []).map((payment) => ({
-      ...payment,
-      order: Array.isArray(payment.order)
-        ? payment.order[0] || null
-        : payment.order,
+    rows: data.map((payment) => ({
+      method: payment.method,
+      status: payment.status,
+      amount_minor: payment.amountMinor,
+      currency: payment.currency,
+      provider: payment.provider,
+      provider_reference: payment.providerRef,
+      paid_at: payment.paidAt,
+      created_at: payment.createdAt,
+      order: {
+        reference: payment.order.reference,
+        customer_name_snapshot: payment.order.customerNameSnapshot,
+        status: payment.order.status,
+      },
     })),
-    total: count || 0,
+    total: count,
     page: filters.page,
     pageSize: ADMIN_PAGE_SIZE,
   };

@@ -14,6 +14,8 @@ function getSafeImageUrl(value) {
 export function getCustomerDisplayName(user, profile = null) {
   const candidate =
     profile?.display_name ||
+    profile?.displayName ||
+    user?.name ||
     user?.user_metadata?.full_name ||
     user?.user_metadata?.name ||
     "";
@@ -43,6 +45,9 @@ export function getCustomerAvatar(user, profile = null) {
   const googleData = googleIdentity?.identity_data || {};
   const userMetadata = user?.user_metadata || {};
   const imageUrl = [
+    user?.image,
+    profile?.image_url,
+    profile?.imageUrl,
     googleData.avatar_url,
     googleData.picture,
     userMetadata.avatar_url,

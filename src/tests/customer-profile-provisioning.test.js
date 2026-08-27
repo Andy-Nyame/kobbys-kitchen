@@ -1,62 +1,46 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { getCustomerProfileProvisioningDecision } from "../lib/auth/customer-profile-provisioning.js";
+import {
+  getCustomerAvatar,
+  getCustomerDisplayName,
+} from "../lib/auth/customer-avatar.js";
 
-describe("universal customer profile provisioning policy", () => {
-  it("requires the same repair path for password and OAuth customer identities", () => {
-    const passwordUser = { id: "password-customer", email: "ama@example.com" };
-    const oauthUser = {
-      id: "oauth-customer",
-      email: "ama.google@example.com",
-      identities: [{ provider: "google" }],
-    };
+describe("provider-independent customer presentation", () => {
+  it("uses the same profile name for password and OAuth identities", () => {
+    const profile = { displayName: "Ama Mensah" };
 
     assert.equal(
-      getCustomerProfileProvisioningDecision({
-        user: passwordUser,
-        role: "CUSTOMER",
-        profile: null,
-      }),
-      "repair"
+      getCustomerDisplayName({ email: "password@example.com" }, profile),
+      "Ama Mensah"
     );
     assert.equal(
-      getCustomerProfileProvisioningDecision({
-        user: oauthUser,
-        role: "CUSTOMER",
-        profile: null,
-      }),
-      "repair"
+      getCustomerDisplayName({ email: "google@example.com", image: "https://example.com/a.png" }, profile),
+      "Ama Mensah"
     );
   });
 
-  it("does not provision a non-customer or unauthenticated identity", () => {
-    assert.equal(
-      getCustomerProfileProvisioningDecision({
-        user: { id: "admin" },
-        role: "ADMIN",
-        profile: null,
-      }),
-      "not_customer"
+  it("uses a safe provider image and otherwise falls back to initials", () => {
+    assert.deepEqual(
+      getCustomerAvatar(
+        { image: "https://images.example.test/ama.png" },
+        { displayName: "Ama Mensah" }
+      ),
+      { imageUrl: "https://images.example.test/ama.png", initials: "AM" }
     );
-    assert.equal(
-      getCustomerProfileProvisioningDecision({
-        user: null,
-        role: null,
-        profile: null,
-      }),
-      "unavailable"
+    assert.deepEqual(
+      getCustomerAvatar({}, { displayName: "Ama Mensah" }),
+      { imageUrl: null, initials: "AM" }
     );
   });
 
-  it("does not repeat provisioning after a profile exists", () => {
+  it("rejects non-HTTPS image metadata", () => {
     assert.equal(
-      getCustomerProfileProvisioningDecision({
-        user: { id: "customer" },
-        role: "CUSTOMER",
-        profile: { display_name: "Ama", phone: null },
-      }),
-      "existing"
+      getCustomerAvatar(
+        { image: "javascript:alert(1)" },
+        { displayName: "Ama Mensah" }
+      ).imageUrl,
+      null
     );
   });
 });

@@ -1,26 +1,17 @@
 import { NextResponse } from "next/server";
 
-import { getGoogleOAuthCallbackUrl } from "@/lib/auth/google-oauth";
-import { createClient } from "@/lib/supabase/server";
+import { googleAuthConfigured, signIn } from "@/auth";
+import { getSafeCustomerRedirectPath } from "@/lib/auth/redirects";
 
 export async function GET(request) {
   const requestUrl = new URL(request.url);
-  const callbackUrl = getGoogleOAuthCallbackUrl(
-    requestUrl,
+  const redirectTo = getSafeCustomerRedirectPath(
     requestUrl.searchParams.get("next")
   );
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: callbackUrl,
-    },
-  });
-
-  if (error || !data.url) {
+  if (!googleAuthConfigured) {
     console.error("[auth-google-start]", {
-      reason: error ? "oauth_start_failed" : "oauth_url_missing",
+      reason: "oauth_not_configured",
     });
 
     return NextResponse.redirect(
@@ -28,5 +19,15 @@ export async function GET(request) {
     );
   }
 
-  return NextResponse.redirect(data.url);
+  try {
+    const url = await signIn("google", { redirect: false, redirectTo });
+    return NextResponse.redirect(url);
+  } catch (error) {
+    console.error("[auth-google-start]", {
+      reason: error?.type || "oauth_start_failed",
+    });
+    return NextResponse.redirect(
+      new URL("/login?error=oauth_unavailable", request.url)
+    );
+  }
 }

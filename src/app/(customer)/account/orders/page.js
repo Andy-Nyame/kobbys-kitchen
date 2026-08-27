@@ -1,7 +1,7 @@
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
 import { requireCustomer } from "@/lib/auth/guards";
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 
 export const metadata = {
   title: "My Orders | Kobby's Kitchen",
@@ -11,18 +11,24 @@ export const metadata = {
 export default async function OrdersPage() {
   const user = await requireCustomer("/account/orders");
 
-  const supabase = await createClient();
-  const { data: orders, error } = await supabase
-    .from("orders")
-    .select("id, reference, status, total_minor, currency, created_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+  let orderList = [];
 
-  if (error) {
+  try {
+    orderList = await prisma.order.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        reference: true,
+        status: true,
+        totalMinor: true,
+        currency: true,
+        createdAt: true,
+      },
+    });
+  } catch (error) {
     console.error("[account-orders]", error);
   }
-
-  const orderList = orders || [];
 
   return (
     <>
@@ -58,10 +64,10 @@ export default async function OrdersPage() {
                   </span>
                 </div>
                 <p>
-                  {order.currency} {(order.total_minor / 100).toFixed(2)}
+                  {order.currency} {(order.totalMinor / 100).toFixed(2)}
                 </p>
                 <p className="order-list__date">
-                  {new Date(order.created_at).toLocaleDateString()}
+                  {new Date(order.createdAt).toLocaleDateString()}
                 </p>
               </li>
             ))}

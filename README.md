@@ -1,65 +1,77 @@
 # Kobby’s Kitchen
 
-Next.js App Router website for Kobby’s Kitchen, built with JavaScript, JSX, and plain CSS.
+Next.js App Router application built with JavaScript, JSX, and plain CSS. The
+application backend uses Auth.js, Prisma, and Neon PostgreSQL.
 
-## Local setup
+## Local development
 
-1. Copy `.env.example` to `.env.local`.
-2. Add the required environment variables:
+1. Copy `.env.example` to `.env.local` and provide development-only values.
+2. Use the pooled Neon URL for `DATABASE_URL` and the direct URL for
+   `DATABASE_URL_UNPOOLED`.
+3. Confirm `APP_ENV=development` and `V2_ORDERING_ENABLED=false`.
+4. Apply repeatable migrations and seed the development catalogue:
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
-SUPABASE_SECRET_KEY=
-PRIMARY_ADMIN_EMAIL=
-NEXT_PUBLIC_SITE_URL=
+npm run prisma:migrate:dev
+npm run seed:development
 ```
 
-3. Run the development server:
+5. Start the application:
 
 ```bash
 npm run dev
 ```
 
-4. Open `http://localhost:3000`.
+The database commands validate the configured Neon project and branch against
+`NEON_PROJECT_ID` and `NEON_BRANCH_ID` before writing.
 
-## Required Supabase setup
+## Authentication
 
-- Reviews are submitted through the server-only Supabase admin client.
-- Public reviews are loaded through the Next.js API routes.
+- Credentials accounts use an Argon2id password hash.
+- Google OAuth is handled by Auth.js when `AUTH_GOOGLE_ID` and
+  `AUTH_GOOGLE_SECRET` are configured.
+- The local Google callback is
+  `http://localhost:3000/api/auth/callback/google`. Add the equivalent HTTPS
+  callback for each preview or production host in Google Cloud.
+- Customer profiles and the `CUSTOMER` role are provisioned idempotently on the
+  server. Provider metadata is never used for authorization.
+- Password reset tokens are random, stored only as SHA-256 hashes, expire after
+  30 minutes, and are single-use. Email delivery requires `RESEND_API_KEY` and
+  `AUTH_EMAIL_FROM`.
 
-## Primary admin bootstrap
+## Primary admin
 
-First create the trusted owner through the normal signup flow and confirm the
-email address. Confirm that the target Supabase project is the intended
-environment and that the repository migrations have been applied there. Then
-set `PRIMARY_ADMIN_EMAIL` in `.env.local` to that existing user's email and run:
+Create the owner through the normal signup flow, set `PRIMARY_ADMIN_EMAIL` to
+that existing Auth.js user, and run:
 
 ```bash
 npm run provision:primary-admin
 ```
 
-The command runs only from the server-side development environment. It uses the
-Supabase secret key to locate the existing Auth user, fails if that user does
-not exist, verifies that `public.user_roles` is available, and idempotently
-assigns the existing `ADMIN` role. It does not create an Auth user or accept a
-password. Remove `PRIMARY_ADMIN_EMAIL` from the environment after provisioning
-if it is no longer needed.
+The command is development-only, validates the Neon project and branch, and
+idempotently changes only that existing user’s role to `ADMIN`. It never creates
+credentials or accepts a password.
 
-## Checks
+## Legacy development import
 
-Run these before deployment:
+`npm run migrate:supabase-development` is a one-way, development-only import
+tool for preserving customer identities, profiles, Google account links, menu
+data, reviews, and ordering settings from the former Supabase development
+database. Password hashes and provider secrets are intentionally not copied.
+Imported password users must use the password-reset flow before signing in.
+
+The `supabase/migrations` directory is retained as historical source-schema
+documentation; it is not part of the application runtime.
+
+## Verification
 
 ```bash
+npm test
+npm run test:development:integration
+npm run test:development:backend
 npm run lint
 npm run build
 ```
 
-## Vercel environment variables
-
-Add these variables in Vercel for preview and production deployments:
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- `SUPABASE_SECRET_KEY`
-- `NEXT_PUBLIC_SITE_URL`
+The integration and acceptance commands must only be run against the confirmed
+development Neon project. No deployment is performed by these scripts.

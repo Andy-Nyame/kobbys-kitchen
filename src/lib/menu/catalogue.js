@@ -1,7 +1,7 @@
 import "server-only";
 
-import { createClient } from "@/lib/supabase/server";
 import { normalizeCatalogueItem } from "@/lib/menu/domain";
+import { prisma } from "@/lib/prisma";
 
 function normalizeCategory(category) {
   return {
@@ -12,35 +12,55 @@ function normalizeCategory(category) {
 }
 
 export async function getPublicMenuCatalogue() {
-  const supabase = await createClient();
-  const [categoryResult, itemResult] = await Promise.all([
-    supabase
-      .from("menu_categories")
-      .select("id, name, slug")
-      .eq("active", true)
-      .order("sort_order", { ascending: true })
-      .order("name", { ascending: true }),
-    supabase
-      .from("menu_items")
-      .select(
-        "id, category_id, slug, name, description, image_path, image_alt, price_minor, currency, available, featured"
-      )
-      .eq("active", true)
-      .order("sort_order", { ascending: true })
-      .order("name", { ascending: true }),
-  ]);
+  try {
+    const [categories, items] = await Promise.all([
+      prisma.menuCategory.findMany({
+        where: { active: true },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        select: { id: true, name: true, slug: true },
+      }),
+      prisma.menuItem.findMany({
+        where: { active: true },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        select: {
+          id: true,
+          categoryId: true,
+          slug: true,
+          name: true,
+          description: true,
+          imagePath: true,
+          imageAlt: true,
+          priceMinor: true,
+          currency: true,
+          available: true,
+          featured: true,
+        },
+      }),
+    ]);
 
-  if (categoryResult.error || itemResult.error) {
-    console.error("[public-menu-catalogue]", {
-      category: categoryResult.error?.code || null,
-      items: itemResult.error?.code || null,
-    });
+    return {
+      ok: true,
+      categories: categories.map(normalizeCategory),
+      items: items
+        .map((item) =>
+          normalizeCatalogueItem({
+            id: item.id,
+            category_id: item.categoryId,
+            slug: item.slug,
+            name: item.name,
+            description: item.description,
+            image_path: item.imagePath,
+            image_alt: item.imageAlt,
+            price_minor: item.priceMinor,
+            currency: item.currency,
+            available: item.available,
+            featured: item.featured,
+          })
+        )
+        .filter(Boolean),
+    };
+  } catch (error) {
+    console.error("[public-menu-catalogue]", { category: error?.code || "query_failed" });
     return { ok: false, categories: [], items: [] };
   }
-
-  return {
-    ok: true,
-    categories: (categoryResult.data || []).map(normalizeCategory),
-    items: (itemResult.data || []).map(normalizeCatalogueItem).filter(Boolean),
-  };
 }

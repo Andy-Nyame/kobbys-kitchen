@@ -104,7 +104,7 @@ describe("safe profile update preparation", () => {
     assert.equal(result.ok, true);
     assert.equal(result.targetUserId, customer.id);
     assert.deepEqual(result.values, {
-      display_name: "Kobby Customer",
+      displayName: "Kobby Customer",
       phone: "+233201234567",
     });
   });

@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { signOut } from "@/auth";
 import { getSafeRedirectPath } from "@/lib/auth/redirects";
 
 export async function POST(request) {
-  const supabase = await createClient();
-
-  await supabase.auth.signOut();
+  await signOut({ redirect: false });
 
   const requestedPath = new URL(request.url).searchParams.get("next");
   const redirectPath = getSafeRedirectPath(requestedPath, "/");
