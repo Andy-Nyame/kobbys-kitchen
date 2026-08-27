@@ -1,5 +1,6 @@
 import "./globals.css";
 
+import { CartProvider } from "@/components/cart/CartProvider";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 
 const themeInitializationScript = `(() => {
@@ -60,7 +61,9 @@ export default function RootLayout({ children }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitializationScript }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <CartProvider>{children}</CartProvider>
+      </body>
     </html>
   );
 }

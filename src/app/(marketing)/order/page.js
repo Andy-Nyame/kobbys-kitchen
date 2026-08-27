@@ -60,21 +60,19 @@ export default function OrderPage() {
           >
             <span className="order-option-card__status">Coming soon</span>
             <div className="order-option-card__content">
-              <p className="order-option-card__eyebrow">Future online ordering</p>
-              <h2 id="online-pickup-title">Online Pickup Ordering</h2>
+              <p className="order-option-card__eyebrow">Online pickup preview</p>
+              <h2 id="online-pickup-title">Build your cart</h2>
               <p>
-                We are preparing a secure account-based experience for choosing
-                meals, paying online or selecting cash, and collecting your order.
+                Browse trusted menu prices, add meals to your cart, and explore
+                the pickup flow before online checkout becomes available.
               </p>
             </div>
             <p className="order-option-card__notice" role="status">
               {orderingState.onlinePickupReason === "build_disabled"
-                ? "Online ordering is not enabled for this build."
+                ? "You can build a cart, but online checkout and order submission are not enabled for this build."
                 : "Online checkout is not available in this milestone."}
             </p>
-            <ButtonLink variant="secondary">
-              Online pickup unavailable
-            </ButtonLink>
+            <ButtonLink href="/menu" variant="secondary">Browse Menu</ButtonLink>
           </section>
         </div>
 
@@ -83,9 +81,9 @@ export default function OrderPage() {
             <p className="order-option-card__eyebrow">What we are building</p>
             <h2 id="order-journey-title">A straightforward pickup journey</h2>
             <p>
-              The Menu page remains the place to browse current meals. This page
-              will become the transactional starting point when online ordering
-              is ready.
+              The Menu page is the place to browse current meals and build your
+              cart. This page will become the transactional starting point when
+              online ordering is ready.
             </p>
           </div>
           <ol className="order-journey__steps">

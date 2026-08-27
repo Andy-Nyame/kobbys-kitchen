@@ -1,8 +1,8 @@
 import HeaderAuthNavigation from "@/components/navigation/HeaderAuthNavigation";
+import CartLink from "@/components/cart/CartLink";
 import NavigationLink from "@/components/navigation/NavigationLink";
-import ButtonLink from "@/components/ui/ButtonLink";
 import ThemeControl from "@/components/theme/ThemeControl";
-import { orderingNavigation, primaryNavigation } from "@/data/navigation";
+import { primaryNavigation } from "@/data/navigation";
 
 export default function MobileNavigation({ authNavigation }) {
   return (
@@ -49,15 +49,8 @@ export default function MobileNavigation({ authNavigation }) {
         </ul>
 
         <div className="mobile-navigation__actions">
+          <CartLink mobile />
           <ThemeControl className="mobile-navigation__theme" />
-          <ButtonLink
-            ariaLabel={orderingNavigation.label}
-            className="mobile-navigation__order"
-            href={orderingNavigation.href}
-            variant="primary"
-          >
-            {orderingNavigation.label}
-          </ButtonLink>
         </div>
       </nav>
     </details>

@@ -1,9 +1,9 @@
 import ButtonLink from "@/components/ui/ButtonLink";
+import MenuCatalogue from "@/components/cart/MenuCatalogue";
 import ContentSection from "@/components/ui/ContentSection";
-import MealCard from "@/components/ui/MealCard";
 import PageIntro from "@/components/ui/PageIntro";
 import { businessData } from "@/data/businessData";
-import { menuItems } from "@/data/menuData";
+import { getPublicMenuCatalogue } from "@/lib/menu/catalogue";
 
 export const metadata = {
   title: "Menu | Kobby's Kitchen",
@@ -11,8 +11,9 @@ export const metadata = {
     "Browse the meals available from Kobby's Kitchen in Tema Community Two and confirm current availability before ordering.",
 };
 
-export default function MenuPage() {
+export default async function MenuPage() {
   const { phone, whatsapp } = businessData;
+  const catalogue = await getPublicMenuCatalogue();
 
   return (
     <main className="page">
@@ -25,18 +26,26 @@ export default function MenuPage() {
 
         <ContentSection
           title="Menu"
-          description="A selection of meals currently available from Kobby's Kitchen."
+          description="Browse current meals, add them to a cart preview, or confirm your order directly on WhatsApp."
         >
-          <div className="meal-grid">
-            {menuItems.map((item) => (
-              <MealCard key={item.id} item={item} />
-            ))}
-          </div>
+          {!catalogue.ok ? (
+            <div className="catalogue-unavailable" role="status">
+              <h2>The menu is temporarily unavailable.</h2>
+              <p>Please use WhatsApp to confirm today&apos;s menu and availability.</p>
+            </div>
+          ) : catalogue.items.length === 0 ? (
+            <div className="catalogue-unavailable" role="status">
+              <h2>No menu items are listed yet.</h2>
+              <p>Please use WhatsApp to confirm today&apos;s menu and availability.</p>
+            </div>
+          ) : (
+            <MenuCatalogue categories={catalogue.categories} items={catalogue.items} />
+          )}
 
           <div className="note-stack">
             <p>
-              Menu items, prices and availability may change. Contact Kobby&apos;s
-              Kitchen to confirm before ordering.
+              Build a cart to explore the upcoming pickup experience. Online
+              checkout is not active, so no order is submitted from this page.
             </p>
             <p>Images are for illustration purposes.</p>
           </div>

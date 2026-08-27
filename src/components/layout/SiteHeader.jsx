@@ -4,10 +4,9 @@ import Link from "next/link";
 import DesktopNavigation from "@/components/navigation/DesktopNavigation";
 import HeaderAuthNavigation from "@/components/navigation/HeaderAuthNavigation";
 import MobileNavigation from "@/components/navigation/MobileNavigation";
-import ButtonLink from "@/components/ui/ButtonLink";
+import CartLink from "@/components/cart/CartLink";
 import ThemeControl from "@/components/theme/ThemeControl";
 import { businessData } from "@/data/businessData";
-import { orderingNavigation } from "@/data/navigation";
 import { getHeaderAuthNavigation } from "@/lib/auth/header-navigation";
 import {
   ensureCustomerProfile,
@@ -60,14 +59,7 @@ export default async function SiteHeader() {
               />
             </ul>
           ) : null}
-          <ButtonLink
-            ariaLabel={orderingNavigation.label}
-            className="site-header__order"
-            href={orderingNavigation.href}
-            variant="primary"
-          >
-            {orderingNavigation.label}
-          </ButtonLink>
+          <CartLink />
           {authNavigation.accountMenu || authNavigation.showSignOut ? (
             <ul className="site-header__account-actions">
               <HeaderAuthNavigation
