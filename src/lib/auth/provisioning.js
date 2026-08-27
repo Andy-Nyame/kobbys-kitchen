@@ -90,8 +90,3 @@ export async function createCredentialsCustomer({
     },
   });
 }
-
-export const customerProvisioningInternals = {
-  normalizeName,
-  safeImageUrl,
-};
