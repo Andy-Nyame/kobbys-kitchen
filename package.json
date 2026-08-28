@@ -16,7 +16,8 @@
     "migrate:supabase-development": "node --env-file-if-exists=.env.local scripts/migrate-supabase-development.js",
     "test:development:backend": "node --env-file-if-exists=.env.local scripts/acceptance/backend-migration.js",
     "test:development:admin-menu": "node --env-file-if-exists=.env.local scripts/acceptance/admin-menu.js",
-    "provision:primary-admin": "node --env-file-if-exists=.env.local scripts/provision-primary-admin.js"
+    "provision:primary-admin": "node --env-file-if-exists=.env.local scripts/provision-primary-admin.js",
+    "provision:primary-admin:production": "node --env-file-if-exists=.env.production.local scripts/provision-primary-admin-production.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
