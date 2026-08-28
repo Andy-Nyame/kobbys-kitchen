@@ -3,11 +3,16 @@
 import Link from "next/link";
 import { useState } from "react";
 
-export default function AdminLoginForm({ nextPath = "/admin" }) {
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
+
+export default function AdminLoginForm({
+  initialError = "",
+  nextPath = "/admin",
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState("");
+  const [serverError, setServerError] = useState(initialError);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event) {
@@ -101,6 +106,15 @@ export default function AdminLoginForm({ nextPath = "/admin" }) {
           {loading ? "Signing in…" : "Sign In"}
         </button>
       </form>
+
+      <div className="auth-divider" role="separator">
+        <span>or</span>
+      </div>
+      <GoogleAuthButton intent="admin" nextPath={nextPath} />
+
+      <p className="admin-login-card__notice">
+        Only authorized administrators can access this workspace.
+      </p>
 
       <Link className="admin-login-card__back" href="/">
         Back to Kobby&rsquo;s Kitchen

@@ -9,12 +9,13 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test src/tests/*.test.js",
-    "test:development:integration": "RUN_DEVELOPMENT_INTEGRATION_TESTS=1 node --env-file-if-exists=.env.local --test src/tests/development-neon.integration.test.js src/tests/menu-catalogue.integration.test.js src/tests/universal-customer-profile.integration.test.js",
+    "test:development:integration": "RUN_DEVELOPMENT_INTEGRATION_TESTS=1 node --env-file-if-exists=.env.local --test src/tests/admin-menu.integration.test.js src/tests/development-neon.integration.test.js src/tests/menu-catalogue.integration.test.js src/tests/universal-customer-profile.integration.test.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "seed:development": "node --env-file-if-exists=.env.local scripts/seed-development.js",
     "migrate:supabase-development": "node --env-file-if-exists=.env.local scripts/migrate-supabase-development.js",
     "test:development:backend": "node --env-file-if-exists=.env.local scripts/acceptance/backend-migration.js",
+    "test:development:admin-menu": "node --env-file-if-exists=.env.local scripts/acceptance/admin-menu.js",
     "provision:primary-admin": "node --env-file-if-exists=.env.local scripts/provision-primary-admin.js"
   },
   "dependencies": {

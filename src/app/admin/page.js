@@ -30,9 +30,14 @@ export default async function AdminDashboardPage({ searchParams }) {
 
   if (!authorization.allowed) {
     const params = await searchParams;
+    const initialError =
+      params?.error === "oauth_unavailable"
+        ? "We could not complete that authentication request. Please try again."
+        : "";
 
     return (
       <AdminLoginForm
+        initialError={initialError}
         nextPath={getSafeAdminRedirectPath(params?.next)}
       />
     );

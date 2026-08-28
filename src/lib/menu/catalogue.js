@@ -20,7 +20,7 @@ export async function getPublicMenuCatalogue() {
         select: { id: true, name: true, slug: true },
       }),
       prisma.menuItem.findMany({
-        where: { active: true },
+        where: { active: true, category: { active: true } },
         orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
         select: {
           id: true,
@@ -34,6 +34,18 @@ export async function getPublicMenuCatalogue() {
           currency: true,
           available: true,
           featured: true,
+          preparationMinutes: true,
+          dietaryNotes: true,
+          images: {
+            orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+            select: {
+              id: true,
+              imageUrl: true,
+              altText: true,
+              sortOrder: true,
+              isPrimary: true,
+            },
+          },
         },
       }),
     ]);
@@ -42,21 +54,32 @@ export async function getPublicMenuCatalogue() {
       ok: true,
       categories: categories.map(normalizeCategory),
       items: items
-        .map((item) =>
-          normalizeCatalogueItem({
+        .map((item) => {
+          const primaryImage = item.images[0];
+
+          return normalizeCatalogueItem({
             id: item.id,
             category_id: item.categoryId,
             slug: item.slug,
             name: item.name,
             description: item.description,
-            image_path: item.imagePath,
-            image_alt: item.imageAlt,
+            image_path: primaryImage?.imageUrl || item.imagePath,
+            image_alt: primaryImage?.altText || item.imageAlt,
+            images: item.images.map((image) => ({
+              id: image.id,
+              image_url: image.imageUrl,
+              alt_text: image.altText,
+              sort_order: image.sortOrder,
+              is_primary: image.isPrimary,
+            })),
             price_minor: item.priceMinor,
             currency: item.currency,
             available: item.available,
             featured: item.featured,
-          })
-        )
+            preparation_minutes: item.preparationMinutes,
+            dietary_notes: item.dietaryNotes,
+          });
+        })
         .filter(Boolean),
     };
   } catch (error) {

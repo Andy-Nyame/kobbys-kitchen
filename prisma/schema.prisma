@@ -147,43 +147,64 @@ model PasswordResetToken {
 }
 
 model MenuCategory {
-  id        String     @id @default(uuid()) @db.Uuid
-  name      String
-  slug      String     @unique
-  active    Boolean    @default(true)
-  sortOrder Int        @default(0)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  items     MenuItem[]
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String     @unique
+  description String?
+  active      Boolean    @default(true)
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  items       MenuItem[]
 
   @@index([active, sortOrder])
   @@map("menu_categories")
 }
 
 model MenuItem {
-  id          String       @id @default(uuid()) @db.Uuid
-  categoryId  String       @db.Uuid
-  slug        String       @unique
-  name        String
-  description String
-  imagePath   String?
-  imageAlt    String?
-  priceMinor  Int
-  currency    String       @default("GHS")
-  available   Boolean      @default(true)
-  featured    Boolean      @default(false)
-  active      Boolean      @default(true)
-  sortOrder   Int          @default(0)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id                 String   @id @default(uuid()) @db.Uuid
+  categoryId         String   @db.Uuid
+  slug               String   @unique
+  name               String
+  description        String
+  imagePath          String?
+  imageAlt           String?
+  priceMinor         Int
+  currency           String   @default("GHS")
+  available          Boolean  @default(true)
+  featured           Boolean  @default(false)
+  active             Boolean  @default(true)
+  sortOrder          Int      @default(0)
+  preparationMinutes Int?
+  dietaryNotes       String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category   MenuCategory    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images     MenuItemImage[]
   reviews    Review[]
   orderItems OrderItem[]
 
   @@index([categoryId, active, sortOrder])
   @@index([active, available])
   @@map("menu_items")
+}
+
+model MenuItemImage {
+  id         String   @id @default(uuid()) @db.Uuid
+  menuItemId String   @db.Uuid
+  imageUrl   String
+  altText    String
+  sortOrder  Int      @default(0)
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@unique([menuItemId, imageUrl])
+  @@index([menuItemId, sortOrder])
+  @@map("menu_item_images")
 }
 
 model Review {

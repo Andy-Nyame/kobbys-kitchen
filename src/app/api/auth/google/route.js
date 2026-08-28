@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { googleAuthConfigured, signIn } from "@/auth";
-import { getSafeCustomerRedirectPath } from "@/lib/auth/redirects";
+import { getGoogleAuthStartDecision } from "@/lib/auth/redirects";
 
 export async function GET(request) {
   const requestUrl = new URL(request.url);
-  const redirectTo = getSafeCustomerRedirectPath(
-    requestUrl.searchParams.get("next")
-  );
+  const decision = getGoogleAuthStartDecision({
+    intent: requestUrl.searchParams.get("intent"),
+    intendedPath: requestUrl.searchParams.get("next"),
+  });
 
   if (!googleAuthConfigured) {
     console.error("[auth-google-start]", {
@@ -15,19 +16,22 @@ export async function GET(request) {
     });
 
     return NextResponse.redirect(
-      new URL("/login?error=oauth_unavailable", request.url)
+      new URL(decision.errorPath, request.url)
     );
   }
 
   try {
-    const url = await signIn("google", { redirect: false, redirectTo });
+    const url = await signIn("google", {
+      redirect: false,
+      redirectTo: decision.redirectTo,
+    });
     return NextResponse.redirect(url);
   } catch (error) {
     console.error("[auth-google-start]", {
       reason: error?.type || "oauth_start_failed",
     });
     return NextResponse.redirect(
-      new URL("/login?error=oauth_unavailable", request.url)
+      new URL(decision.errorPath, request.url)
     );
   }
 }

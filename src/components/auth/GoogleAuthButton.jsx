@@ -1,6 +1,6 @@
 "use client";
 
-import { getSafeCustomerRedirectPath } from "@/lib/auth/redirects";
+import { getGoogleAuthStartDecision } from "@/lib/auth/redirects";
 
 function GoogleIcon() {
   return (
@@ -25,14 +25,21 @@ function GoogleIcon() {
   );
 }
 
-export default function GoogleAuthButton() {
+export default function GoogleAuthButton({ intent = "customer", nextPath = null }) {
   function continueWithGoogle() {
-    const requestedPath = new URLSearchParams(window.location.search).get(
-      "next"
-    );
-    const next = getSafeCustomerRedirectPath(requestedPath);
+    const requestedPath =
+      nextPath || new URLSearchParams(window.location.search).get("next");
+    const decision = getGoogleAuthStartDecision({
+      intent,
+      intendedPath: requestedPath,
+    });
+    const params = new URLSearchParams({ next: decision.redirectTo });
 
-    window.location.assign(`/api/auth/google?next=${encodeURIComponent(next)}`);
+    if (decision.intent === "admin") {
+      params.set("intent", "admin");
+    }
+
+    window.location.assign(`/api/auth/google?${params.toString()}`);
   }
 
   return (

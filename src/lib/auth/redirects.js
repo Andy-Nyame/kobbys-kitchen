@@ -49,6 +49,22 @@ export function getSafeCustomerRedirectPath(value, fallback = "/account") {
   return fallback;
 }
 
+export function getGoogleAuthStartDecision({ intent, intendedPath } = {}) {
+  if (intent === "admin") {
+    return {
+      intent: "admin",
+      redirectTo: getSafeAdminRedirectPath(intendedPath),
+      errorPath: "/admin?error=oauth_unavailable",
+    };
+  }
+
+  return {
+    intent: "customer",
+    redirectTo: getSafeCustomerRedirectPath(intendedPath),
+    errorPath: "/login?error=oauth_unavailable",
+  };
+}
+
 export function getCustomerLoginPath(intendedPath = "/account") {
   const safePath = getSafeCustomerRedirectPath(intendedPath);
 

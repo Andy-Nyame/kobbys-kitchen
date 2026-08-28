@@ -20,6 +20,17 @@ describe("public menu catalogue domain", () => {
       currency: "GHS",
       available: false,
       featured: true,
+      preparation_minutes: 25,
+      dietary_notes: "Contains fish",
+      images: [
+        {
+          id: "33333333-3333-4333-8333-333333333333",
+          image_url: "/images/food/jollof-rice.png",
+          alt_text: "Jollof Rice",
+          sort_order: 0,
+          is_primary: true,
+        },
+      ],
     });
 
     assert.deepEqual(item, {
@@ -34,6 +45,17 @@ describe("public menu catalogue domain", () => {
       currency: "GHS",
       available: false,
       featured: true,
+      images: [
+        {
+          id: "33333333-3333-4333-8333-333333333333",
+          imageUrl: "/images/food/jollof-rice.png",
+          altText: "Jollof Rice",
+          sortOrder: 0,
+          isPrimary: true,
+        },
+      ],
+      preparationMinutes: 25,
+      dietaryNotes: "Contains fish",
     });
   });
 
