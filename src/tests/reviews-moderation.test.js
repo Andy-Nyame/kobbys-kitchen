@@ -9,6 +9,24 @@ import {
   REVIEW_MODERATION_ACTION,
   REVIEW_STATUS,
 } from "../lib/reviews/moderation.js";
+import { canPublicViewerSeeReview, getPublicReviewVisibility } from "../lib/reviews/visibility.js";
+
+describe("server-side public review visibility", () => {
+  it("limits anonymous visitors to approved and featured reviews", () => {
+    assert.deepEqual(getPublicReviewVisibility(null), { status: "APPROVED", featured: true });
+    assert.equal(canPublicViewerSeeReview({ status: "APPROVED", featured: true }, null), true);
+    assert.equal(canPublicViewerSeeReview({ status: "APPROVED", featured: false }, null), false);
+    assert.equal(canPublicViewerSeeReview({ status: "PENDING", featured: true }, null), false);
+    assert.equal(canPublicViewerSeeReview({ status: "REJECTED", featured: true }, null), false);
+  });
+
+  it("lets customers see all approved reviews and no private states", () => {
+    assert.deepEqual(getPublicReviewVisibility("CUSTOMER"), { status: "APPROVED" });
+    assert.equal(canPublicViewerSeeReview({ status: "APPROVED", featured: false }, "CUSTOMER"), true);
+    assert.equal(canPublicViewerSeeReview({ status: "PENDING", featured: true }, "CUSTOMER"), false);
+    assert.equal(canPublicViewerSeeReview({ status: "REJECTED", featured: false }, "CUSTOMER"), false);
+  });
+});
 
 describe("review moderation transitions", () => {
   it("approves pending or hidden reviews without featuring them", () => {

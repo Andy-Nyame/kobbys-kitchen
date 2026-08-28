@@ -5,10 +5,14 @@ import {
   assertOrderingStateOpenForSubmission,
   resolveEffectiveOrderingState,
 } from "@/lib/ordering/state";
+import {
+  presentPublicOrderingState,
+  presentWeeklySchedule,
+} from "@/lib/ordering/presentation";
 import { prisma } from "@/lib/prisma";
 
-export async function getEffectiveOrderingState({ now = new Date() } = {}) {
-  const setting = await prisma.orderingSetting.findUnique({
+async function getOrderingConfiguration() {
+  return prisma.orderingSetting.findUnique({
     where: { id: "default" },
     include: {
       scheduleWindows: {
@@ -20,6 +24,10 @@ export async function getEffectiveOrderingState({ now = new Date() } = {}) {
       },
     },
   });
+}
+
+export async function getEffectiveOrderingState({ now = new Date() } = {}) {
+  const setting = await getOrderingConfiguration();
 
   return resolveEffectiveOrderingState({
     featureEnabled: isOrderingEnabled(),
@@ -27,6 +35,15 @@ export async function getEffectiveOrderingState({ now = new Date() } = {}) {
     scheduleWindows: setting?.scheduleWindows || [],
     now,
   });
+}
+
+export async function getPublicOrderingStatus(options) {
+  return presentPublicOrderingState(await getEffectiveOrderingState(options));
+}
+
+export async function getPublicOpeningHours() {
+  const setting = await getOrderingConfiguration();
+  return presentWeeklySchedule(setting?.scheduleWindows || []);
 }
 
 // Ordering availability gates new submissions only. It never cancels or mutates

@@ -1,12 +1,14 @@
 import { Suspense } from "react";
 import Image from "next/image";
 
+import OpeningHours from "@/components/ordering/OpeningHours";
 import HomeReviewSummary from "@/components/reviews/HomeReviewSummary";
 import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
 import MealCard from "@/components/ui/MealCard";
 import { businessData } from "@/data/businessData";
 import { menuItems } from "@/data/menuData";
+import { getPublicOpeningHours } from "@/lib/ordering/server";
 
 export const metadata = {
   title: "Kobby's Kitchen | Fast Food in Tema Community Two",
@@ -16,11 +18,12 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function Home() {
+export default async function Home() {
   const featuredMeals = menuItems.filter((item) => item.featured);
   const phoneLink = businessData.phone.href;
   const whatsappLink = businessData.whatsapp.href;
   const directionsLink = businessData.googleMapsLink;
+  const openingHours = await getPublicOpeningHours();
 
   return (
     <main className="page">
@@ -156,18 +159,9 @@ export default function Home() {
 
         <ContentSection
           title="Opening Hours"
-          description="Visit Kobby's Kitchen during our evening and late-night opening hours."
+          description="Our normal weekly restaurant hours, shown in GMT."
         >
-          <ul className="hours-list">
-            {businessData.openingHours.map((entry) => (
-              <li key={entry.day} className="hours-list__item">
-                <span>{entry.day}</span>
-                <strong className={entry.closed ? "hours-list__closed" : ""}>
-                  {entry.hours}
-                </strong>
-              </li>
-            ))}
-          </ul>
+          <OpeningHours schedule={openingHours} />
         </ContentSection>
 
         <ContentSection

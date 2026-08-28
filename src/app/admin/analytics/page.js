@@ -1,162 +1,30 @@
-import Link from "next/link";
-
 import AdminMetricCard from "@/components/admin/AdminMetricCard";
-import AdminQueryNotice from "@/components/admin/AdminQueryNotice";
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
-import { parseAnalyticsFilters } from "@/lib/admin/filters";
-import {
-  formatAdminDate,
-  formatMoneyMinor,
-  formatStatusLabel,
-} from "@/lib/admin/presentation";
-import { getOrderMetrics } from "@/lib/analytics/order-queries";
+import { formatAdminDate } from "@/lib/admin/presentation";
+import { getAccountMetrics } from "@/lib/analytics/account-queries";
 import { requireAdmin } from "@/lib/auth/guards";
-import { ORDER_STATUS, PAYMENT_METHOD } from "@/lib/orders/domain";
 
-export const metadata = {
-  title: "Admin Analytics | Kobby's Kitchen",
-  description: "Kobby's Kitchen order and paid-revenue analytics.",
-};
+export const metadata = { title: "Account Analytics | Kobby's Kitchen", description: "Registration and account composition analytics." };
 
-function buildDailyRows(metrics) {
-  const rows = new Map();
-
-  for (const item of metrics.orderCountByDay) {
-    rows.set(item.day, {
-      day: item.day,
-      orderCount: Number(item.count || 0),
-      revenueMinor: 0,
-    });
-  }
-
-  for (const item of metrics.revenueByDay) {
-    const row = rows.get(item.day) || {
-      day: item.day,
-      orderCount: 0,
-      revenueMinor: 0,
-    };
-    row.revenueMinor = Number(item.revenue_minor || 0);
-    rows.set(item.day, row);
-  }
-
-  return [...rows.values()].sort((left, right) => right.day.localeCompare(left.day));
-}
-
-export default async function AdminAnalyticsPage({ searchParams }) {
+export default async function AdminAnalyticsPage() {
   await requireAdmin("/admin/analytics");
-
-  const params = await searchParams;
-  const { values: filters, errors } = parseAnalyticsFilters(params);
   let metrics = null;
+  try { metrics = await getAccountMetrics(); } catch (error) { console.error("[admin-account-analytics]", error); }
+  const maxTrend = metrics ? Math.max(...metrics.registrationTrend.map((item) => item.count), 1) : 1;
 
-  try {
-    metrics = await getOrderMetrics(filters);
-  } catch (error) {
-    console.error("[admin-analytics]", error);
-  }
-
-  const dailyRows = metrics ? buildDailyRows(metrics) : [];
-
-  return (
-    <>
-      <PageIntro
-        eyebrow="Admin operations"
-        title="Analytics and Revenue"
-        description="Order activity and current paid-revenue reporting from logical payment records."
-      />
-
-      <ContentSection title="Date Range" description="Order counts use order creation time; revenue uses the trusted paid timestamp." className="admin-section">
-        <AdminQueryNotice errors={errors} />
-        <form className="admin-filter-form admin-filter-form--dates" action="/admin/analytics" method="GET">
-          <label className="form-field">
-            <span>From</span>
-            <input name="from" type="date" defaultValue={filters.from} />
-          </label>
-          <label className="form-field">
-            <span>To</span>
-            <input name="to" type="date" defaultValue={filters.to} />
-          </label>
-          <div className="admin-filter-form__actions">
-            <button className="button-link button-link--primary" type="submit">Apply range</button>
-            <Link className="button-link button-link--secondary" href="/admin/analytics">Clear</Link>
-          </div>
-        </form>
-      </ContentSection>
-
-      <ContentSection title="Revenue Summary" description="Refunded, unpaid, pending and failed payments are excluded from revenue." className="admin-section">
-        {metrics ? (
-          <div className="admin-metric-grid">
-            <AdminMetricCard label="Paid revenue" value={formatMoneyMinor(metrics.paidRevenueMinor)} />
-            <AdminMetricCard label="Paid orders" value={metrics.paidOrderCount} />
-            <AdminMetricCard label="Average paid order" value={formatMoneyMinor(metrics.averagePaidOrderValueMinor)} />
-            <AdminMetricCard label="Unpaid cash" value={formatMoneyMinor(metrics.unpaidCashValueMinor)} note="Not revenue" tone="warning" />
-            {Object.values(PAYMENT_METHOD).map((method) => (
-              <AdminMetricCard key={method} label={`${formatStatusLabel(method)} paid`} value={formatMoneyMinor(metrics.revenueByPaymentMethodMinor[method])} />
-            ))}
-          </div>
-        ) : (
-          <p className="admin-data-error">Revenue analytics are temporarily unavailable.</p>
-        )}
-      </ContentSection>
-
-      <ContentSection title="Orders by Status" description="Counts for orders created in the selected range." className="admin-section">
-        {metrics ? (
-          <div className="admin-metric-grid">
-            {Object.values(ORDER_STATUS).map((status) => (
-              <AdminMetricCard key={status} label={formatStatusLabel(status)} value={metrics.orderStatusCounts[status]} />
-            ))}
-          </div>
-        ) : (
-          <p className="admin-data-error">Order analytics are temporarily unavailable.</p>
-        )}
-      </ContentSection>
-
-      <ContentSection title="Daily Activity" description="Only dates with recorded order or paid-revenue activity are shown." className="admin-section">
-        {metrics && dailyRows.length > 0 ? (
-          <div className="admin-table-shell" tabIndex="0" role="region" aria-label="Daily analytics table">
-            <table className="admin-table admin-table--compact">
-              <thead><tr><th scope="col">Date</th><th scope="col">Orders</th><th scope="col">Paid revenue</th></tr></thead>
-              <tbody>
-                {dailyRows.map((row) => (
-                  <tr key={row.day}>
-                    <td data-label="Date">{formatAdminDate(row.day)}</td>
-                    <td data-label="Orders">{row.orderCount}</td>
-                    <td data-label="Paid revenue">{formatMoneyMinor(row.revenueMinor)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : metrics ? (
-          <p className="admin-empty-state">No order or paid-revenue activity exists for this range.</p>
-        ) : (
-          <p className="admin-data-error">Daily analytics are temporarily unavailable.</p>
-        )}
-      </ContentSection>
-
-      <ContentSection title="Top Completed Items" description="Quantity and snapshot revenue from orders that are both completed and paid." className="admin-section">
-        {metrics && metrics.topItems.length > 0 ? (
-          <div className="admin-table-shell" tabIndex="0" role="region" aria-label="Top items table">
-            <table className="admin-table admin-table--compact">
-              <thead><tr><th scope="col">Item</th><th scope="col">Quantity</th><th scope="col">Item revenue</th></tr></thead>
-              <tbody>
-                {metrics.topItems.map((item) => (
-                  <tr key={item.item_name}>
-                    <td data-label="Item">{item.item_name}</td>
-                    <td data-label="Quantity">{Number(item.quantity || 0)}</td>
-                    <td data-label="Item revenue">{formatMoneyMinor(Number(item.revenue_minor || 0))}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : metrics ? (
-          <p className="admin-empty-state">Top items will appear after paid orders are completed.</p>
-        ) : (
-          <p className="admin-data-error">Item analytics are temporarily unavailable.</p>
-        )}
-      </ContentSection>
-    </>
-  );
+  return <>
+    <PageIntro eyebrow="Admin insights" title="Account Analytics" description="Real registration totals and account composition from trusted user records." />
+    <ContentSection title="Account Summary" description="Counts reflect registered identities. Activity tracking is not currently collected, so no active-user metric is inferred." className="admin-section">
+      {metrics ? <div className="admin-metric-grid">
+        <AdminMetricCard label="Registered accounts" value={metrics.totalAccounts} /><AdminMetricCard label="Customers" value={metrics.customerCount} /><AdminMetricCard label="Administrators" value={metrics.adminCount} /><AdminMetricCard label="Registered today" value={metrics.registrationsToday} /><AdminMetricCard label="Registered in 7 days" value={metrics.registrationsSevenDays} /><AdminMetricCard label="Registered in 30 days" value={metrics.registrationsThirtyDays} /><AdminMetricCard label="Google identities" value={metrics.googleAccountCount} /><AdminMetricCard label="Password credentials" value={metrics.credentialAccountCount} />
+      </div> : <p className="admin-data-error">Account analytics are temporarily unavailable.</p>}
+    </ContentSection>
+    <ContentSection title="Registration Trend" description="New accounts per GMT calendar day for the last seven days; zero days are shown truthfully." className="admin-section">
+      {metrics ? <div className="admin-registration-trend" role="img" aria-label="Seven-day account registration trend">{metrics.registrationTrend.map((item) => <div className="admin-registration-trend__day" key={item.day}><span className="admin-registration-trend__count">{item.count}</span><span className="admin-registration-trend__bar" style={{ "--trend-height": `${Math.max((item.count / maxTrend) * 100, item.count ? 8 : 2)}%` }} aria-hidden="true" /><span>{item.day.slice(5)}</span></div>)}</div> : <p className="admin-data-error">Registration trends are temporarily unavailable.</p>}
+    </ContentSection>
+    <ContentSection title="Recent Registrations" description="The newest registered accounts and their authentication methods." className="admin-section">
+      {metrics?.recentAccounts.length ? <div className="admin-table-shell" tabIndex="0" role="region" aria-label="Recent registrations"><table className="admin-table admin-table--compact"><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Method</th><th scope="col">Registered</th></tr></thead><tbody>{metrics.recentAccounts.map((account) => <tr key={account.id}><td data-label="Name">{account.name}</td><td data-label="Email">{account.email}</td><td data-label="Role">{account.role === "ADMIN" ? "Administrator" : "Customer"}</td><td data-label="Method">{account.providers.length ? account.providers.join(", ") : "Password"}</td><td data-label="Registered">{formatAdminDate(account.createdAt)}</td></tr>)}</tbody></table></div> : metrics ? <p className="admin-empty-state">No registered accounts are available yet.</p> : <p className="admin-data-error">Recent registrations are temporarily unavailable.</p>}
+    </ContentSection>
+  </>;
 }

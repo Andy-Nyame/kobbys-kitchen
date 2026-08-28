@@ -54,15 +54,6 @@ export const businessData = {
     "No customer reviews have been published yet. Be the first to share your experience.",
   finalCta:
     "Ready to enjoy a satisfying meal or place an order for an event?",
-  openingHours: [
-    { day: "Monday", hours: "4:00 PM – 12:00 Midnight", closed: false },
-    { day: "Tuesday", hours: "Closed", closed: true },
-    { day: "Wednesday", hours: "4:00 PM – 12:00 Midnight", closed: false },
-    { day: "Thursday", hours: "4:00 PM – 12:00 Midnight", closed: false },
-    { day: "Friday", hours: "4:00 PM – 12:00 Midnight", closed: false },
-    { day: "Saturday", hours: "4:00 PM – 12:00 Midnight", closed: false },
-    { day: "Sunday", hours: "4:00 PM – 12:00 Midnight", closed: false },
-  ],
 };
 
 export const reviewFormFields = [

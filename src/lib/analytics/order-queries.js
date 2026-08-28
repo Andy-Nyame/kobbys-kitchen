@@ -22,7 +22,7 @@ export async function getOrderMetrics(dateRange = {}) {
   const [orders, payments, completedOrders] = await Promise.all([
     prisma.order.findMany({
       where: hasRange ? { createdAt: dateWhere } : {},
-      select: { id: true, status: true, createdAt: true },
+      select: { id: true, status: true, totalMinor: true, createdAt: true },
       orderBy: { createdAt: "asc" },
     }),
     prisma.payment.findMany({
@@ -40,6 +40,7 @@ export async function getOrderMetrics(dateRange = {}) {
         status: true,
         amountMinor: true,
         paidAt: true,
+        order: { select: { status: true } },
       },
     }),
     prisma.order.findMany({
@@ -61,12 +62,17 @@ export async function getOrderMetrics(dateRange = {}) {
   ]);
 
   const metrics = summarizeOrderMetrics({
-    orders,
+    orders: orders.map((order) => ({
+      id: order.id,
+      status: order.status,
+      total_minor: order.totalMinor,
+    })),
     payments: payments.map((payment) => ({
       order_id: payment.orderId,
       method: payment.method,
       status: payment.status,
       amount_minor: payment.amountMinor,
+      order_status: payment.order.status,
     })),
   });
   const ordersByDay = new Map();
@@ -79,7 +85,11 @@ export async function getOrderMetrics(dateRange = {}) {
   }
 
   for (const payment of payments) {
-    if (payment.status !== "PAID" || !payment.paidAt) {
+    if (
+      payment.status !== "PAID" ||
+      payment.order.status === "CANCELLED" ||
+      !payment.paidAt
+    ) {
       continue;
     }
 

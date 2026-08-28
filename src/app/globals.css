@@ -1408,6 +1408,54 @@ select:focus-visible {
   color: var(--color-brand-orange);
 }
 
+.hours-list__windows {
+  display: grid;
+  gap: 0.25rem;
+  text-align: right;
+}
+
+.ordering-status-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(72rem, calc(100% - 2rem));
+  margin: 1.25rem auto;
+  border: 1px solid var(--color-border);
+  border-left: 0.35rem solid var(--color-brand-orange);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface);
+  padding: 1rem 1.15rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.ordering-status-notice--open {
+  border-left-color: var(--color-success-text);
+}
+
+.ordering-status-notice p {
+  margin: 0.2rem 0 0;
+}
+
+.ordering-status-notice__label {
+  color: var(--color-text-strong);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.ordering-status-notice__detail,
+.ordering-status-notice__timezone,
+.cart-ordering-note {
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+}
+
+.ordering-status-notice__timezone {
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+
 .location-card {
   display: grid;
   gap: 1rem;
@@ -3868,6 +3916,86 @@ select:focus-visible {
   display: grid;
   gap: 0.75rem;
   min-width: 0;
+}
+
+.admin-schedule-day__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.admin-domain-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+  padding: 0.2rem 0.1rem 0.65rem;
+}
+
+.admin-domain-tabs__link {
+  flex: 0 0 auto;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+  padding: 0.65rem 1rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.admin-domain-tabs__link:hover,
+.admin-domain-tabs__link:focus-visible,
+.admin-domain-tabs__link--current {
+  border-color: var(--color-brand-orange);
+  background: var(--color-surface-secondary);
+  color: var(--color-text-strong);
+}
+
+.admin-registration-trend {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(2.25rem, 1fr));
+  align-items: end;
+  gap: 0.65rem;
+  min-height: 12rem;
+}
+
+.admin-registration-trend__day {
+  display: grid;
+  grid-template-rows: auto 8rem auto;
+  align-items: end;
+  gap: 0.4rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+.admin-registration-trend__count {
+  color: var(--color-text-strong);
+  font-weight: 800;
+}
+
+.admin-registration-trend__bar {
+  display: block;
+  width: min(2rem, 80%);
+  height: var(--trend-height);
+  min-height: 2px;
+  margin-inline: auto;
+  border-radius: 0.4rem 0.4rem 0 0;
+  background: var(--color-brand-orange);
+}
+
+@media (max-width: 560px) {
+  .ordering-status-notice {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hours-list__item {
+    align-items: flex-start;
+  }
+
+  .admin-registration-trend {
+    gap: 0.3rem;
+  }
 }
 
 .admin-schedule-window {

@@ -1,8 +1,10 @@
 import ButtonLink from "@/components/ui/ButtonLink";
 import PageIntro from "@/components/ui/PageIntro";
+import OrderingStatusNotice from "@/components/ordering/OrderingStatusNotice";
 import { businessData } from "@/data/businessData";
 import { isOrderingEnabled } from "@/lib/feature-flags";
 import { getOrderingHubState } from "@/lib/orders/hub";
+import { getPublicOrderingStatus } from "@/lib/ordering/server";
 
 export const metadata = {
   title: "Order | Kobby's Kitchen",
@@ -10,8 +12,11 @@ export const metadata = {
     "Choose how to order from Kobby's Kitchen, including our available WhatsApp ordering service.",
 };
 
-export default function OrderPage() {
+export const dynamic = "force-dynamic";
+
+export default async function OrderPage() {
   const orderingState = getOrderingHubState(isOrderingEnabled());
+  const orderingStatus = await getPublicOrderingStatus();
 
   return (
     <main className="page">
@@ -21,6 +26,8 @@ export default function OrderPage() {
           title="How would you like to order?"
           description="Choose the ordering option that works today, or see what we are preparing for online pickup."
         />
+
+        <OrderingStatusNotice context="order" status={orderingStatus} />
 
         <div className="order-hub__options">
           <section

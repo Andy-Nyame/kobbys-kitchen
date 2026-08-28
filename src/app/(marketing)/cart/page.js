@@ -1,14 +1,21 @@
 import CartPageContent from "@/components/cart/CartPageContent";
 import PageIntro from "@/components/ui/PageIntro";
+import OrderingStatusNotice from "@/components/ordering/OrderingStatusNotice";
 import { getPublicMenuCatalogue } from "@/lib/menu/catalogue";
+import { getPublicOrderingStatus } from "@/lib/ordering/server";
 
 export const metadata = {
   title: "Cart | Kobby's Kitchen",
   description: "Review the meals you have added while online checkout is being prepared.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function CartPage() {
-  const catalogue = await getPublicMenuCatalogue();
+  const [catalogue, orderingStatus] = await Promise.all([
+    getPublicMenuCatalogue(),
+    getPublicOrderingStatus(),
+  ]);
 
   return (
     <main className="page">
@@ -18,6 +25,12 @@ export default async function CartPage() {
           title="Your pickup cart"
           description="Build your order at your own pace. Online checkout is not active yet, so nothing is submitted from this cart."
         />
+        <OrderingStatusNotice context="cart" status={orderingStatus} />
+        {!orderingStatus.isOpen ? (
+          <p className="cart-ordering-note">
+            Your cart remains saved on this device while ordering is closed.
+          </p>
+        ) : null}
         {catalogue.ok ? (
           <CartPageContent catalogueItems={catalogue.items} />
         ) : (

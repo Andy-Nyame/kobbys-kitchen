@@ -9,6 +9,12 @@ const ACTIVE_ORDER_STATUSES = [
   ORDER_STATUS.PREPARING,
   ORDER_STATUS.READY_FOR_PICKUP,
 ];
+export const HISTORY_ORDER_STATUSES = [
+  ORDER_STATUS.COMPLETED,
+  ORDER_STATUS.CANCELLED,
+];
+
+export { ACTIVE_ORDER_STATUSES };
 
 function normalizeOrders(orders) {
   return (orders || []).map((order) => ({
@@ -69,11 +75,20 @@ export async function getRecentAdminOrders(limit = 8) {
   return normalizeOrders([...uniqueOrders.values()].slice(0, safeLimit));
 }
 
-export async function listAdminOrders(filters) {
+export async function listAdminOrders(filters, { statuses = null } = {}) {
   const start = (filters.page - 1) * ADMIN_PAGE_SIZE;
   const dateWhere = getOrderDateWhere(filters);
+  const scopedStatus =
+    filters.orderStatus &&
+    (!Array.isArray(statuses) || statuses.includes(filters.orderStatus))
+      ? filters.orderStatus
+      : null;
   const where = {
-    ...(filters.orderStatus ? { status: filters.orderStatus } : {}),
+    ...(scopedStatus
+      ? { status: scopedStatus }
+      : Array.isArray(statuses)
+        ? { status: { in: statuses } }
+        : {}),
     ...(Object.keys(dateWhere).length ? { createdAt: dateWhere } : {}),
     ...(filters.search
       ? {
@@ -86,8 +101,8 @@ export async function listAdminOrders(filters) {
       : {}),
     ...(filters.paymentMethod || filters.paymentStatus
       ? {
-          payments: {
-            some: {
+          payment: {
+            is: {
               ...(filters.paymentMethod ? { method: filters.paymentMethod } : {}),
               ...(filters.paymentStatus ? { status: filters.paymentStatus } : {}),
             },

@@ -1,9 +1,11 @@
 import Image from "next/image";
 
+import OpeningHours from "@/components/ordering/OpeningHours";
 import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
 import { businessData } from "@/data/businessData";
+import { getPublicOpeningHours } from "@/lib/ordering/server";
 
 export const metadata = {
   title: "About Kobby's Kitchen",
@@ -11,8 +13,11 @@ export const metadata = {
     "Learn about Kobby's Kitchen, our services and Felix Papa Kwasi Cudjoe, the owner and chef.",
 };
 
-export default function AboutPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AboutPage() {
   const { phone, whatsapp } = businessData;
+  const openingHours = await getPublicOpeningHours();
 
   return (
     <main className="page">
@@ -98,6 +103,13 @@ export default function AboutPage() {
           title="Chef Message"
           description={businessData.chefMessage}
         />
+
+        <ContentSection
+          title="Opening Hours"
+          description="Our normal weekly restaurant schedule. Temporary ordering pauses and overrides do not change these hours."
+        >
+          <OpeningHours schedule={openingHours} />
+        </ContentSection>
 
         <ContentSection
           title="Contact Kobby's Kitchen"

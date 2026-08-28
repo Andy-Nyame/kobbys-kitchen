@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getAuthenticatedUser } from "@/lib/auth/guards";
 import { prisma } from "@/lib/prisma";
+import { getPublicReviewVisibility } from "@/lib/reviews/visibility";
 import {
   REVIEW_INVALID_JSON_MESSAGE,
   REVIEW_RATING_OPTIONS,
@@ -51,8 +52,10 @@ function buildReviewSummary(reviews) {
 
 export async function GET() {
   try {
+    const viewer = await getAuthenticatedUser();
+    const viewerRole = viewer?.role === "CUSTOMER" ? "CUSTOMER" : null;
     const approved = await prisma.review.findMany({
-      where: { status: "APPROVED" },
+      where: getPublicReviewVisibility(viewerRole),
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

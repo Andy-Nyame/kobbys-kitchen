@@ -1,139 +1,54 @@
-import AdminMetricCard from "@/components/admin/AdminMetricCard";
 import AdminLoginForm from "@/components/admin/AdminLoginForm";
+import AdminMetricCard from "@/components/admin/AdminMetricCard";
 import AdminOrderTable from "@/components/admin/AdminOrderTable";
 import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
 import { getRecentAdminOrders } from "@/lib/admin/orders";
-import { getOrderingAvailability } from "@/lib/admin/ordering-status";
-import { formatMoneyMinor } from "@/lib/admin/presentation";
-import { getAdminOrderingSettings } from "@/lib/admin/settings";
-import { getOrderMetrics } from "@/lib/analytics/order-queries";
+import { getAccountMetrics } from "@/lib/analytics/account-queries";
 import { getAdminAccess } from "@/lib/auth/guards";
 import { getSafeAdminRedirectPath } from "@/lib/auth/redirects";
-import { isOrderingEnabled } from "@/lib/feature-flags";
-import { ORDER_STATUS } from "@/lib/orders/domain";
+import { getEffectiveOrderingState } from "@/lib/ordering/server";
+import { formatGmtTransition } from "@/lib/ordering/presentation";
+import { prisma } from "@/lib/prisma";
 
-export const metadata = {
-  title: "Admin Overview | Kobby's Kitchen",
-  description: "Kobby's Kitchen operational overview.",
+export const metadata = { title: "Admin Overview | Kobby's Kitchen", description: "Kobby's Kitchen operational overview." };
+
+const orderingReasonLabels = {
+  BUILD_DISABLED: "Online ordering is disabled by the deployment switch",
+  EMERGENCY_PAUSED: "Emergency pause active",
+  FORCED_OPEN: "Open by temporary override",
+  FORCED_CLOSED: "Closed by temporary override",
+  SCHEDULE_OPEN: "Open by weekly schedule",
+  SCHEDULE_CLOSED: "Closed by weekly schedule",
+  NO_SCHEDULE: "No ordering hours configured",
+  CONFIGURATION_INVALID: "Ordering configuration requires attention",
 };
-
-function logDashboardError(area, result) {
-  if (result.status === "rejected") {
-    console.error(`[admin-overview:${area}]`, result.reason);
-  }
-}
 
 export default async function AdminDashboardPage({ searchParams }) {
   const { authorization } = await getAdminAccess();
-
   if (!authorization.allowed) {
     const params = await searchParams;
-    const initialError =
-      params?.error === "oauth_unavailable"
-        ? "We could not complete that authentication request. Please try again."
-        : "";
-
-    return (
-      <AdminLoginForm
-        initialError={initialError}
-        nextPath={getSafeAdminRedirectPath(params?.next)}
-      />
-    );
+    return <AdminLoginForm initialError={params?.error === "oauth_unavailable" ? "We could not complete that authentication request. Please try again." : ""} nextPath={getSafeAdminRedirectPath(params?.next)} />;
   }
 
-  const [metricsResult, ordersResult, settingsResult] = await Promise.allSettled([
-    getOrderMetrics(),
-    getRecentAdminOrders(8),
-    getAdminOrderingSettings(),
+  const [stateResult, accountsResult, ordersResult, reviewsResult] = await Promise.allSettled([
+    getEffectiveOrderingState(), getAccountMetrics(), getRecentAdminOrders(5), prisma.review.count({ where: { status: "PENDING" } }),
   ]);
+  for (const [area, result] of [["ordering", stateResult], ["accounts", accountsResult], ["orders", ordersResult], ["reviews", reviewsResult]]) if (result.status === "rejected") console.error(`[admin-overview:${area}]`, result.reason);
+  const state = stateResult.status === "fulfilled" ? stateResult.value : null;
+  const accounts = accountsResult.status === "fulfilled" ? accountsResult.value : null;
+  const orders = ordersResult.status === "fulfilled" ? ordersResult.value : null;
+  const pendingReviews = reviewsResult.status === "fulfilled" ? reviewsResult.value : null;
+  const transition = state?.acceptingOrders ? formatGmtTransition(state.nextCloseAt, state.currentTime, "Closes") : formatGmtTransition(state?.nextOpenAt, state?.currentTime, "Opens");
 
-  logDashboardError("metrics", metricsResult);
-  logDashboardError("orders", ordersResult);
-  logDashboardError("settings", settingsResult);
-
-  const metrics = metricsResult.status === "fulfilled" ? metricsResult.value : null;
-  const recentOrders = ordersResult.status === "fulfilled" ? ordersResult.value : null;
-  const settings = settingsResult.status === "fulfilled" ? settingsResult.value : null;
-  const orderingStatus = getOrderingAvailability({
-    featureEnabled: isOrderingEnabled(),
-    acceptingOrders: settings?.acceptingOrders === true,
-  });
-
-  return (
-    <>
-      <PageIntro
-        eyebrow="Admin operations"
-        title="Overview"
-        description="A read-only view of orders, payments, revenue and kitchen availability."
-      />
-
-      <section className="admin-operational-status" aria-labelledby="ordering-state-title">
-        <div>
-          <p className="admin-section-eyebrow">Ordering state</p>
-          <h2 id="ordering-state-title">{orderingStatus.label}</h2>
-          <p>{orderingStatus.message}</p>
-          {settingsResult.status === "rejected" ? (
-            <p className="admin-inline-error">The operational setting could not be loaded.</p>
-          ) : null}
-        </div>
-        <span className={`admin-availability admin-availability--${orderingStatus.available ? "open" : "closed"}`}>
-          {orderingStatus.available ? "Available" : "Unavailable"}
-        </span>
-      </section>
-
-      <ContentSection
-        title="Order Summary"
-        description="Current order totals from the operational database."
-        className="admin-section"
-      >
-        {metrics ? (
-          <div className="admin-metric-grid">
-            <AdminMetricCard label="Total orders" value={metrics.totalOrders} />
-            <AdminMetricCard label="Awaiting payment" value={metrics.orderStatusCounts[ORDER_STATUS.AWAITING_PAYMENT]} tone="warning" />
-            <AdminMetricCard label="Pending" value={metrics.orderStatusCounts[ORDER_STATUS.PENDING]} tone="warning" />
-            <AdminMetricCard label="Preparing" value={metrics.orderStatusCounts[ORDER_STATUS.PREPARING]} tone="info" />
-            <AdminMetricCard label="Ready for pickup" value={metrics.orderStatusCounts[ORDER_STATUS.READY_FOR_PICKUP]} tone="success" />
-            <AdminMetricCard label="Completed" value={metrics.orderStatusCounts[ORDER_STATUS.COMPLETED]} tone="success" />
-            <AdminMetricCard label="Cancelled" value={metrics.orderStatusCounts[ORDER_STATUS.CANCELLED]} tone="danger" />
-            <AdminMetricCard label="Paid revenue" value={formatMoneyMinor(metrics.paidRevenueMinor)} note="Logical PAID payments only" />
-            <AdminMetricCard label="Unpaid cash" value={formatMoneyMinor(metrics.unpaidCashValueMinor)} note="Not counted as revenue" tone="warning" />
-          </div>
-        ) : (
-          <p className="admin-data-error">Order metrics are temporarily unavailable.</p>
-        )}
-      </ContentSection>
-
-      <ContentSection title="Payment Summary" description="Collected cash, electronic payments and outstanding payment states." className="admin-section">
-        {metrics ? (
-          <div className="admin-metric-grid admin-metric-grid--payments">
-            <AdminMetricCard label="Cash paid" value={formatMoneyMinor(metrics.paymentSummary.cashPaidMinor)} />
-            <AdminMetricCard label="Cash unpaid" value={formatMoneyMinor(metrics.paymentSummary.cashUnpaidMinor)} note={`${metrics.paymentSummary.cashUnpaidCount} order${metrics.paymentSummary.cashUnpaidCount === 1 ? "" : "s"}`} tone="warning" />
-            <AdminMetricCard label="Mobile Money paid" value={formatMoneyMinor(metrics.paymentSummary.mobileMoneyPaidMinor)} />
-            <AdminMetricCard label="Card paid" value={formatMoneyMinor(metrics.paymentSummary.cardPaidMinor)} />
-            <AdminMetricCard label="Electronic pending" value={metrics.paymentSummary.pendingElectronicCount} tone="warning" />
-            <AdminMetricCard label="Electronic failed" value={metrics.paymentSummary.failedElectronicCount} tone="danger" />
-          </div>
-        ) : (
-          <p className="admin-data-error">Payment metrics are temporarily unavailable.</p>
-        )}
-        <div className="section-actions">
-          <ButtonLink href="/admin/payments" variant="secondary">View Payments</ButtonLink>
-          <ButtonLink href="/admin/analytics" variant="secondary">View Analytics</ButtonLink>
-        </div>
-      </ContentSection>
-
-      <ContentSection title="Active and Recent Orders" description="Active work is prioritized, followed by the newest orders." className="admin-section">
-        {recentOrders ? (
-          <AdminOrderTable orders={recentOrders} />
-        ) : (
-          <p className="admin-data-error">Recent orders are temporarily unavailable.</p>
-        )}
-        <div className="section-actions">
-          <ButtonLink href="/admin/orders" variant="secondary">View All Orders</ButtonLink>
-        </div>
-      </ContentSection>
-    </>
-  );
+  return <>
+    <PageIntro eyebrow="Admin operations" title="Overview" description="A concise view of ordering, active work, customer accounts and review activity." />
+    <section className="admin-operational-status" aria-labelledby="ordering-state-title"><div><p className="admin-section-eyebrow">Current ordering status</p><h2 id="ordering-state-title">{state ? state.acceptingOrders ? "OPEN" : "CLOSED" : "Unavailable"}</h2><p>{state ? `${orderingReasonLabels[state.reason] || "Ordering state resolved"}${transition ? ` · ${transition}` : ""}` : "The authoritative ordering state could not be loaded."}</p></div><span className={`admin-availability admin-availability--${state?.acceptingOrders ? "open" : "closed"}`}>{state?.acceptingOrders ? "Open" : "Closed"}</span></section>
+    <ContentSection title="At a Glance" description="High-level indicators link to their detailed administrative domains." className="admin-section">
+      <div className="admin-metric-grid"><AdminMetricCard label="Registered customers" value={accounts?.customerCount ?? "—"} /><AdminMetricCard label="New accounts (7 days)" value={accounts?.registrationsSevenDays ?? "—"} /><AdminMetricCard label="Pending reviews" value={pendingReviews ?? "—"} tone={pendingReviews ? "warning" : "default"} /><AdminMetricCard label="Orders shown" value={orders?.length ?? "—"} note="Active work prioritized" /></div>
+      <div className="section-actions"><ButtonLink href="/admin/operations" variant="secondary">Manage Operations</ButtonLink><ButtonLink href="/admin/analytics" variant="secondary">Account Analytics</ButtonLink><ButtonLink href="/admin/reviews" variant="secondary">Review Moderation</ButtonLink></div>
+    </ContentSection>
+    <ContentSection title="Active and Recent Orders" description="Active work is prioritized, followed by the newest records." className="admin-section">{orders ? <AdminOrderTable orders={orders} /> : <p className="admin-data-error">Recent orders are temporarily unavailable.</p>}<div className="section-actions"><ButtonLink href="/admin/orders" variant="secondary">Open Orders</ButtonLink><ButtonLink href="/admin/orders?view=analytics" variant="secondary">Revenue &amp; Analytics</ButtonLink></div></ContentSection>
+  </>;
 }

@@ -2,8 +2,10 @@ import ButtonLink from "@/components/ui/ButtonLink";
 import MenuCatalogue from "@/components/cart/MenuCatalogue";
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
+import OrderingStatusNotice from "@/components/ordering/OrderingStatusNotice";
 import { businessData } from "@/data/businessData";
 import { getPublicMenuCatalogue } from "@/lib/menu/catalogue";
+import { getPublicOrderingStatus } from "@/lib/ordering/server";
 
 export const metadata = {
   title: "Menu | Kobby's Kitchen",
@@ -11,9 +13,14 @@ export const metadata = {
     "Browse the meals available from Kobby's Kitchen in Tema Community Two and confirm current availability before ordering.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function MenuPage() {
   const { phone, whatsapp } = businessData;
-  const catalogue = await getPublicMenuCatalogue();
+  const [catalogue, orderingStatus] = await Promise.all([
+    getPublicMenuCatalogue(),
+    getPublicOrderingStatus(),
+  ]);
 
   return (
     <main className="page">
@@ -23,6 +30,8 @@ export default async function MenuPage() {
           title="Explore Our Menu"
           description="Browse the meals available from Kobby's Kitchen and contact us to confirm current availability."
         />
+
+        <OrderingStatusNotice context="menu" status={orderingStatus} />
 
         <ContentSection
           title="Menu"

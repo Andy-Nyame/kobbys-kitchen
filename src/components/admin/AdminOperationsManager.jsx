@@ -30,7 +30,7 @@ const sourceText = {
 function formatAccraDateTime(value) {
   if (!value) return null;
 
-  return new Intl.DateTimeFormat("en-GH", {
+  const formatted = new Intl.DateTimeFormat("en-GH", {
     timeZone: "Africa/Accra",
     weekday: "short",
     day: "numeric",
@@ -38,6 +38,7 @@ function formatAccraDateTime(value) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
+  return `${formatted} GMT`;
 }
 
 function withClientKeys(schedule) {
@@ -106,7 +107,7 @@ function StatusPanel({ operations }) {
         </div>
         <div>
           <dt>Timezone</dt>
-          <dd>Africa/Accra</dd>
+          <dd>GMT (Africa/Accra schedule)</dd>
         </div>
       </dl>
     </section>
@@ -251,8 +252,8 @@ export default function AdminOperationsManager({ initialOperations }) {
       [dayOfWeek]: [
         ...current[dayOfWeek],
         {
-          startTime: "10:00",
-          endTime: "20:00",
+          startTime: "",
+          endTime: "",
           clientKey: `${dayOfWeek}-${Date.now()}-${Math.random()}`,
         },
       ],
@@ -266,6 +267,10 @@ export default function AdminOperationsManager({ initialOperations }) {
         (window) => window.clientKey !== clientKey
       ),
     }));
+  }
+
+  function closeDay(dayOfWeek) {
+    setSchedule((current) => ({ ...current, [dayOfWeek]: [] }));
   }
 
   function saveSchedule(event) {
@@ -306,7 +311,7 @@ export default function AdminOperationsManager({ initialOperations }) {
             <p className="admin-section-eyebrow">Regular hours</p>
             <h2 id="weekly-schedule-heading">Weekly ordering schedule</h2>
           </div>
-          <p>Each window uses Africa/Accra time. Adjacent windows are allowed; overnight and overlapping windows are not.</p>
+          <p>Each window uses Ghana time (GMT), evaluated server-side with Africa/Accra. Adjacent windows are allowed; overnight and overlapping windows are not.</p>
         </div>
 
         <form className="admin-schedule" onSubmit={saveSchedule}>
@@ -354,14 +359,26 @@ export default function AdminOperationsManager({ initialOperations }) {
                   </div>
                 ))}
               </div>
-              <button
-                className="button-link button-link--secondary"
-                disabled={pending}
-                onClick={() => addWindow(dayOfWeek)}
-                type="button"
-              >
-                Add window
-              </button>
+              <div className="admin-schedule-day__actions">
+                <button
+                  className="button-link button-link--secondary"
+                  disabled={pending}
+                  onClick={() => addWindow(dayOfWeek)}
+                  type="button"
+                >
+                  {schedule[dayOfWeek].length ? "+ Add Time Window" : "Open this day"}
+                </button>
+                {schedule[dayOfWeek].length ? (
+                  <button
+                    className="cart-text-button"
+                    disabled={pending}
+                    onClick={() => closeDay(dayOfWeek)}
+                    type="button"
+                  >
+                    Close this day
+                  </button>
+                ) : null}
+              </div>
             </fieldset>
           ))}
           <div className="admin-schedule__save">
@@ -381,7 +398,7 @@ export default function AdminOperationsManager({ initialOperations }) {
           <p>Overrides use the existing ordering precedence and can remain active until cleared or expire automatically.</p>
         </div>
         <label className="form-field admin-operations-expiry">
-          <span>Optional expiry (Africa/Accra)</span>
+          <span>Optional expiry (GMT)</span>
           <input
             disabled={pending}
             onChange={(event) => setExpiresAt(event.target.value)}

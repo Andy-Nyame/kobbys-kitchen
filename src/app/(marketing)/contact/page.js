@@ -1,8 +1,10 @@
 import ButtonLink from "@/components/ui/ButtonLink";
+import OpeningHours from "@/components/ordering/OpeningHours";
 import ContentSection from "@/components/ui/ContentSection";
 import InlineIcon from "@/components/ui/InlineIcon";
 import PageIntro from "@/components/ui/PageIntro";
 import { businessData } from "@/data/businessData";
+import { getPublicOpeningHours } from "@/lib/ordering/server";
 
 export const metadata = {
   title: "Contact Kobby's Kitchen",
@@ -10,9 +12,12 @@ export const metadata = {
     "Call, WhatsApp or email Kobby's Kitchen in Tema Community Two for takeaway questions and event orders.",
 };
 
-export default function ContactPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ContactPage() {
   const directionsLink = businessData.googleMapsLink;
   const { phone, whatsapp, email, socialLinks } = businessData;
+  const openingHours = await getPublicOpeningHours();
 
   return (
     <main className="page">
@@ -121,18 +126,9 @@ export default function ContactPage() {
 
         <ContentSection
           title="Opening Hours"
-          description="Visit Kobby's Kitchen during the following times."
+          description="Our normal weekly restaurant hours, shown in GMT."
         >
-          <ul className="hours-list">
-            {businessData.openingHours.map((entry) => (
-              <li key={entry.day} className="hours-list__item">
-                <span>{entry.day}</span>
-                <strong className={entry.closed ? "hours-list__closed" : ""}>
-                  {entry.hours}
-                </strong>
-              </li>
-            ))}
-          </ul>
+          <OpeningHours schedule={openingHours} />
         </ContentSection>
 
         <ContentSection

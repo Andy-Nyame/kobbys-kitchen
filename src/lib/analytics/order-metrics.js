@@ -21,6 +21,8 @@ function createRevenueByPaymentMethod() {
 export function summarizeOrderMetrics({ orders = [], payments = [] } = {}) {
   const orderStatusCounts = createStatusCounts();
   const orderStatusById = new Map();
+  let grossOrderValueMinor = 0;
+  let nonCancelledOrderCount = 0;
 
   for (const order of orders) {
     if (!(order.status in orderStatusCounts)) {
@@ -29,6 +31,11 @@ export function summarizeOrderMetrics({ orders = [], payments = [] } = {}) {
 
     orderStatusCounts[order.status] += 1;
     orderStatusById.set(order.id, order.status);
+    if (order.status !== ORDER_STATUS.CANCELLED) {
+      assertMinorAmount(order.total_minor || 0, "order.total_minor");
+      grossOrderValueMinor += order.total_minor || 0;
+      nonCancelledOrderCount += 1;
+    }
   }
 
   const revenueByPaymentMethodMinor = createRevenueByPaymentMethod();
@@ -54,7 +61,13 @@ export function summarizeOrderMetrics({ orders = [], payments = [] } = {}) {
     seenPaymentOrderIds.add(payment.order_id);
     assertMinorAmount(payment.amount_minor, "payment.amount_minor");
 
-    if (isRevenuePayment(payment)) {
+    const paymentOrderStatus =
+      orderStatusById.get(payment.order_id) || payment.order_status;
+
+    if (
+      isRevenuePayment(payment) &&
+      paymentOrderStatus !== ORDER_STATUS.CANCELLED
+    ) {
       paidRevenueMinor += payment.amount_minor;
       revenueByPaymentMethodMinor[payment.method] += payment.amount_minor;
       paidOrderCount += 1;
@@ -64,7 +77,7 @@ export function summarizeOrderMetrics({ orders = [], payments = [] } = {}) {
     if (
       payment.method === PAYMENT_METHOD.CASH &&
       payment.status === PAYMENT_STATUS.UNPAID &&
-      orderStatusById.get(payment.order_id) !== ORDER_STATUS.CANCELLED
+      paymentOrderStatus !== ORDER_STATUS.CANCELLED
     ) {
       unpaidCashValueMinor += payment.amount_minor;
       cashUnpaidCount += 1;
@@ -87,6 +100,11 @@ export function summarizeOrderMetrics({ orders = [], payments = [] } = {}) {
 
   return {
     totalOrders: orders.length,
+    grossOrderValueMinor,
+    averageOrderValueMinor:
+      nonCancelledOrderCount === 0
+        ? 0
+        : Math.round(grossOrderValueMinor / nonCancelledOrderCount),
     orderStatusCounts,
     paidOrderCount,
     paidRevenueMinor,
@@ -115,6 +133,8 @@ export function normalizeOrderMetricsRecord(record = {}) {
 
   return {
     totalOrders: Number(record.total_orders || 0),
+    grossOrderValueMinor: Number(record.gross_order_value_minor || 0),
+    averageOrderValueMinor: Number(record.average_order_value_minor || 0),
     orderStatusCounts: Object.fromEntries(
       Object.values(ORDER_STATUS).map((status) => [
         status,
