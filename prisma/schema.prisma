@@ -53,6 +53,12 @@ enum PaymentAttemptStatus {
   ABANDONED
 }
 
+enum OrderingOverrideMode {
+  NONE
+  OPEN
+  CLOSED
+}
+
 model User {
   id            String    @id @default(uuid()) @db.Uuid
   name          String?
@@ -69,8 +75,9 @@ model User {
   profile             Profile?
   passwordResetTokens PasswordResetToken[]
   reviews             Review[]
-  moderationEvents    ReviewModeration[] @relation("ReviewModerator")
+  moderationEvents    ReviewModeration[]   @relation("ReviewModerator")
   orders              Order[]
+  orderingChanges     OrderingSetting[]    @relation("OrderingSettingChangedBy")
 
   @@index([role])
   @@map("users")
@@ -250,11 +257,36 @@ model ReviewModeration {
 }
 
 model OrderingSetting {
-  id              String   @id @default("default")
-  acceptingOrders Boolean  @default(false)
-  updatedAt       DateTime @updatedAt
+  id                String               @id @default("default")
+  acceptingOrders   Boolean              @default(false)
+  emergencyPaused   Boolean              @default(false)
+  overrideMode      OrderingOverrideMode @default(NONE)
+  overrideExpiresAt DateTime?
+  changedById       String?              @db.Uuid
+  updatedAt         DateTime             @updatedAt
 
+  changedBy       User?                    @relation("OrderingSettingChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+  scheduleWindows OrderingScheduleWindow[]
+
+  @@index([changedById])
   @@map("ordering_settings")
+}
+
+model OrderingScheduleWindow {
+  id                String   @id @default(uuid()) @db.Uuid
+  orderingSettingId String   @default("default")
+  dayOfWeek         Int
+  startMinute       Int
+  endMinute         Int
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  orderingSetting OrderingSetting @relation(fields: [orderingSettingId], references: [id], onDelete: Cascade)
+
+  @@unique([orderingSettingId, dayOfWeek, startMinute, endMinute])
+  @@index([orderingSettingId, dayOfWeek, sortOrder])
+  @@map("ordering_schedule_windows")
 }
 
 model Order {
@@ -278,9 +310,9 @@ model Order {
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
 
-  user     User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  items    OrderItem[]
-  payment  Payment?
+  user    User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items   OrderItem[]
+  payment Payment?
 
   @@index([status, placedAt])
   @@index([userId, placedAt])

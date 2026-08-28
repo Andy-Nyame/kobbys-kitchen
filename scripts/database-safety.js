@@ -1,4 +1,22 @@
+import crypto from "node:crypto";
 import pg from "pg";
+
+export const DEVELOPMENT_BRANCH_FINGERPRINT = "4935952ad5c6";
+export const PRODUCTION_BRANCH_FINGERPRINT = "3213c801be7a";
+
+export function getBranchFingerprint(branchId) {
+  return crypto.createHash("sha256").update(branchId || "").digest("hex").slice(0, 12);
+}
+
+export function assertDevelopmentBranchFingerprint(fingerprint) {
+  if (fingerprint === PRODUCTION_BRANCH_FINGERPRINT) {
+    throw new Error("Refusing to use the Production Neon branch for a Development operation.");
+  }
+
+  if (fingerprint !== DEVELOPMENT_BRANCH_FINGERPRINT) {
+    throw new Error("The Neon branch is not the approved Development target.");
+  }
+}
 
 function required(name) {
   const value = process.env[name]?.trim();
@@ -34,6 +52,9 @@ export async function verifyDevelopmentDatabase() {
         current_setting('neon.branch_id', true) as branch_id
     `);
     const fingerprint = result.rows[0];
+
+    assertDevelopmentBranchFingerprint(getBranchFingerprint(expectedBranchId));
+    assertDevelopmentBranchFingerprint(getBranchFingerprint(fingerprint?.branch_id));
 
     if (
       fingerprint?.project_id !== expectedProjectId ||

@@ -32,10 +32,15 @@ integrationDescribe("confirmed development Neon activation", () => {
     const { prisma } = await import("../lib/prisma.js");
     const setting = await prisma.orderingSetting.findUnique({
       where: { id: "default" },
+      include: { scheduleWindows: true },
     });
 
     assert.equal(process.env.V2_ORDERING_ENABLED, "false");
     assert.equal(setting?.acceptingOrders, false);
+    assert.equal(setting?.emergencyPaused, false);
+    assert.equal(setting?.overrideMode, "NONE");
+    assert.equal(setting?.overrideExpiresAt, null);
+    assert.ok(Array.isArray(setting?.scheduleWindows));
   });
 
   it("keeps customer profiles and roles one-to-one on imported data", async () => {
