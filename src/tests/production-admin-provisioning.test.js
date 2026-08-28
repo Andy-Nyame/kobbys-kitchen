@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { describe, it } from "node:test";
 
 import {
@@ -72,6 +73,16 @@ async function runProvisioning({
 }
 
 describe("Production primary-admin provisioning", () => {
+  it("keeps Production credentials out of Next.js reserved environment files", () => {
+    const packageJson = JSON.parse(
+      fs.readFileSync(new URL("../../package.json", import.meta.url), "utf8")
+    );
+    const command = packageJson.scripts["provision:primary-admin:production"];
+
+    assert.match(command, /--env-file-if-exists=\.env\.admin-production\.local/);
+    assert.doesNotMatch(command, /\.env\.production\.local/);
+  });
+
   it("refuses non-Production environments", () => {
     assert.throws(
       () => validateProductionEnvironment(productionEnvironment({ APP_ENV: "development" })),
