@@ -53,8 +53,8 @@ export default async function MenuPage() {
 
           <div className="note-stack">
             <p>
-              Build a cart to explore the upcoming pickup experience. Online
-              checkout is not active, so no order is submitted from this page.
+              Build your pickup cart while browsing. Checkout becomes available
+              only when both the restaurant and online ordering are open.
             </p>
             <p>Images are for illustration purposes.</p>
           </div>

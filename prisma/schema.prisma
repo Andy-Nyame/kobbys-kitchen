@@ -70,14 +70,15 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts            Account[]
-  sessions            Session[]
-  profile             Profile?
-  passwordResetTokens PasswordResetToken[]
-  reviews             Review[]
-  moderationEvents    ReviewModeration[]   @relation("ReviewModerator")
-  orders              Order[]
-  orderingChanges     OrderingSetting[]    @relation("OrderingSettingChangedBy")
+  accounts             Account[]
+  sessions             Session[]
+  profile              Profile?
+  passwordResetTokens  PasswordResetToken[]
+  reviews              Review[]
+  moderationEvents     ReviewModeration[]     @relation("ReviewModerator")
+  orders               Order[]
+  orderingChanges      OrderingSetting[]      @relation("OrderingSettingChangedBy")
+  businessHoursChanges BusinessHoursSetting[] @relation("BusinessHoursSettingChangedBy")
 
   @@index([role])
   @@map("users")
@@ -290,6 +291,36 @@ model OrderingScheduleWindow {
   @@map("ordering_schedule_windows")
 }
 
+model BusinessHoursSetting {
+  id          String   @id @default("default")
+  changedById String?  @db.Uuid
+  updatedAt   DateTime @updatedAt
+
+  changedBy User?                 @relation("BusinessHoursSettingChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+  windows   BusinessHoursWindow[]
+
+  @@index([changedById])
+  @@map("business_hours_settings")
+}
+
+model BusinessHoursWindow {
+  id                     String   @id @default(uuid()) @db.Uuid
+  businessHoursSettingId String   @default("default")
+  dayOfWeek              Int
+  startMinute            Int
+  endMinute              Int
+  endsNextDay            Boolean  @default(false)
+  sortOrder              Int      @default(0)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  businessHoursSetting BusinessHoursSetting @relation(fields: [businessHoursSettingId], references: [id], onDelete: Cascade)
+
+  @@unique([businessHoursSettingId, dayOfWeek, startMinute, endMinute, endsNextDay])
+  @@index([businessHoursSettingId, dayOfWeek, sortOrder])
+  @@map("business_hours_windows")
+}
+
 model Order {
   id                    String          @id @default(uuid()) @db.Uuid
   reference             String          @unique
@@ -316,10 +347,10 @@ model Order {
   items   OrderItem[]
   payment Payment?
 
+  @@unique([userId, idempotencyKey])
   @@index([status, placedAt])
   @@index([userId, placedAt])
   @@index([paymentStatus, placedAt])
-  @@unique([userId, idempotencyKey])
   @@map("orders")
 }
 

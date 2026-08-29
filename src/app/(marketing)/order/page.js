@@ -32,14 +32,15 @@ export default async function OrderPage() {
             aria-labelledby="whatsapp-order-title"
           >
             <span className="order-option-card__status order-option-card__status--available">
-              Available now
+              {orderingStatus.restaurantOpen ? "Restaurant open" : "Restaurant closed"}
             </span>
             <div className="order-option-card__content">
               <p className="order-option-card__eyebrow">Direct ordering</p>
               <h2 id="whatsapp-order-title">Order on WhatsApp</h2>
               <p>
                 Message Kobby&rsquo;s Kitchen to confirm meal availability and
-                arrange your order directly with the team.
+                arrange your order directly with the team. Website ordering
+                hours do not determine walk-in or direct service.
               </p>
             </div>
             <div className="section-actions order-option-card__actions">

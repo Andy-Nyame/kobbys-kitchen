@@ -1,12 +1,16 @@
 import "server-only";
 
 import { isOrderingEnabled } from "@/lib/feature-flags";
+import { getEffectiveBusinessHoursState } from "@/lib/business-hours/server";
 import {
   AdminOrderingMutationError,
   executeAdminOrderingMutation,
 } from "@/lib/ordering/admin-mutations";
 import { serializeScheduleForEditor } from "@/lib/ordering/admin-validation";
-import { resolveEffectiveOrderingState } from "@/lib/ordering/state";
+import {
+  combineBusinessAndOnlineOrderingState,
+  resolveEffectiveOrderingState,
+} from "@/lib/ordering/state";
 import { prisma } from "@/lib/prisma";
 
 export { AdminOrderingMutationError };
@@ -25,11 +29,16 @@ export async function getAdminOrderingOperations({ now = new Date() } = {}) {
     },
   });
   const windows = setting?.scheduleWindows || [];
-  const effectiveState = resolveEffectiveOrderingState({
+  const onlineState = resolveEffectiveOrderingState({
     featureEnabled: isOrderingEnabled(),
     setting,
     scheduleWindows: windows,
     now,
+  });
+  const businessState = await getEffectiveBusinessHoursState({ now, client: prisma });
+  const effectiveState = combineBusinessAndOnlineOrderingState({
+    onlineState,
+    businessState,
   });
 
   return {

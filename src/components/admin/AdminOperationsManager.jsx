@@ -17,6 +17,7 @@ const reasonText = {
   SCHEDULE_CLOSED: "Outside ordering hours.",
   NO_SCHEDULE: "No weekly ordering hours are configured.",
   CONFIGURATION_INVALID: "Ordering configuration is invalid and has failed closed.",
+  RESTAURANT_CLOSED: "The restaurant is physically closed, so website orders cannot be accepted.",
 };
 
 const sourceText = {
@@ -25,6 +26,7 @@ const sourceText = {
   OVERRIDE: "Temporary override",
   SCHEDULE: "Weekly schedule",
   DEFAULT: "Closed default",
+  BUSINESS_HOURS: "Physical business hours",
 };
 
 function formatAccraDateTime(value) {
@@ -69,7 +71,7 @@ function StatusPanel({ operations }) {
       className={`admin-operations-status admin-operations-status--${effectiveState.acceptingOrders ? "open" : "closed"}`}
     >
       <div>
-        <p className="admin-section-eyebrow">Authoritative current state</p>
+        <p className="admin-section-eyebrow">Current online ordering status</p>
         <h2 id="ordering-current-state">
           {effectiveState.acceptingOrders ? "OPEN" : "CLOSED"}
         </h2>
@@ -308,10 +310,10 @@ export default function AdminOperationsManager({ initialOperations }) {
       <section aria-labelledby="weekly-schedule-heading" className="admin-operations-panel">
         <div className="admin-operations-panel__heading">
           <div>
-            <p className="admin-section-eyebrow">Regular hours</p>
-            <h2 id="weekly-schedule-heading">Weekly ordering schedule</h2>
+            <p className="admin-section-eyebrow">Website order acceptance</p>
+            <h2 id="weekly-schedule-heading">Online Ordering Hours</h2>
           </div>
-          <p>Each window uses Ghana time (GMT), evaluated server-side with Africa/Accra. Adjacent windows are allowed; overnight and overlapping windows are not.</p>
+          <p>These hours control when customers may submit website orders. They do not describe when the physical restaurant is open. Times use Ghana time (GMT), evaluated server-side with Africa/Accra.</p>
         </div>
 
         <form className="admin-schedule" onSubmit={saveSchedule}>
@@ -383,7 +385,7 @@ export default function AdminOperationsManager({ initialOperations }) {
           ))}
           <div className="admin-schedule__save">
             <button className="button-link button-link--primary" disabled={pending} type="submit">
-              {pending ? "Saving…" : "Save Weekly Schedule"}
+              {pending ? "Saving…" : "Save Online Ordering Hours"}
             </button>
           </div>
         </form>
@@ -393,9 +395,9 @@ export default function AdminOperationsManager({ initialOperations }) {
         <div className="admin-operations-panel__heading">
           <div>
             <p className="admin-section-eyebrow">Temporary control</p>
-            <h2 id="override-heading">Open or close now</h2>
+            <h2 id="override-heading">Quick Online Override</h2>
           </div>
-          <p>Overrides use the existing ordering precedence and can remain active until cleared or expire automatically.</p>
+          <p>Overrides affect online orders only. They cannot open checkout while the physical restaurant is closed.</p>
         </div>
         <label className="form-field admin-operations-expiry">
           <span>Optional expiry (GMT)</span>

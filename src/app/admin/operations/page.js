@@ -26,8 +26,8 @@ export default async function AdminOperationsPage() {
     <>
       <PageIntro
         eyebrow="Admin operations"
-        title="Ordering Operations"
-        description="Control weekly pickup hours and temporary availability for new online orders. Existing accepted orders are never changed here."
+        title="Online Ordering Operations"
+        description="Control when customers may submit website pickup orders. Physical restaurant hours are managed separately in Settings, and existing accepted orders are never changed here."
       />
 
       {operations ? (

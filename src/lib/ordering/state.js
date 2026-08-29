@@ -325,3 +325,60 @@ export function assertOrderingStateOpenForSubmission(state) {
 
   return state;
 }
+
+function earliestTransition(...values) {
+  const candidates = values
+    .filter(Boolean)
+    .map((value) => new Date(value))
+    .filter((value) => !Number.isNaN(value.getTime()))
+    .sort((left, right) => left.getTime() - right.getTime());
+
+  return candidates[0]?.toISOString() || null;
+}
+
+// Physical business hours are a hard upper bound for new website orders.
+// Online overrides deliberately cannot open checkout while the restaurant is
+// physically closed. This combined state gates new submissions only; it never
+// changes an order that was already accepted.
+export function combineBusinessAndOnlineOrderingState({
+  onlineState,
+  businessState,
+}) {
+  const restaurantOpen = businessState?.restaurantOpen === true;
+  const onlineOpen = onlineState?.acceptingOrders === true;
+
+  if (!restaurantOpen) {
+    return {
+      ...onlineState,
+      acceptingOrders: false,
+      reason: "RESTAURANT_CLOSED",
+      source: "BUSINESS_HOURS",
+      restaurantOpen: false,
+      businessReason: businessState?.reason || "BUSINESS_CLOSED",
+      businessCurrentTime: businessState?.currentTime || onlineState?.currentTime,
+      businessNextOpenAt: businessState?.nextOpenAt || null,
+      businessNextCloseAt: null,
+      onlineReason: onlineState?.reason || "CLOSED",
+      onlineSource: onlineState?.source || "DEFAULT",
+      onlineNextOpenAt: onlineState?.nextOpenAt || null,
+      onlineNextCloseAt: onlineState?.nextCloseAt || null,
+    };
+  }
+
+  return {
+    ...onlineState,
+    acceptingOrders: onlineOpen,
+    restaurantOpen: true,
+    businessReason: businessState?.reason || "BUSINESS_OPEN",
+    businessCurrentTime: businessState?.currentTime || onlineState?.currentTime,
+    businessNextOpenAt: null,
+    businessNextCloseAt: businessState?.nextCloseAt || null,
+    onlineReason: onlineState?.reason || "CLOSED",
+    onlineSource: onlineState?.source || "DEFAULT",
+    onlineNextOpenAt: onlineState?.nextOpenAt || null,
+    onlineNextCloseAt: onlineState?.nextCloseAt || null,
+    nextCloseAt: onlineOpen
+      ? earliestTransition(onlineState?.nextCloseAt, businessState?.nextCloseAt)
+      : onlineState?.nextCloseAt || null,
+  };
+}

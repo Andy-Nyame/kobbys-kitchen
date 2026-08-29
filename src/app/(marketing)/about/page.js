@@ -5,7 +5,7 @@ import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
 import { businessData } from "@/data/businessData";
-import { getPublicOpeningHours } from "@/lib/ordering/server";
+import { getPublicBusinessHours } from "@/lib/business-hours/server";
 
 export const metadata = {
   title: "About Kobby's Kitchen",
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AboutPage() {
   const { phone, whatsapp } = businessData;
-  const openingHours = await getPublicOpeningHours();
+  const openingHours = await getPublicBusinessHours();
 
   return (
     <main className="page">

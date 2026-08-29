@@ -55,7 +55,7 @@ export async function POST(request) {
       mutation,
     });
     const messages = {
-      SAVE_SCHEDULE: "Weekly ordering schedule saved.",
+      SAVE_SCHEDULE: "Online ordering hours saved.",
       SET_OVERRIDE: `${mutation.data.mode === "OPEN" ? "Open" : "Closed"} override activated.`,
       CLEAR_OVERRIDE: "Ordering override cleared.",
       PAUSE: "New online orders paused.",

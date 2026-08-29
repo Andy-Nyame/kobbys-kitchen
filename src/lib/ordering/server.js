@@ -1,13 +1,14 @@
 import "server-only";
 
 import { isOrderingEnabled } from "@/lib/feature-flags";
+import { getEffectiveBusinessHoursState } from "@/lib/business-hours/server";
 import {
   assertOrderingStateOpenForSubmission,
+  combineBusinessAndOnlineOrderingState,
   resolveEffectiveOrderingState,
 } from "@/lib/ordering/state";
 import {
   presentPublicOrderingState,
-  presentWeeklySchedule,
 } from "@/lib/ordering/presentation";
 import { prisma } from "@/lib/prisma";
 
@@ -26,7 +27,7 @@ async function getOrderingConfiguration(client = prisma) {
   });
 }
 
-export async function getEffectiveOrderingState({
+export async function getOnlineOrderingState({
   now = new Date(),
   client = prisma,
 } = {}) {
@@ -40,13 +41,20 @@ export async function getEffectiveOrderingState({
   });
 }
 
-export async function getPublicOrderingStatus(options) {
-  return presentPublicOrderingState(await getEffectiveOrderingState(options));
+export async function getEffectiveOrderingState({
+  now = new Date(),
+  client = prisma,
+} = {}) {
+  const [onlineState, businessState] = await Promise.all([
+    getOnlineOrderingState({ now, client }),
+    getEffectiveBusinessHoursState({ now, client }),
+  ]);
+
+  return combineBusinessAndOnlineOrderingState({ onlineState, businessState });
 }
 
-export async function getPublicOpeningHours() {
-  const setting = await getOrderingConfiguration();
-  return presentWeeklySchedule(setting?.scheduleWindows || []);
+export async function getPublicOrderingStatus(options) {
+  return presentPublicOrderingState(await getEffectiveOrderingState(options));
 }
 
 // Ordering availability gates new submissions only. It never cancels or mutates

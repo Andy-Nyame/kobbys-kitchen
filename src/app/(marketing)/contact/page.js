@@ -4,7 +4,7 @@ import ContentSection from "@/components/ui/ContentSection";
 import InlineIcon from "@/components/ui/InlineIcon";
 import PageIntro from "@/components/ui/PageIntro";
 import { businessData } from "@/data/businessData";
-import { getPublicOpeningHours } from "@/lib/ordering/server";
+import { getPublicBusinessHours } from "@/lib/business-hours/server";
 
 export const metadata = {
   title: "Contact Kobby's Kitchen",
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export default async function ContactPage() {
   const directionsLink = businessData.googleMapsLink;
   const { phone, whatsapp, email, socialLinks } = businessData;
-  const openingHours = await getPublicOpeningHours();
+  const openingHours = await getPublicBusinessHours();
 
   return (
     <main className="page">

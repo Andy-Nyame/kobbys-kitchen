@@ -9,7 +9,7 @@ export default function OpeningHours({ schedule }) {
           ) : (
             <span className="hours-list__windows">
               {day.windows.map((window) => (
-                <strong key={`${window.startMinute}-${window.endMinute}`}>
+                <strong key={`${window.startMinute}-${window.endMinute}-${window.endsNextDay}`}>
                   {window.label}
                 </strong>
               ))}
@@ -17,6 +17,10 @@ export default function OpeningHours({ schedule }) {
           )}
         </li>
       ))}
+      <li className="hours-list__item hours-list__item--timezone">
+        <span>Timezone</span>
+        <strong>GMT</strong>
+      </li>
     </ul>
   );
 }

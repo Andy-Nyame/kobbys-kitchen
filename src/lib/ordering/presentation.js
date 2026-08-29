@@ -79,6 +79,22 @@ export function formatGmtTransition(targetValue, currentValue, verb) {
   return `${verb} ${target.weekday} at ${clock}`;
 }
 
+function formatRestaurantClose(targetValue) {
+  if (!targetValue) return null;
+  const target = accraParts(targetValue);
+  return `Kobby’s Kitchen is open until ${formatHour(target.hour, target.minute)}.`;
+}
+
+function formatRestaurantReopen(targetValue, currentValue) {
+  if (!targetValue) return null;
+  const target = accraParts(targetValue);
+  const current = accraParts(currentValue);
+  const clock = formatHour(target.hour, target.minute);
+  return target.dateKey === current.dateKey
+    ? `Kobby’s Kitchen reopens at ${clock}.`
+    : `Kobby’s Kitchen reopens ${target.weekday} at ${clock}.`;
+}
+
 export function presentPublicOrderingState(state) {
   const base = {
     isOpen: state?.acceptingOrders === true,
@@ -86,13 +102,31 @@ export function presentPublicOrderingState(state) {
     timezone: "GMT",
     message: "Online ordering is currently closed.",
     detail: null,
+    secondary: null,
+    restaurantOpen: state?.restaurantOpen !== false,
+    restaurantStatus: state?.restaurantOpen === false ? "CLOSED" : "OPEN",
   };
+
+  if (state?.restaurantOpen === false) {
+    return {
+      ...base,
+      message: state?.businessNextOpenAt
+        ? "Kobby’s Kitchen is currently closed. Online ordering is unavailable."
+        : "Kobby’s Kitchen is currently closed. Online ordering is unavailable.",
+      detail: formatRestaurantReopen(
+        state?.businessNextOpenAt,
+        state?.businessCurrentTime || state?.currentTime
+      ),
+      onlineReason: state?.onlineReason || state?.reason,
+    };
+  }
 
   if (state?.acceptingOrders === true) {
     return {
       ...base,
       message: "Online pickup ordering is open.",
       detail: formatGmtTransition(state.nextCloseAt, state.currentTime, "Closes"),
+      secondary: formatRestaurantClose(state?.businessNextCloseAt),
     };
   }
 
@@ -100,6 +134,7 @@ export function presentPublicOrderingState(state) {
     return {
       ...base,
       message: "Online ordering is temporarily unavailable.",
+      secondary: formatRestaurantClose(state?.businessNextCloseAt),
     };
   }
 
@@ -108,6 +143,7 @@ export function presentPublicOrderingState(state) {
       ...base,
       message: "Online ordering is temporarily closed.",
       detail: formatGmtTransition(state.nextOpenAt, state.currentTime, "Opens"),
+      secondary: formatRestaurantClose(state?.businessNextCloseAt),
     };
   }
 
@@ -115,11 +151,13 @@ export function presentPublicOrderingState(state) {
     return {
       ...base,
       message: "Online pickup ordering is not enabled yet.",
+      secondary: formatRestaurantClose(state?.businessNextCloseAt),
     };
   }
 
   return {
     ...base,
     detail: formatGmtTransition(state?.nextOpenAt, state?.currentTime, "Opens"),
+    secondary: formatRestaurantClose(state?.businessNextCloseAt),
   };
 }

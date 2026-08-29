@@ -8,7 +8,7 @@ import ContentSection from "@/components/ui/ContentSection";
 import MealCard from "@/components/ui/MealCard";
 import { businessData } from "@/data/businessData";
 import { menuItems } from "@/data/menuData";
-import { getPublicOpeningHours } from "@/lib/ordering/server";
+import { getPublicBusinessHours } from "@/lib/business-hours/server";
 
 export const metadata = {
   title: "Kobby's Kitchen | Fast Food in Tema Community Two",
@@ -23,7 +23,7 @@ export default async function Home() {
   const phoneLink = businessData.phone.href;
   const whatsappLink = businessData.whatsapp.href;
   const directionsLink = businessData.googleMapsLink;
-  const openingHours = await getPublicOpeningHours();
+  const openingHours = await getPublicBusinessHours();
 
   return (
     <main className="page">

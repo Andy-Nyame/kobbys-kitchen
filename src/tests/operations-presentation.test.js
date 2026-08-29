@@ -5,8 +5,8 @@ import { describe, it } from "node:test";
 import { resolveEffectiveOrderingState } from "../lib/ordering/state.js";
 import { presentPublicOrderingState, presentWeeklySchedule } from "../lib/ordering/presentation.js";
 
-describe("normal opening-hours presentation", () => {
-  it("keeps all seven days and represents Tuesday as configurable zero windows", () => {
+describe("online ordering-hours presentation", () => {
+  it("keeps all seven configurable online-ordering days", () => {
     const schedule = presentWeeklySchedule([{ dayOfWeek: 1, startMinute: 600, endMinute: 1200 }]);
     assert.equal(schedule.length, 7);
     assert.equal(schedule[0].windows[0].label, "10:00 AM GMT – 8:00 PM GMT");
@@ -22,12 +22,14 @@ describe("normal opening-hours presentation", () => {
     assert.equal(schedule[4].windows.length, 2);
   });
 
-  it("sources public pages from the ordering server instead of hard-coded business hours", async () => {
+  it("sources public pages from the separate physical business-hours server", async () => {
     const [about, businessData] = await Promise.all([
       readFile(new URL("../app/(marketing)/about/page.js", import.meta.url), "utf8"),
       readFile(new URL("../data/businessData.js", import.meta.url), "utf8"),
     ]);
-    assert.match(about, /getPublicOpeningHours/);
+    assert.match(about, /getPublicBusinessHours/);
+    assert.match(about, /lib\/business-hours\/server/);
+    assert.doesNotMatch(about, /lib\/ordering\/server/);
     assert.doesNotMatch(businessData, /openingHours/);
   });
 });
@@ -59,6 +61,6 @@ describe("safe public ordering status", () => {
       assert.match(source, /OrderingStatusNotice/);
     }
     const cart = await readFile(new URL("../app/(marketing)/cart/page.js", import.meta.url), "utf8");
-    assert.match(cart, /cart remains saved/i);
+    assert.match(cart, /cart is saved/i);
   });
 });
