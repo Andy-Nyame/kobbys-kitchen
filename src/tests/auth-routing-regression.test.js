@@ -57,4 +57,12 @@ describe("customer/admin authentication routing regression", () => {
     assert.doesNotMatch(marketingLayout, /redirect\(/);
     assert.doesNotMatch(siteHeader, /redirect\(["']\/admin/);
   });
+
+  it("loads trusted customer and administrator profiles in the public header", async () => {
+    const siteHeader = await readFile("src/components/layout/SiteHeader.jsx", "utf8");
+    assert.match(siteHeader, /role === "CUSTOMER"/);
+    assert.match(siteHeader, /ensureCustomerProfile\(user\)/);
+    assert.match(siteHeader, /role === "ADMIN"/);
+    assert.match(siteHeader, /getUserProfile\(user\.id\)/);
+  });
 });

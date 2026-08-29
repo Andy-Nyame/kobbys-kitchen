@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { validateProfileUpdatePayload } from "@/lib/validation/auth";
 
@@ -9,6 +10,7 @@ export default function ProfileForm({
   endpoint = "/api/account/profile",
   initialProfile,
 }) {
+  const router = useRouter();
   const [displayName, setDisplayName] = useState(initialProfile.displayName);
   const [phone, setPhone] = useState(initialProfile.phone);
   const [savedProfile, setSavedProfile] = useState(initialProfile);
@@ -80,6 +82,7 @@ export default function ProfileForm({
         type: "success",
         message: result.message || "Profile updated successfully.",
       });
+      router.refresh();
     } catch {
       setFeedback({
         type: "error",

@@ -20,13 +20,23 @@ describe("Auth.js Google customer boundaries", () => {
     assert.equal(getSafeRedirectPath("https://attacker.example", "/login"), "/login");
   });
 
-  it("never exposes admin controls from provider presentation metadata", () => {
+  it("uses the trusted role, rather than provider presentation metadata, for admin actions", () => {
     const navigation = getHeaderAuthNavigation(
-      { id: "oauth-user", image: "https://images.example.test/user.png" },
-      "ADMIN"
+      {
+        id: "oauth-user",
+        image: "https://images.example.test/user.png",
+        user_metadata: { role: "ADMIN" },
+      },
+      "CUSTOMER"
     );
 
-    assert.equal(navigation.accountMenu, null);
-    assert.deepEqual(navigation.links, []);
+    assert.equal(
+      navigation.accountMenu.links.some((link) => link.href.startsWith("/admin")),
+      false
+    );
+    assert.equal(
+      navigation.accountMenu.avatar.imageUrl,
+      "https://images.example.test/user.png"
+    );
   });
 });

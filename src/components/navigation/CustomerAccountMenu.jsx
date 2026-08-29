@@ -36,9 +36,9 @@ export default function CustomerAccountMenu({ menu }) {
   return (
     <details className="customer-account-menu" ref={detailsRef}>
       <summary
-        aria-label="Open account menu"
+        aria-label={menu.triggerLabel}
         className="customer-account-menu__toggle"
-        title="Open account menu"
+        title={menu.triggerLabel}
       >
         <CustomerAvatar avatar={menu.avatar} />
       </summary>
@@ -48,7 +48,7 @@ export default function CustomerAccountMenu({ menu }) {
           <strong>{menu.displayName}</strong>
           <span className="customer-account-menu__email">{menu.email}</span>
         </div>
-        <nav aria-label="Customer account">
+        <nav aria-label={menu.navigationLabel}>
           <ul className="customer-account-menu__list">
             {menu.links.map((item) => (
               <li key={item.href}>

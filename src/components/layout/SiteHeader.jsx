@@ -11,6 +11,7 @@ import { getHeaderAuthNavigation } from "@/lib/auth/header-navigation";
 import {
   ensureCustomerProfile,
   getAuthenticatedUser,
+  getUserProfile,
   getUserRole,
 } from "@/lib/auth/guards";
 
@@ -22,7 +23,12 @@ export default async function SiteHeader() {
   try {
     user = await getAuthenticatedUser();
     role = user ? await getUserRole(user.id) : null;
-    profile = role === "CUSTOMER" ? await ensureCustomerProfile(user) : null;
+
+    if (role === "CUSTOMER") {
+      profile = await ensureCustomerProfile(user);
+    } else if (role === "ADMIN") {
+      profile = await getUserProfile(user.id);
+    }
   } catch (error) {
     if (error?.reason) {
       console.error("[site-header-auth]", { reason: error.reason });
