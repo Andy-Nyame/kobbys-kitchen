@@ -17,7 +17,7 @@ const reasonText = {
   SCHEDULE_CLOSED: "Outside ordering hours.",
   NO_SCHEDULE: "No weekly ordering hours are configured.",
   CONFIGURATION_INVALID: "Ordering configuration is invalid and has failed closed.",
-  RESTAURANT_CLOSED: "The restaurant is physically closed, so website orders cannot be accepted.",
+  BUSINESS_DAY_CLOSED: "The restaurant is closed today, so website orders cannot be accepted.",
 };
 
 const sourceText = {

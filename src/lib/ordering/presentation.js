@@ -95,25 +95,63 @@ function formatRestaurantReopen(targetValue, currentValue) {
     : `Kobby’s Kitchen reopens ${target.weekday} at ${clock}.`;
 }
 
+function formatOnlineOpening(targetValue, currentValue) {
+  if (!targetValue) return null;
+  const target = accraParts(targetValue);
+  const current = accraParts(currentValue);
+  const tomorrow = accraParts(new Date(current.date.getTime() + 24 * 60 * 60 * 1000));
+  const clock = formatHour(target.hour, target.minute);
+
+  if (target.dateKey === current.dateKey) {
+    return `Online ordering opens today at ${clock}.`;
+  }
+  if (target.dateKey === tomorrow.dateKey) {
+    return `Online ordering opens tomorrow at ${clock}.`;
+  }
+  return `Online ordering opens ${target.weekday} at ${clock}.`;
+}
+
+function formatOnlineClosing(targetValue) {
+  if (!targetValue) return null;
+  const target = accraParts(targetValue);
+  return `Online orders close at ${formatHour(target.hour, target.minute)}.`;
+}
+
+function formatAfterOnlineWindow(businessCloseValue) {
+  if (!businessCloseValue) {
+    return "We’re no longer accepting new online orders today. Orders already placed will still be prepared for pickup.";
+  }
+
+  const close = accraParts(businessCloseValue);
+  return `We’re no longer accepting new online orders today. Orders already placed will still be prepared for pickup before we close at ${formatHour(close.hour, close.minute)}.`;
+}
+
+function isSameAccraDate(leftValue, rightValue) {
+  if (!leftValue || !rightValue) return false;
+  return accraParts(leftValue).dateKey === accraParts(rightValue).dateKey;
+}
+
 export function presentPublicOrderingState(state) {
   const base = {
     isOpen: state?.acceptingOrders === true,
     label: state?.acceptingOrders === true ? "OPEN" : "CLOSED",
+    headline: state?.acceptingOrders === true
+      ? "Online Ordering Open"
+      : "Online Ordering Closed",
     timezone: "Africa/Accra",
     message: "Online ordering is currently closed.",
     detail: null,
     secondary: null,
     restaurantOpen: state?.restaurantOpen !== false,
     restaurantStatus: state?.restaurantOpen === false ? "CLOSED" : "OPEN",
+    businessDayClosed: state?.businessDayClosed === true,
   };
 
-  if (state?.restaurantOpen === false) {
+  if (state?.businessDayClosed === true) {
     return {
       ...base,
-      message: state?.businessNextOpenAt
-        ? "Kobby’s Kitchen is currently closed. Online ordering is unavailable."
-        : "Kobby’s Kitchen is currently closed. Online ordering is unavailable.",
-      detail: formatRestaurantReopen(
+      message: "Kobby’s Kitchen is closed today. Online ordering is unavailable.",
+      secondary: formatRestaurantReopen(
         state?.businessNextOpenAt,
         state?.businessCurrentTime || state?.currentTime
       ),
@@ -124,9 +162,8 @@ export function presentPublicOrderingState(state) {
   if (state?.acceptingOrders === true) {
     return {
       ...base,
-      message: "Online pickup ordering is open.",
-      detail: formatGmtTransition(state.nextCloseAt, state.currentTime, "Closes"),
-      secondary: formatRestaurantClose(state?.businessNextCloseAt),
+      message: "Place your order online and pick it up when it’s ready.",
+      detail: formatOnlineClosing(state.nextCloseAt),
     };
   }
 
@@ -134,7 +171,9 @@ export function presentPublicOrderingState(state) {
     return {
       ...base,
       message: "Online ordering is temporarily unavailable.",
-      secondary: formatRestaurantClose(state?.businessNextCloseAt),
+      secondary: state?.restaurantOpen
+        ? formatRestaurantClose(state?.businessNextCloseAt)
+        : null,
     };
   }
 
@@ -142,8 +181,10 @@ export function presentPublicOrderingState(state) {
     return {
       ...base,
       message: "Online ordering is temporarily closed.",
-      detail: formatGmtTransition(state.nextOpenAt, state.currentTime, "Opens"),
-      secondary: formatRestaurantClose(state?.businessNextCloseAt),
+      detail: formatOnlineOpening(state.nextOpenAt, state.currentTime),
+      secondary: state?.restaurantOpen
+        ? formatRestaurantClose(state?.businessNextCloseAt)
+        : null,
     };
   }
 
@@ -151,13 +192,28 @@ export function presentPublicOrderingState(state) {
     return {
       ...base,
       message: "Online pickup ordering is not enabled yet.",
-      secondary: formatRestaurantClose(state?.businessNextCloseAt),
+      secondary: state?.restaurantOpen
+        ? formatRestaurantClose(state?.businessNextCloseAt)
+        : null,
     };
   }
 
+  const anotherWindowToday = isSameAccraDate(state?.nextOpenAt, state?.currentTime);
+
   return {
     ...base,
-    detail: formatGmtTransition(state?.nextOpenAt, state?.currentTime, "Opens"),
-    secondary: formatRestaurantClose(state?.businessNextCloseAt),
+    message:
+      state?.reason === "SCHEDULE_CLOSED" &&
+      !anotherWindowToday &&
+      state?.restaurantOpen === true
+        ? formatAfterOnlineWindow(state?.businessNextCloseAt)
+        : "Online ordering is currently closed.",
+    detail: anotherWindowToday
+      ? formatOnlineOpening(state?.nextOpenAt, state?.currentTime)
+      : null,
+    secondary:
+      !anotherWindowToday && state?.restaurantOpen !== true
+        ? formatOnlineOpening(state?.nextOpenAt, state?.currentTime)
+        : null,
   };
 }

@@ -336,15 +336,17 @@ function earliestTransition(...values) {
   return candidates[0]?.toISOString() || null;
 }
 
-// Physical business hours are a hard upper bound for new website orders.
-// Online overrides deliberately cannot open checkout while the restaurant is
-// physically closed. This combined state gates new submissions only; it never
-// changes an order that was already accepted.
+// Physical business hours and online ordering hours are separate clocks.
+// A configured online window may open before the storefront opens, but a day
+// with no physical business-hours windows (currently Tuesday) remains a hard
+// boundary. This combined state gates new submissions only; it never changes
+// an order that was already accepted.
 export function combineBusinessAndOnlineOrderingState({
   onlineState,
   businessState,
 }) {
   const restaurantOpen = businessState?.restaurantOpen === true;
+  const businessDayClosed = businessState?.todayClosed === true;
   const onlineOpen = onlineState?.acceptingOrders === true;
 
   // The deployment switch is the master online-ordering kill switch. Keep its
@@ -355,6 +357,7 @@ export function combineBusinessAndOnlineOrderingState({
       ...onlineState,
       acceptingOrders: false,
       restaurantOpen,
+      businessDayClosed,
       businessReason: businessState?.reason || "BUSINESS_CLOSED",
       businessCurrentTime: businessState?.currentTime || onlineState?.currentTime,
       businessNextOpenAt: businessState?.nextOpenAt || null,
@@ -366,17 +369,20 @@ export function combineBusinessAndOnlineOrderingState({
     };
   }
 
-  if (!restaurantOpen) {
+  // A weekly closed business day outranks every online override. Current
+  // physical clock state does not: advance online orders may open earlier.
+  if (businessDayClosed) {
     return {
       ...onlineState,
       acceptingOrders: false,
-      reason: "RESTAURANT_CLOSED",
+      reason: "BUSINESS_DAY_CLOSED",
       source: "BUSINESS_HOURS",
-      restaurantOpen: false,
+      restaurantOpen,
+      businessDayClosed: true,
       businessReason: businessState?.reason || "BUSINESS_CLOSED",
       businessCurrentTime: businessState?.currentTime || onlineState?.currentTime,
       businessNextOpenAt: businessState?.nextOpenAt || null,
-      businessNextCloseAt: null,
+      businessNextCloseAt: restaurantOpen ? businessState?.nextCloseAt || null : null,
       onlineReason: onlineState?.reason || "CLOSED",
       onlineSource: onlineState?.source || "DEFAULT",
       onlineNextOpenAt: onlineState?.nextOpenAt || null,
@@ -387,17 +393,21 @@ export function combineBusinessAndOnlineOrderingState({
   return {
     ...onlineState,
     acceptingOrders: onlineOpen,
-    restaurantOpen: true,
+    restaurantOpen,
+    businessDayClosed: false,
     businessReason: businessState?.reason || "BUSINESS_OPEN",
     businessCurrentTime: businessState?.currentTime || onlineState?.currentTime,
-    businessNextOpenAt: null,
-    businessNextCloseAt: businessState?.nextCloseAt || null,
+    businessNextOpenAt: restaurantOpen ? null : businessState?.nextOpenAt || null,
+    businessNextCloseAt: restaurantOpen ? businessState?.nextCloseAt || null : null,
     onlineReason: onlineState?.reason || "CLOSED",
     onlineSource: onlineState?.source || "DEFAULT",
     onlineNextOpenAt: onlineState?.nextOpenAt || null,
     onlineNextCloseAt: onlineState?.nextCloseAt || null,
     nextCloseAt: onlineOpen
-      ? earliestTransition(onlineState?.nextCloseAt, businessState?.nextCloseAt)
+      ? earliestTransition(
+          onlineState?.nextCloseAt,
+          restaurantOpen ? businessState?.nextCloseAt : null
+        )
       : onlineState?.nextCloseAt || null,
   };
 }

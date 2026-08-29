@@ -7,7 +7,7 @@ export default function OrderingStatusNotice({ status, context = "default" }) {
     >
       <div>
         <span className="ordering-status-notice__label">
-          Online pickup · {status.label}
+          {status.headline || `Online Ordering ${status.label}`}
         </span>
         <p>{status.message}</p>
         {status.detail ? <p className="ordering-status-notice__detail">{status.detail}</p> : null}

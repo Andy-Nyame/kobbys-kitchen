@@ -43,6 +43,8 @@ describe("safe public ordering status", () => {
   it("presents OPEN and next close without raw codes or repeated timezone labels", () => {
     const publicState = presentPublicOrderingState(state());
     assert.equal(publicState.label, "OPEN");
+    assert.equal(publicState.headline, "Online Ordering Open");
+    assert.equal(publicState.message, "Place your order online and pick it up when it’s ready.");
     assert.match(publicState.detail, /8:00 PM/);
     assert.doesNotMatch(publicState.detail, /GMT/);
     assert.equal("reason" in publicState, false);
@@ -57,11 +59,22 @@ describe("safe public ordering status", () => {
   });
 
   it("keeps menu, cart and order status integration explicit", async () => {
-    for (const path of ["../app/(marketing)/menu/page.js", "../app/(marketing)/cart/page.js", "../app/(marketing)/order/page.js"]) {
+    for (const path of ["../app/(marketing)/menu/page.js", "../app/(marketing)/cart/page.js", "../app/(marketing)/order/page.js", "../app/(customer)/checkout/page.js"]) {
       const source = await readFile(new URL(path, import.meta.url), "utf8");
       assert.match(source, /OrderingStatusNotice/);
+      assert.match(source, /getPublicOrderingStatus/);
     }
     const cart = await readFile(new URL("../app/(marketing)/cart/page.js", import.meta.url), "utf8");
     assert.match(cart, /cart is saved/i);
+  });
+
+  it("keeps matching native time controls for every online-ordering window", async () => {
+    const manager = await readFile(
+      new URL("../components/admin/AdminOperationsManager.jsx", import.meta.url),
+      "utf8"
+    );
+    assert.equal((manager.match(/type="time"/g) || []).length, 2);
+    assert.match(manager, /"startTime"/);
+    assert.match(manager, /"endTime"/);
   });
 });

@@ -44,7 +44,7 @@ export default async function AdminSettingsPage() {
 
       <ContentSection
         title="Business Hours"
-        description="When the restaurant is physically open. These hours appear on the public site and form a hard safety boundary for online checkout."
+        description="When the restaurant is physically open. These hours appear on the public site, and closed business days prevent online checkout."
         className="admin-section"
       >
         {businessHours ? (

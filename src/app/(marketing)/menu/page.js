@@ -54,7 +54,7 @@ export default async function MenuPage() {
           <div className="note-stack">
             <p>
               Build your pickup cart while browsing. Checkout becomes available
-              only when both the restaurant and online ordering are open.
+              when online ordering is open on an operating business day.
             </p>
             <p>Images are for illustration purposes.</p>
           </div>

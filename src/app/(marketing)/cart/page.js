@@ -28,9 +28,9 @@ export default async function CartPage() {
         <OrderingStatusNotice context="cart" status={orderingStatus} />
         {!orderingStatus.isOpen ? (
           <p className="cart-ordering-note">
-            {orderingStatus.restaurantOpen
-              ? "Your cart is saved. Online ordering is currently closed."
-              : "Your cart is saved. Kobby’s Kitchen is currently closed."}
+            {orderingStatus.businessDayClosed
+              ? "Your cart is saved. Kobby’s Kitchen is closed today."
+              : "Your cart is saved. Online ordering is currently closed."}
           </p>
         ) : null}
         {catalogue.ok ? (

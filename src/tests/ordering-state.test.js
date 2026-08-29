@@ -276,12 +276,14 @@ describe("future submission guard", () => {
   });
 
   it("does not mutate an order that was accepted before ordering closed", () => {
-    const acceptedOrder = Object.freeze({ id: "existing-order", status: "PENDING" });
-    const before = { ...acceptedOrder };
+    const acceptedOrders = ["PENDING", "CONFIRMED", "PREPARING", "READY_FOR_PICKUP"].map(
+      (status) => Object.freeze({ id: `existing-${status.toLowerCase()}`, status })
+    );
+    const before = acceptedOrders.map((order) => ({ ...order }));
 
     assert.throws(() =>
       assertOrderingStateOpenForSubmission(resolve({ featureEnabled: false }))
     );
-    assert.deepEqual(acceptedOrder, before);
+    assert.deepEqual(acceptedOrders, before);
   });
 });

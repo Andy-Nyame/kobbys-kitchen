@@ -83,10 +83,10 @@ describe("physical business-hours domain", () => {
 });
 
 describe("physical and online ordering separation", () => {
-  it("automatically follows a 5 PM–10 PM online window inside physical hours", () => {
+  it("automatically follows a 2 PM–10 PM online window before and during physical hours", () => {
     const scheduleWindows = [
-      { dayOfWeek: 1, startMinute: 17 * 60, endMinute: 22 * 60 },
-      { dayOfWeek: 2, startMinute: 17 * 60, endMinute: 22 * 60 },
+      { dayOfWeek: 1, startMinute: 14 * 60, endMinute: 22 * 60 },
+      { dayOfWeek: 2, startMinute: 14 * 60, endMinute: 22 * 60 },
     ];
     const combinedAt = (value) => {
       const now = new Date(value);
@@ -101,13 +101,16 @@ describe("physical and online ordering separation", () => {
       });
     };
 
-    assert.equal(combinedAt("2026-08-31T16:30:00.000Z").restaurantOpen, true);
-    assert.equal(combinedAt("2026-08-31T16:59:59.000Z").acceptingOrders, false);
-    assert.equal(combinedAt("2026-08-31T17:00:00.000Z").acceptingOrders, true);
+    assert.equal(combinedAt("2026-08-31T13:59:59.000Z").acceptingOrders, false);
+    assert.equal(combinedAt("2026-08-31T14:00:00.000Z").acceptingOrders, true);
+    assert.equal(combinedAt("2026-08-31T15:00:00.000Z").restaurantOpen, false);
+    assert.equal(combinedAt("2026-08-31T15:00:00.000Z").acceptingOrders, true);
+    assert.equal(combinedAt("2026-08-31T16:00:00.000Z").restaurantOpen, true);
+    assert.equal(combinedAt("2026-08-31T16:00:00.000Z").acceptingOrders, true);
     assert.equal(combinedAt("2026-08-31T21:59:59.000Z").acceptingOrders, true);
     assert.equal(combinedAt("2026-08-31T22:00:00.000Z").acceptingOrders, false);
-    assert.equal(combinedAt("2026-08-31T22:30:00.000Z").restaurantOpen, true);
-    assert.equal(combinedAt("2026-08-31T22:30:00.000Z").acceptingOrders, false);
+    assert.equal(combinedAt("2026-08-31T23:00:00.000Z").restaurantOpen, true);
+    assert.equal(combinedAt("2026-08-31T23:00:00.000Z").acceptingOrders, false);
     assert.equal(combinedAt("2026-09-01T00:00:00.000Z").restaurantOpen, false);
     assert.equal(combinedAt("2026-09-01T18:00:00.000Z").acceptingOrders, false);
   });
@@ -130,11 +133,13 @@ describe("physical and online ordering separation", () => {
     assert.equal(combined.restaurantOpen, false);
   });
 
-  it("allows checkout only when both physical and online states are open", () => {
+  it("allows checkout when online ordering is open on an operating day", () => {
     const combined = combineBusinessAndOnlineOrderingState({
       onlineState: online(true),
-      businessState: physical("2026-08-31T18:00:00.000Z"),
+      businessState: physical("2026-08-31T15:00:00.000Z"),
     });
+    assert.equal(combined.restaurantOpen, false);
+    assert.equal(combined.businessDayClosed, false);
     assert.equal(combined.acceptingOrders, true);
     assert.doesNotThrow(() => assertOrderingStateOpenForSubmission(combined));
   });
@@ -152,16 +157,53 @@ describe("physical and online ordering separation", () => {
     );
   });
 
-  it("rejects a scheduled or forced online OPEN while the restaurant is closed", () => {
+  it("rejects a scheduled or forced online OPEN on the Tuesday closed day", () => {
     for (const reason of ["SCHEDULE_OPEN", "FORCED_OPEN"]) {
       const combined = combineBusinessAndOnlineOrderingState({
         onlineState: online(true, { reason, source: reason === "FORCED_OPEN" ? "OVERRIDE" : "SCHEDULE" }),
         businessState: physical("2026-09-01T18:00:00.000Z"),
       });
       assert.equal(combined.acceptingOrders, false);
-      assert.equal(combined.reason, "RESTAURANT_CLOSED");
+      assert.equal(combined.reason, "BUSINESS_DAY_CLOSED");
+      assert.equal(combined.businessDayClosed, true);
       assert.equal(combined.onlineReason, reason);
+      assert.throws(
+        () => assertOrderingStateOpenForSubmission(combined),
+        OrderingClosedForSubmissionError
+      );
     }
+  });
+
+  it("keeps global, closed-day, pause and override precedence authoritative", () => {
+    const mondayBeforeStorefront = physical("2026-08-31T15:00:00.000Z");
+    const tuesday = physical("2026-09-01T15:00:00.000Z");
+
+    const combine = (businessState, overrides) =>
+      combineBusinessAndOnlineOrderingState({
+        onlineState: online(true, overrides),
+        businessState,
+      });
+
+    assert.equal(
+      combine(mondayBeforeStorefront, { reason: "BUILD_DISABLED", source: "BUILD_FLAG" }).acceptingOrders,
+      false
+    );
+    assert.equal(
+      combine(tuesday, { reason: "FORCED_OPEN", source: "OVERRIDE" }).reason,
+      "BUSINESS_DAY_CLOSED"
+    );
+    assert.equal(
+      combine(mondayBeforeStorefront, { acceptingOrders: false, reason: "EMERGENCY_PAUSED", source: "EMERGENCY_PAUSE" }).acceptingOrders,
+      false
+    );
+    assert.equal(
+      combine(mondayBeforeStorefront, { acceptingOrders: false, reason: "FORCED_CLOSED", source: "OVERRIDE" }).acceptingOrders,
+      false
+    );
+    assert.equal(
+      combine(mondayBeforeStorefront, { reason: "FORCED_OPEN", source: "OVERRIDE" }).acceptingOrders,
+      true
+    );
   });
 
   it("keeps emergency pause online-only and leaves the physical schedule unchanged", () => {
@@ -175,21 +217,48 @@ describe("physical and online ordering separation", () => {
     assert.equal(physical("2026-08-31T18:00:00.000Z").restaurantOpen, true);
   });
 
-  it("presents physical and online status as distinct customer-facing facts", () => {
-    const physicallyOpen = combineBusinessAndOnlineOrderingState({
-      onlineState: online(false),
-      businessState: physical("2026-08-31T18:00:00.000Z"),
-    });
-    const openPresentation = presentPublicOrderingState(physicallyOpen);
-    assert.equal(openPresentation.message, "Online ordering is currently closed.");
-    assert.equal(openPresentation.secondary, "Kobby’s Kitchen is open until 12:00 AM.");
+  it("presents before, during and after-window states without GMT wording", () => {
+    const scheduleWindows = [{ dayOfWeek: 1, startMinute: 14 * 60, endMinute: 22 * 60 }];
+    const presentationAt = (value) => {
+      const now = new Date(value);
+      return presentPublicOrderingState(
+        combineBusinessAndOnlineOrderingState({
+          onlineState: resolveEffectiveOrderingState({
+            featureEnabled: true,
+            setting: { emergencyPaused: false, overrideMode: "NONE" },
+            scheduleWindows,
+            now,
+          }),
+          businessState: physical(value),
+        })
+      );
+    };
+
+    const before = presentationAt("2026-08-31T13:00:00.000Z");
+    assert.equal(before.headline, "Online Ordering Closed");
+    assert.equal(before.detail, "Online ordering opens today at 2:00 PM.");
+
+    const during = presentationAt("2026-08-31T15:00:00.000Z");
+    assert.equal(during.headline, "Online Ordering Open");
+    assert.equal(during.message, "Place your order online and pick it up when it’s ready.");
+    assert.equal(during.detail, "Online orders close at 10:00 PM.");
+    assert.equal(during.restaurantOpen, false);
+
+    const after = presentationAt("2026-08-31T22:00:00.000Z");
+    assert.equal(after.headline, "Online Ordering Closed");
+    assert.equal(
+      after.message,
+      "We’re no longer accepting new online orders today. Orders already placed will still be prepared for pickup before we close at 12:00 AM."
+    );
+    assert.doesNotMatch(JSON.stringify({ before, during, after }), /GMT/);
 
     const tuesday = combineBusinessAndOnlineOrderingState({
       onlineState: online(true, { reason: "FORCED_OPEN", source: "OVERRIDE" }),
       businessState: physical("2026-09-01T12:00:00.000Z"),
     });
     const closedPresentation = presentPublicOrderingState(tuesday);
-    assert.match(closedPresentation.message, /Kobby’s Kitchen is currently closed/i);
-    assert.equal(closedPresentation.detail, "Kobby’s Kitchen reopens Wednesday at 4:00 PM.");
+    assert.equal(closedPresentation.headline, "Online Ordering Closed");
+    assert.match(closedPresentation.message, /Kobby’s Kitchen is closed today/i);
+    assert.equal(closedPresentation.secondary, "Kobby’s Kitchen reopens Wednesday at 4:00 PM.");
   });
 });
