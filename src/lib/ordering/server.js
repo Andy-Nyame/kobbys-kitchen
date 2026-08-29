@@ -11,8 +11,8 @@ import {
 } from "@/lib/ordering/presentation";
 import { prisma } from "@/lib/prisma";
 
-async function getOrderingConfiguration() {
-  return prisma.orderingSetting.findUnique({
+async function getOrderingConfiguration(client = prisma) {
+  return client.orderingSetting.findUnique({
     where: { id: "default" },
     include: {
       scheduleWindows: {
@@ -26,8 +26,11 @@ async function getOrderingConfiguration() {
   });
 }
 
-export async function getEffectiveOrderingState({ now = new Date() } = {}) {
-  const setting = await getOrderingConfiguration();
+export async function getEffectiveOrderingState({
+  now = new Date(),
+  client = prisma,
+} = {}) {
+  const setting = await getOrderingConfiguration(client);
 
   return resolveEffectiveOrderingState({
     featureEnabled: isOrderingEnabled(),

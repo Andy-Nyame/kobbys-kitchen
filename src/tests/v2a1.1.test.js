@@ -208,16 +208,26 @@ describe("disabled ordering and database security contracts", () => {
     );
   });
 
-  it("preserves trusted-server-only order creation", () => {
-    assert.equal(
-      fs.existsSync(path.join(rootDirectory, "src/app/api/orders/route.js")),
-      false
+  it("preserves trusted-server-only order creation behind the ordering guard", () => {
+    const orderRoute = fs.readFileSync(
+      path.join(rootDirectory, "src/app/api/orders/route.js"),
+      "utf8"
     );
+    const checkoutService = fs.readFileSync(
+      path.join(rootDirectory, "src/lib/orders/checkout-service.js"),
+      "utf8"
+    );
+
+    assert.match(orderRoute, /createPickupOrderForCustomer/);
+    assert.match(orderRoute, /getAuthenticatedUser/);
+    assert.match(orderRoute, /getUserRole/);
+    assert.match(checkoutService, /await assertOrderingOpen\(\{ client: transaction \}\)/);
+    assert.match(checkoutService, /transaction\.menuItem\.findMany/);
   });
 
   it("enforces one payment per order and unique retry identifiers", () => {
     assert.match(schema, /orderId\s+String\s+@unique\s+@db\.Uuid/);
-    assert.match(schema, /idempotencyKey\s+String\s+@unique/);
+    assert.match(schema, /@@unique\(\[userId, idempotencyKey\]\)/);
     assert.match(constraints, /CREATE UNIQUE INDEX "payments_orderId_key"/);
   });
 });

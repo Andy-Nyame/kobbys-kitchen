@@ -41,7 +41,9 @@ export function getSafeCustomerRedirectPath(value, fallback = "/account") {
   if (
     safePath === "/account" ||
     safePath.startsWith("/account/") ||
-    safePath.startsWith("/account?")
+    safePath.startsWith("/account?") ||
+    safePath === "/checkout" ||
+    safePath.startsWith("/checkout?")
   ) {
     return safePath;
   }

@@ -17,6 +17,7 @@ export default function AdminOrderTable({ orders, emptyMessage = "No orders yet.
           <tr>
             <th scope="col">Order</th>
             <th scope="col">Customer</th>
+            <th scope="col">Items</th>
             <th scope="col">Total</th>
             <th scope="col">Payment</th>
             <th scope="col">Order status</th>
@@ -32,6 +33,16 @@ export default function AdminOrderTable({ orders, emptyMessage = "No orders yet.
               <td data-label="Customer">
                 <strong>{order.customer_name_snapshot}</strong>
                 <span className="admin-table__secondary">{order.phone_snapshot}</span>
+              </td>
+              <td data-label="Items">
+                <ul className="admin-order-items">
+                  {order.items.map((item, index) => (
+                    <li key={`${item.nameSnapshot}:${item.priceTier}:${index}`}>
+                      <span>{item.quantity} × {item.nameSnapshot}</span>
+                      <small>{formatMoneyMinor(item.unitPriceMinor, order.currency)} each</small>
+                    </li>
+                  ))}
+                </ul>
               </td>
               <td data-label="Total">
                 {formatMoneyMinor(order.total_minor, order.currency)}

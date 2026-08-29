@@ -26,6 +26,7 @@ function normalizeOrders(orders) {
     status: order.status,
     created_at: order.createdAt,
     payment: order.payment || null,
+    items: order.items || [],
   }));
 }
 
@@ -46,6 +47,16 @@ const orderSelect = {
   status: true,
   createdAt: true,
   payment: { select: { method: true, status: true } },
+  items: {
+    orderBy: { createdAt: "asc" },
+    select: {
+      nameSnapshot: true,
+      priceTier: true,
+      unitPriceMinor: true,
+      quantity: true,
+      lineTotalMinor: true,
+    },
+  },
 };
 
 export async function getRecentAdminOrders(limit = 8) {

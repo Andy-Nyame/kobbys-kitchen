@@ -47,6 +47,7 @@ export function CartProvider({ children }) {
   const value = useMemo(
     () => ({
       lines,
+      hasLoaded,
       itemCount: getCartItemCount(lines),
       addItem: (menuItemId, priceTier = 0) =>
         setLines((current) => addCartItem(current, menuItemId, priceTier)),
@@ -80,7 +81,7 @@ export function CartProvider({ children }) {
         setLines((current) => removeCartItem(current, menuItemId, priceTier)),
       clearCart: () => setLines([]),
     }),
-    [lines]
+    [hasLoaded, lines]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

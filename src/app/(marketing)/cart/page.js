@@ -6,7 +6,7 @@ import { getPublicOrderingStatus } from "@/lib/ordering/server";
 
 export const metadata = {
   title: "Cart | Kobby's Kitchen",
-  description: "Review the meals you have added while online checkout is being prepared.",
+  description: "Review your meals and continue to secure pickup checkout.",
 };
 
 export const dynamic = "force-dynamic";
@@ -23,7 +23,7 @@ export default async function CartPage() {
         <PageIntro
           eyebrow="Cart"
           title="Your pickup cart"
-          description="Build your order at your own pace. Online checkout is not active yet, so nothing is submitted from this cart."
+          description="Review your selections before secure, server-verified pickup checkout."
         />
         <OrderingStatusNotice context="cart" status={orderingStatus} />
         {!orderingStatus.isOpen ? (
@@ -32,7 +32,10 @@ export default async function CartPage() {
           </p>
         ) : null}
         {catalogue.ok ? (
-          <CartPageContent catalogueItems={catalogue.items} />
+          <CartPageContent
+            catalogueItems={catalogue.items}
+            orderingStatus={orderingStatus}
+          />
         ) : (
           <section className="cart-empty-state" role="status">
             <h2>Your cart is saved locally.</h2>

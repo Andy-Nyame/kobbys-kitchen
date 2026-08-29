@@ -301,10 +301,11 @@ model Order {
   customerNameSnapshot  String
   customerEmailSnapshot String
   customerPhoneSnapshot String
+  note                  String?
   subtotalMinor         Int
   totalMinor            Int
   currency              String          @default("GHS")
-  idempotencyKey        String          @unique
+  idempotencyKey        String
   placedAt              DateTime        @default(now())
   completedAt           DateTime?
   cancelledAt           DateTime?
@@ -318,6 +319,7 @@ model Order {
   @@index([status, placedAt])
   @@index([userId, placedAt])
   @@index([paymentStatus, placedAt])
+  @@unique([userId, idempotencyKey])
   @@map("orders")
 }
 
@@ -326,6 +328,7 @@ model OrderItem {
   orderId        String   @db.Uuid
   menuItemId     String?  @db.Uuid
   nameSnapshot   String
+  priceTier      Int      @default(0)
   unitPriceMinor Int
   quantity       Int
   lineTotalMinor Int

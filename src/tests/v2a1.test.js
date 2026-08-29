@@ -141,11 +141,24 @@ describe("database stabilization contract", () => {
     assert.doesNotMatch(provisioning, /role:\s*"ADMIN"/);
   });
 
-  it("exposes no customer order-mutation endpoint while ordering is disabled", () => {
-    assert.equal(
-      fs.existsSync(path.join(rootDirectory, "src/app/api/orders/route.js")),
-      false
+  it("keeps customer order mutation closed through the authoritative server guard", () => {
+    const orderRoute = fs.readFileSync(
+      path.join(rootDirectory, "src/app/api/orders/route.js"),
+      "utf8"
     );
+    const orderingServer = fs.readFileSync(
+      path.join(rootDirectory, "src/lib/ordering/server.js"),
+      "utf8"
+    );
+    const orderServer = fs.readFileSync(
+      path.join(rootDirectory, "src/lib/orders/server.js"),
+      "utf8"
+    );
+
+    assert.match(orderRoute, /createPickupOrderForCustomer/);
+    assert.match(orderServer, /assertOrderingOpenForSubmission/);
+    assert.match(orderingServer, /isOrderingEnabled\(\)/);
+    assert.match(orderingServer, /assertOrderingStateOpenForSubmission/);
   });
 
   it("adds nonnegative integer-minor-unit constraints", () => {

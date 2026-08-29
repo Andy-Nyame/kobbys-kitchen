@@ -2,8 +2,6 @@ import ButtonLink from "@/components/ui/ButtonLink";
 import PageIntro from "@/components/ui/PageIntro";
 import OrderingStatusNotice from "@/components/ordering/OrderingStatusNotice";
 import { businessData } from "@/data/businessData";
-import { isOrderingEnabled } from "@/lib/feature-flags";
-import { getOrderingHubState } from "@/lib/orders/hub";
 import { getPublicOrderingStatus } from "@/lib/ordering/server";
 
 export const metadata = {
@@ -15,7 +13,6 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function OrderPage() {
-  const orderingState = getOrderingHubState(isOrderingEnabled());
   const orderingStatus = await getPublicOrderingStatus();
 
   return (
@@ -65,19 +62,20 @@ export default async function OrderPage() {
             className="order-option-card"
             aria-labelledby="online-pickup-title"
           >
-            <span className="order-option-card__status">Coming soon</span>
+            <span className="order-option-card__status">
+              {orderingStatus.isOpen ? "Available now" : "Currently closed"}
+            </span>
             <div className="order-option-card__content">
               <p className="order-option-card__eyebrow">Online pickup preview</p>
-              <h2 id="online-pickup-title">Build your cart</h2>
+              <h2 id="online-pickup-title">Online pickup</h2>
               <p>
-                Browse trusted menu prices, add meals to your cart, and explore
-                the pickup flow before online checkout becomes available.
+                Browse trusted menu prices, build your cart, and place a secure
+                cash-at-pickup order when online ordering is open.
               </p>
             </div>
             <p className="order-option-card__notice" role="status">
-              {orderingState.onlinePickupReason === "build_disabled"
-                ? "You can build a cart, but online checkout and order submission are not enabled for this build."
-                : "Online checkout is not available in this milestone."}
+              Mobile Money, Card, and delivery are coming soon. Cash at Pickup
+              is the only live checkout method.
             </p>
             <ButtonLink href="/menu" variant="secondary">Browse Menu</ButtonLink>
           </section>
@@ -89,8 +87,8 @@ export default async function OrderPage() {
             <h2 id="order-journey-title">A straightforward pickup journey</h2>
             <p>
               The Menu page is the place to browse current meals and build your
-              cart. This page will become the transactional starting point when
-              online ordering is ready.
+              cart. Checkout revalidates the current menu and ordering state
+              before an order is accepted.
             </p>
           </div>
           <ol className="order-journey__steps">

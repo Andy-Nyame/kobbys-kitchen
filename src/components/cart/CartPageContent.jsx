@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCart } from "@/components/cart/CartProvider";
 import { formatGhs, getCartSubtotalMinor, resolveCartLines } from "@/lib/cart/domain";
 
-export default function CartPageContent({ catalogueItems }) {
+export default function CartPageContent({ catalogueItems, orderingStatus }) {
   const { clearCart, decreaseItem, increaseItem, lines, removeItem } = useCart();
   const { resolvedLines: cartLines, unresolvedLines } = resolveCartLines(
     lines,
@@ -76,8 +76,14 @@ export default function CartPageContent({ catalogueItems }) {
 
       <div className="cart-page__summary">
         <div><span>Subtotal</span><strong>{formatGhs(subtotalMinor)}</strong></div>
-        <p>Online checkout is being prepared. Building a cart does not place an order.</p>
-        <span aria-disabled="true" className="button-link button-link--disabled">Checkout unavailable</span>
+        <p>
+          {orderingStatus.isOpen
+            ? "Checkout revalidates every price and item before placing your pickup order."
+            : "Your cart remains saved. Checkout will show when online ordering reopens."}
+        </p>
+        <Link className="button-link button-link--primary" href="/checkout">
+          Continue to Checkout
+        </Link>
       </div>
     </section>
   );
