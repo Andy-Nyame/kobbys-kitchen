@@ -6,6 +6,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { authenticateCredentials } from "@/lib/auth/credentials";
 import { ensureCustomerAccountById } from "@/lib/auth/provisioning";
 import { getSafeRedirectPath } from "@/lib/auth/redirects";
+import { getAuthSignInPolicy } from "@/lib/auth/sign-in-policy";
 import { prisma } from "@/lib/prisma";
 
 const providers = [
@@ -48,25 +49,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   providers,
   callbacks: {
-    async signIn({ user }) {
-      if (!user?.id) {
-        return false;
-      }
-
-      const databaseUser = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { role: true },
+    async signIn({ user, account }) {
+      const databaseUser = user?.id
+        ? await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { role: true },
+          })
+        : null;
+      const policy = getAuthSignInPolicy({
+        provider: account?.provider,
+        userId: user?.id,
+        databaseUser,
       });
 
-      if (!databaseUser) {
-        return false;
-      }
-
-      if (databaseUser.role === "CUSTOMER") {
+      // On a first OAuth login Auth.js invokes signIn before the adapter has
+      // persisted the new User. The schema default and createUser event are the
+      // trusted CUSTOMER provisioning path; provider data never assigns ADMIN.
+      if (policy.provisionCustomer) {
         await ensureCustomerAccountById(user.id);
       }
 
-      return true;
+      return policy.allowed;
     },
     async jwt({ token, user }) {
       const userId = user?.id || token.userId || token.sub;

@@ -1,5 +1,8 @@
+import { deriveMenuPriceMinor, normalizePriceTier } from "../menu/pricing.js";
+
 export const CART_STORAGE_KEY = "kobbys-kitchen-cart";
-export const CART_STORAGE_VERSION = 1;
+export const CART_STORAGE_VERSION = 2;
+export const LEGACY_CART_STORAGE_VERSION = 1;
 export const MAX_CART_ITEM_QUANTITY = 20;
 
 const UUID_PATTERN =
@@ -28,21 +31,28 @@ export function normalizeCartLines(lines) {
     }
 
     const quantity = normalizeQuantity(line.quantity);
+    const priceTier = normalizePriceTier(line.priceTier);
 
-    if (!quantity) {
+    if (!quantity || priceTier === null) {
       continue;
     }
 
+    const lineKey = `${line.menuItemId}:${priceTier}`;
+
     quantities.set(
-      line.menuItemId,
-      Math.min((quantities.get(line.menuItemId) || 0) + quantity, MAX_CART_ITEM_QUANTITY)
+      lineKey,
+      {
+        menuItemId: line.menuItemId,
+        priceTier,
+        quantity: Math.min(
+          (quantities.get(lineKey)?.quantity || 0) + quantity,
+          MAX_CART_ITEM_QUANTITY
+        ),
+      }
     );
   }
 
-  return [...quantities.entries()].map(([menuItemId, quantity]) => ({
-    menuItemId,
-    quantity,
-  }));
+  return [...quantities.values()];
 }
 
 export function parsePersistedCart(value) {
@@ -53,11 +63,19 @@ export function parsePersistedCart(value) {
   try {
     const parsed = JSON.parse(value);
 
-    if (!parsed || parsed.version !== CART_STORAGE_VERSION) {
+    if (!parsed || !Array.isArray(parsed.lines)) {
       return [];
     }
 
-    return normalizeCartLines(parsed.lines);
+    if (parsed.version === LEGACY_CART_STORAGE_VERSION) {
+      return normalizeCartLines(
+        parsed.lines.map((line) => ({ ...line, priceTier: 0 }))
+      );
+    }
+
+    return parsed.version === CART_STORAGE_VERSION
+      ? normalizeCartLines(parsed.lines)
+      : [];
   } catch {
     return [];
   }
@@ -70,47 +88,66 @@ export function serializeCart(lines) {
   });
 }
 
-export function addCartItem(lines, menuItemId) {
-  if (!isMenuItemId(menuItemId)) {
+export function addCartItem(lines, menuItemId, priceTier = 0) {
+  const normalizedTier = normalizePriceTier(priceTier);
+
+  if (!isMenuItemId(menuItemId) || normalizedTier === null) {
     return normalizeCartLines(lines);
   }
 
   const normalizedLines = normalizeCartLines(lines);
   const existingLine = normalizedLines.find(
-    (line) => line.menuItemId === menuItemId
+    (line) =>
+      line.menuItemId === menuItemId && line.priceTier === normalizedTier
   );
 
   if (!existingLine) {
-    return [...normalizedLines, { menuItemId, quantity: 1 }];
+    return [
+      ...normalizedLines,
+      { menuItemId, priceTier: normalizedTier, quantity: 1 },
+    ];
   }
 
   return normalizedLines.map((line) =>
-    line.menuItemId === menuItemId
+    line.menuItemId === menuItemId && line.priceTier === normalizedTier
       ? { ...line, quantity: Math.min(line.quantity + 1, MAX_CART_ITEM_QUANTITY) }
       : line
   );
 }
 
-export function setCartItemQuantity(lines, menuItemId, quantity) {
-  if (!isMenuItemId(menuItemId)) {
+export function setCartItemQuantity(lines, menuItemId, priceTier, quantity) {
+  const normalizedTier = normalizePriceTier(priceTier);
+
+  if (!isMenuItemId(menuItemId) || normalizedTier === null) {
     return normalizeCartLines(lines);
   }
 
   const normalizedLines = normalizeCartLines(lines);
 
   if (!Number.isInteger(quantity) || quantity <= 0) {
-    return normalizedLines.filter((line) => line.menuItemId !== menuItemId);
+    return normalizedLines.filter(
+      (line) =>
+        line.menuItemId !== menuItemId || line.priceTier !== normalizedTier
+    );
   }
 
   return normalizedLines.map((line) =>
-    line.menuItemId === menuItemId
+    line.menuItemId === menuItemId && line.priceTier === normalizedTier
       ? { ...line, quantity: Math.min(quantity, MAX_CART_ITEM_QUANTITY) }
       : line
   );
 }
 
-export function removeCartItem(lines, menuItemId) {
-  return normalizeCartLines(lines).filter((line) => line.menuItemId !== menuItemId);
+export function removeCartItem(lines, menuItemId, priceTier) {
+  const normalizedTier = normalizePriceTier(priceTier);
+
+  if (normalizedTier === null) {
+    return normalizeCartLines(lines);
+  }
+
+  return normalizeCartLines(lines).filter(
+    (line) => line.menuItemId !== menuItemId || line.priceTier !== normalizedTier
+  );
 }
 
 export function getCartItemCount(lines) {
@@ -118,20 +155,41 @@ export function getCartItemCount(lines) {
 }
 
 export function getCartSubtotalMinor(lines, catalogueItems) {
-  const prices = new Map(
+  return resolveCartLines(lines, catalogueItems).resolvedLines.reduce(
+    (subtotal, line) => subtotal + line.lineTotalMinor,
+    0
+  );
+}
+
+export function resolveCartLines(lines, catalogueItems) {
+  const items = new Map(
     (Array.isArray(catalogueItems) ? catalogueItems : []).map((item) => [
       item.id,
-      item.priceMinor,
+      item,
     ])
   );
+  const resolvedLines = [];
+  const unresolvedLines = [];
 
-  return normalizeCartLines(lines).reduce((subtotal, line) => {
-    const priceMinor = prices.get(line.menuItemId);
+  for (const line of normalizeCartLines(lines)) {
+    const item = items.get(line.menuItemId);
+    const selectedPriceMinor = deriveMenuPriceMinor(item, line.priceTier);
 
-    return Number.isInteger(priceMinor) && priceMinor >= 0
-      ? subtotal + priceMinor * line.quantity
-      : subtotal;
-  }, 0);
+    if (!item || selectedPriceMinor === null || item.active === false) {
+      unresolvedLines.push({ ...line, reason: "ITEM_OR_TIER_UNAVAILABLE" });
+      continue;
+    }
+
+    resolvedLines.push({
+      ...line,
+      item,
+      selectedPriceMinor,
+      lineTotalMinor: selectedPriceMinor * line.quantity,
+      orderable: item.available === true,
+    });
+  }
+
+  return { resolvedLines, unresolvedLines };
 }
 
 export function formatGhs(minorAmount) {

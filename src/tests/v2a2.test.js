@@ -44,7 +44,7 @@ describe("admin authorization decisions", () => {
     assert.deepEqual(getAdminAuthorization({ id: "customer" }, "CUSTOMER"), {
       allowed: false,
       reason: "FORBIDDEN",
-      redirectTo: "/",
+      redirectTo: "/access-denied?area=admin",
     });
   });
 

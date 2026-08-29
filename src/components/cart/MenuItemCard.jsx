@@ -7,11 +7,14 @@ import { useCart } from "@/components/cart/CartProvider";
 import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
 import { formatGhs } from "@/lib/cart/domain";
 import { canAddMenuItemToCart } from "@/lib/menu/domain";
+import { deriveMenuPriceMinor, MAX_PRICE_TIER } from "@/lib/menu/pricing";
 
 export default function MenuItemCard({ item, categoryName }) {
   const { addItem } = useCart();
   const [failedImage, setFailedImage] = useState(false);
+  const [priceTier, setPriceTier] = useState(0);
   const showImage = Boolean(item.image) && !failedImage;
+  const selectedPriceMinor = deriveMenuPriceMinor(item, priceTier);
 
   return (
     <article className="meal-card menu-item-card">
@@ -37,16 +40,42 @@ export default function MenuItemCard({ item, categoryName }) {
         </div>
         <h3>{item.name}</h3>
         <p>{item.description}</p>
-        <div className="menu-item-card__footer">
-          <strong className="meal-card__price">{formatGhs(item.priceMinor)}</strong>
-          {canAddMenuItemToCart(item) ? (
-            <button className="cart-button" onClick={() => addItem(item.id)} type="button">
-              Add to Cart
+        <p className="meal-card__price">From {formatGhs(item.priceMinor)}</p>
+        {canAddMenuItemToCart(item) ? (
+          <div className="menu-price-selector">
+            <span className="menu-price-selector__label">Selected amount</span>
+            <div className="menu-price-selector__controls">
+              <button
+                aria-label={`Lower ${item.name} amount by ${formatGhs(item.priceStepMinor)}`}
+                disabled={priceTier === 0}
+                onClick={() => setPriceTier((current) => Math.max(0, current - 1))}
+                type="button"
+              >
+                −
+              </button>
+              <strong aria-live="polite">{formatGhs(selectedPriceMinor)}</strong>
+              <button
+                aria-label={`Raise ${item.name} amount by ${formatGhs(item.priceStepMinor)}`}
+                disabled={priceTier === MAX_PRICE_TIER}
+                onClick={() => setPriceTier((current) => Math.min(MAX_PRICE_TIER, current + 1))}
+                type="button"
+              >
+                +
+              </button>
+            </div>
+            <button
+              className="cart-button"
+              onClick={() => addItem(item.id, priceTier)}
+              type="button"
+            >
+              Add {formatGhs(selectedPriceMinor)} to Cart
             </button>
-          ) : (
+          </div>
+        ) : (
+          <div className="menu-item-card__footer">
             <span className="menu-item-card__unavailable" role="status">Unavailable</span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </article>
   );

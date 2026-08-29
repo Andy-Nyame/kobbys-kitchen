@@ -1,4 +1,5 @@
 import pg from "pg";
+import { getApprovedBackfillPriceStepMinor } from "../src/lib/menu/pricing.js";
 
 import { prisma } from "../src/lib/prisma.js";
 import { verifyDevelopmentDatabase } from "./database-safety.js";
@@ -201,12 +202,18 @@ try {
         imagePath: item.image_path,
         imageAlt: item.image_alt,
         priceMinor: item.price_minor,
+        priceStepMinor: getApprovedBackfillPriceStepMinor(item.price_minor),
         currency: item.currency,
         available: item.available,
         featured: item.featured,
         active: item.active,
         sortOrder: item.sort_order,
       };
+      if (!values.priceStepMinor) {
+        throw new Error(
+          `Menu item ${item.slug} does not match the approved variable-price backfill convention.`
+        );
+      }
       await transaction.menuItem.upsert({
         where: { slug: item.slug },
         create: {

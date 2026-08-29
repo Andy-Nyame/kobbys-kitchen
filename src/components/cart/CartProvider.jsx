@@ -48,18 +48,36 @@ export function CartProvider({ children }) {
     () => ({
       lines,
       itemCount: getCartItemCount(lines),
-      addItem: (menuItemId) => setLines((current) => addCartItem(current, menuItemId)),
-      increaseItem: (menuItemId) =>
+      addItem: (menuItemId, priceTier = 0) =>
+        setLines((current) => addCartItem(current, menuItemId, priceTier)),
+      increaseItem: (menuItemId, priceTier) =>
         setLines((current) => {
-          const line = current.find((item) => item.menuItemId === menuItemId);
-          return setCartItemQuantity(current, menuItemId, (line?.quantity || 0) + 1);
+          const line = current.find(
+            (item) =>
+              item.menuItemId === menuItemId && item.priceTier === priceTier
+          );
+          return setCartItemQuantity(
+            current,
+            menuItemId,
+            priceTier,
+            (line?.quantity || 0) + 1
+          );
         }),
-      decreaseItem: (menuItemId) =>
+      decreaseItem: (menuItemId, priceTier) =>
         setLines((current) => {
-          const line = current.find((item) => item.menuItemId === menuItemId);
-          return setCartItemQuantity(current, menuItemId, (line?.quantity || 0) - 1);
+          const line = current.find(
+            (item) =>
+              item.menuItemId === menuItemId && item.priceTier === priceTier
+          );
+          return setCartItemQuantity(
+            current,
+            menuItemId,
+            priceTier,
+            (line?.quantity || 0) - 1
+          );
         }),
-      removeItem: (menuItemId) => setLines((current) => removeCartItem(current, menuItemId)),
+      removeItem: (menuItemId, priceTier) =>
+        setLines((current) => removeCartItem(current, menuItemId, priceTier)),
       clearCart: () => setLines([]),
     }),
     [lines]

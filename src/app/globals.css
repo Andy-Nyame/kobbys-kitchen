@@ -1184,6 +1184,55 @@ select:focus-visible {
   gap: 0.75rem;
 }
 
+.menu-price-selector {
+  display: grid;
+  gap: 0.65rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.8rem;
+}
+
+.menu-price-selector__label {
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.menu-price-selector__controls {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background-color: var(--color-surface-secondary);
+}
+
+.menu-price-selector__controls button {
+  min-height: 44px;
+  border: 0;
+  background-color: transparent;
+  color: var(--color-text-strong);
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.menu-price-selector__controls button:hover:not(:disabled),
+.menu-price-selector__controls button:focus-visible {
+  background-color: var(--color-surface-muted);
+}
+
+.menu-price-selector__controls button:disabled {
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.menu-price-selector__controls strong {
+  text-align: center;
+  color: var(--color-brand-orange);
+}
+
 .cart-button,
 .cart-text-button {
   min-height: 44px;
@@ -2724,6 +2773,111 @@ select:focus-visible {
 .admin-workspace__utility {
   display: grid;
   gap: 0.8rem;
+}
+
+.admin-account-menu {
+  position: relative;
+  min-width: 0;
+}
+
+.admin-account-menu__toggle {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background-color: var(--color-surface);
+  padding: 0.45rem 0.55rem;
+  color: var(--color-text-strong);
+  cursor: pointer;
+  list-style: none;
+}
+
+.admin-account-menu__toggle::-webkit-details-marker {
+  display: none;
+}
+
+.admin-account-menu__toggle:hover,
+.admin-account-menu__toggle:focus-visible,
+.admin-account-menu[open] .admin-account-menu__toggle {
+  border-color: var(--color-brand-orange);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.admin-account-menu__summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.admin-account-menu__summary-copy strong,
+.admin-account-menu__summary-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-account-menu__summary-copy strong {
+  font-size: 0.86rem;
+}
+
+.admin-account-menu__summary-copy span {
+  color: var(--color-text-secondary);
+  font-size: 0.73rem;
+}
+
+.admin-account-menu__panel {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background-color: var(--color-surface-elevated);
+  box-shadow: var(--shadow-medium);
+  padding: 0.55rem;
+}
+
+.admin-account-menu__identity {
+  display: grid;
+  gap: 0.2rem;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.45rem 0.5rem 0.7rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-account-menu__identity span {
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+}
+
+.admin-account-menu__identity .profile-role-badge {
+  justify-self: start;
+  color: var(--color-accent-contrast);
+}
+
+.admin-account-menu__panel > a,
+.admin-account-menu__panel button {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  border: 0;
+  border-radius: 0.65rem;
+  background: transparent;
+  padding: 0.65rem 0.7rem;
+  color: var(--color-text-strong);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: none;
+}
+
+.admin-account-menu__panel > a:hover,
+.admin-account-menu__panel > a:focus-visible,
+.admin-account-menu__panel button:hover,
+.admin-account-menu__panel button:focus-visible {
+  background-color: var(--color-surface-secondary);
 }
 
 .admin-workspace__theme,

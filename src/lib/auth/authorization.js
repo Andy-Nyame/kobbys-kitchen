@@ -10,7 +10,11 @@ export function getAdminAuthorization(user, role, intendedPath = "/admin") {
   }
 
   if (role !== "ADMIN") {
-    return { allowed: false, reason: "FORBIDDEN", redirectTo: "/" };
+    return {
+      allowed: false,
+      reason: "FORBIDDEN",
+      redirectTo: "/access-denied?area=admin",
+    };
   }
 
   return { allowed: true, reason: null, redirectTo: null };

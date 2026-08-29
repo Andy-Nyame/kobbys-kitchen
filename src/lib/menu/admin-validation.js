@@ -89,6 +89,16 @@ export function parseGhsToMinor(value) {
   return minor;
 }
 
+export function parsePositiveGhsToMinor(value, field = "Price increment") {
+  const minor = parseGhsToMinor(value);
+
+  if (minor <= 0) {
+    throw new TypeError(`${field} must be greater than zero.`);
+  }
+
+  return minor;
+}
+
 export function normalizeMenuImagePath(value) {
   const normalized = typeof value === "string" ? value.trim() : "";
 
@@ -140,6 +150,10 @@ function normalizeItem(payload, includeId) {
       required: true,
     }),
     priceMinor: parseGhsToMinor(payload?.priceCedis),
+    priceStepMinor: parsePositiveGhsToMinor(
+      payload?.priceStepCedis,
+      "Price increment"
+    ),
     available: normalizeBoolean(payload?.available, "Availability"),
     active: normalizeBoolean(payload?.active, "Menu visibility"),
     featured: normalizeBoolean(payload?.featured, "Featured state"),

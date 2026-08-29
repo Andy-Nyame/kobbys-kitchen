@@ -3,18 +3,17 @@
 import Link from "next/link";
 
 import { useCart } from "@/components/cart/CartProvider";
-import { formatGhs, getCartSubtotalMinor } from "@/lib/cart/domain";
+import { formatGhs, getCartSubtotalMinor, resolveCartLines } from "@/lib/cart/domain";
 
 export default function CartPageContent({ catalogueItems }) {
   const { clearCart, decreaseItem, increaseItem, lines, removeItem } = useCart();
-  const itemsById = new Map(catalogueItems.map((item) => [item.id, item]));
-  const cartLines = lines
-    .map((line) => ({ ...line, item: itemsById.get(line.menuItemId) }))
-    .filter((line) => line.item);
-  const unavailableLines = lines.length - cartLines.length;
+  const { resolvedLines: cartLines, unresolvedLines } = resolveCartLines(
+    lines,
+    catalogueItems
+  );
   const subtotalMinor = getCartSubtotalMinor(lines, catalogueItems);
 
-  if (cartLines.length === 0) {
+  if (lines.length === 0) {
     return (
       <section className="cart-empty-state">
         <h2>Your cart is empty.</h2>
@@ -35,27 +34,45 @@ export default function CartPageContent({ catalogueItems }) {
       </div>
 
       <ul className="cart-line-list">
-        {cartLines.map(({ item, menuItemId, quantity }) => (
-          <li className="cart-line" key={menuItemId}>
+        {cartLines.map(({ item, lineTotalMinor, menuItemId, priceTier, quantity, selectedPriceMinor }) => (
+          <li className="cart-line" key={`${menuItemId}:${priceTier}`}>
             <div className="cart-line__details">
               <h3>{item.name}</h3>
-              <p>{formatGhs(item.priceMinor)} each</p>
+              <p>{formatGhs(selectedPriceMinor)} each</p>
               {!item.available ? <span className="menu-item-card__unavailable">Currently unavailable</span> : null}
             </div>
             <div className="cart-line__controls">
               <div aria-label={`Quantity for ${item.name}`} className="quantity-control">
-                <button aria-label={`Decrease ${item.name} quantity`} onClick={() => decreaseItem(menuItemId)} type="button">−</button>
+                <button aria-label={`Decrease ${item.name} at ${formatGhs(selectedPriceMinor)} quantity`} onClick={() => decreaseItem(menuItemId, priceTier)} type="button">−</button>
                 <span aria-live="polite">{quantity}</span>
-                <button aria-label={`Increase ${item.name} quantity`} onClick={() => increaseItem(menuItemId)} type="button">+</button>
+                <button aria-label={`Increase ${item.name} at ${formatGhs(selectedPriceMinor)} quantity`} onClick={() => increaseItem(menuItemId, priceTier)} type="button">+</button>
               </div>
-              <strong>{formatGhs(item.priceMinor * quantity)}</strong>
-              <button className="cart-text-button" onClick={() => removeItem(menuItemId)} type="button">Remove</button>
+              <strong>{formatGhs(lineTotalMinor)}</strong>
+              <button className="cart-text-button" onClick={() => removeItem(menuItemId, priceTier)} type="button">Remove</button>
             </div>
           </li>
         ))}
       </ul>
 
-      {unavailableLines ? <p className="cart-page__notice" role="status">Items no longer in the menu were removed from this preview.</p> : null}
+      {cartLines.length === 0 ? (
+        <p className="cart-page__notice">No current menu selection could be resolved.</p>
+      ) : null}
+
+      {unresolvedLines.length ? (
+        <div className="cart-page__notice" role="status">
+          <p>Some saved cart selections no longer match the current menu. Remove them before a future checkout.</p>
+          {unresolvedLines.map((line) => (
+            <button
+              className="cart-text-button"
+              key={`${line.menuItemId}:${line.priceTier}`}
+              onClick={() => removeItem(line.menuItemId, line.priceTier)}
+              type="button"
+            >
+              Remove unavailable selection
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <div className="cart-page__summary">
         <div><span>Subtotal</span><strong>{formatGhs(subtotalMinor)}</strong></div>

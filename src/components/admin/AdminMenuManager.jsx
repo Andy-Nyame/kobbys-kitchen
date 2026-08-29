@@ -115,12 +115,22 @@ function ItemFields({ categories, item }) {
         />
       </label>
       <label className="form-field">
-        <span>Price (GH₵)</span>
+        <span>Starting Price (GH₵)</span>
         <input
           defaultValue={item?.priceCedis || ""}
           inputMode="decimal"
           name="priceCedis"
           placeholder="25.00"
+          required
+        />
+      </label>
+      <label className="form-field">
+        <span>Price Increment (GH₵)</span>
+        <input
+          defaultValue={item?.priceStepCedis || "10.00"}
+          inputMode="decimal"
+          name="priceStepCedis"
+          placeholder="10.00"
           required
         />
       </label>
@@ -448,7 +458,9 @@ export default function AdminMenuManager({ categories, items }) {
                   <div>
                     <p className="admin-section-eyebrow">{item.categoryName}</p>
                     <h3>{item.name}</h3>
-                    <p>{formatGhs(item.priceMinor)}</p>
+                    <p>
+                      From {formatGhs(item.priceMinor)} · +{formatGhs(item.priceStepMinor)} per tier
+                    </p>
                   </div>
                   <div className="admin-menu-item__states">
                     <span>{item.active && item.categoryActive ? "Visible" : "Hidden"}</span>

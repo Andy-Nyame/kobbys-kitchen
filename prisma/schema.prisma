@@ -177,6 +177,7 @@ model MenuItem {
   imagePath          String?
   imageAlt           String?
   priceMinor         Int
+  priceStepMinor     Int
   currency           String   @default("GHS")
   available          Boolean  @default(true)
   featured           Boolean  @default(false)

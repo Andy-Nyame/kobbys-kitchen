@@ -17,6 +17,7 @@ describe("public menu catalogue domain", () => {
       image_path: "/images/food/jollof-rice.png",
       image_alt: "Jollof Rice",
       price_minor: 3000,
+      price_step_minor: 1000,
       currency: "GHS",
       available: false,
       featured: true,
@@ -42,6 +43,7 @@ describe("public menu catalogue domain", () => {
       image: "/images/food/jollof-rice.png",
       imageAlt: "Jollof Rice",
       priceMinor: 3000,
+      priceStepMinor: 1000,
       currency: "GHS",
       available: false,
       featured: true,
@@ -67,6 +69,7 @@ describe("public menu catalogue domain", () => {
         category_id: "category",
         name: "Meal",
         price_minor: 30.5,
+        price_step_minor: 500,
         currency: "GHS",
       }),
       null
@@ -77,6 +80,7 @@ describe("public menu catalogue domain", () => {
         category_id: "category",
         name: "Meal",
         price_minor: 3000,
+        price_step_minor: 500,
         currency: "USD",
       }),
       null

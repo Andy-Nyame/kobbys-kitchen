@@ -21,6 +21,7 @@ function itemPayload(overrides = {}) {
     name: "Waakye Special",
     description: "Rice and beans served with traditional accompaniments.",
     priceCedis: "25.50",
+    priceStepCedis: "5.00",
     available: true,
     active: true,
     featured: false,
@@ -62,6 +63,7 @@ describe("admin menu validation", () => {
       active: true,
     });
     assert.equal(item.data.priceMinor, 2550);
+    assert.equal(item.data.priceStepMinor, 500);
     assert.equal(item.data.preparationMinutes, 20);
     assert.equal(item.data.categoryId, categoryId);
     assert.equal(item.data.active, true);
@@ -75,6 +77,10 @@ describe("admin menu validation", () => {
     assert.throws(
       () => prepareMenuAdminMutation(itemPayload({ sortOrder: "-1" })),
       /display order is invalid/
+    );
+    assert.throws(
+      () => prepareMenuAdminMutation(itemPayload({ priceStepCedis: "0" })),
+      /greater than zero/
     );
     assert.throws(
       () => prepareMenuAdminMutation({ action: "DELETE_ITEM", id: itemId }),

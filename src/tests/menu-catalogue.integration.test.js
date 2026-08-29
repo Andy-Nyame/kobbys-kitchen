@@ -20,7 +20,11 @@ integrationDescribe("development Prisma menu catalogue", () => {
     assert.equal(items.length, 5);
     assert.ok(
       items.every(
-        (item) => Number.isInteger(item.priceMinor) && item.currency === "GHS"
+        (item) =>
+          Number.isInteger(item.priceMinor) &&
+          Number.isInteger(item.priceStepMinor) &&
+          item.priceStepMinor > 0 &&
+          item.currency === "GHS"
       )
     );
   });

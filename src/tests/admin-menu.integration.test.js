@@ -53,6 +53,7 @@ integrationDescribe("development Neon admin menu foundation", () => {
           name: "Integration Meal",
           description: "Disposable development verification item.",
           priceMinor: 2550,
+          priceStepMinor: 500,
           currency: "GHS",
           available: true,
           active: true,
@@ -94,6 +95,7 @@ integrationDescribe("development Neon admin menu foundation", () => {
           name: "Updated Integration Meal",
           categoryId: secondCategoryId,
           priceMinor: 3100,
+          priceStepMinor: 1000,
           available: false,
         },
       });
@@ -106,6 +108,7 @@ integrationDescribe("development Neon admin menu foundation", () => {
       assert.equal(resolved.name, "Updated Integration Meal");
       assert.equal(resolved.categoryId, secondCategoryId);
       assert.equal(resolved.priceMinor, 3100);
+      assert.equal(resolved.priceStepMinor, 1000);
       assert.equal(resolved.available, false);
       assert.equal(resolved.images[0].id, primary.id);
 

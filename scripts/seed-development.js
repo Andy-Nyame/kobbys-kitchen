@@ -50,6 +50,7 @@ try {
         imagePath: item.image,
         imageAlt: `${item.name} from Kobby’s Kitchen`,
         priceMinor: item.priceMinor,
+        priceStepMinor: item.priceStepMinor,
         currency: "GHS",
         available: item.available,
         featured: item.featured,

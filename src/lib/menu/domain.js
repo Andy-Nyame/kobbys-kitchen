@@ -6,6 +6,8 @@ export function normalizeCatalogueItem(item) {
     typeof item.name !== "string" ||
     !Number.isInteger(item.price_minor) ||
     item.price_minor < 0 ||
+    !Number.isInteger(item.price_step_minor) ||
+    item.price_step_minor <= 0 ||
     item.currency !== "GHS"
   ) {
     return null;
@@ -29,6 +31,7 @@ export function normalizeCatalogueItem(item) {
         }))
       : [],
     priceMinor: item.price_minor,
+    priceStepMinor: item.price_step_minor,
     currency: item.currency,
     available: item.available === true,
     featured: item.featured === true,

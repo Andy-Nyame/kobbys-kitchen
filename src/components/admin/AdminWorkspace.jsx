@@ -1,27 +1,15 @@
 import Link from "next/link";
 
 import AdminNavigation from "@/components/admin/AdminNavigation";
+import AdminAccountMenu from "@/components/admin/AdminAccountMenu";
 import ThemeControl from "@/components/theme/ThemeControl";
 
-function AdminUtility({ email }) {
+function AdminUtility({ presentation }) {
   return (
     <div className="admin-workspace__utility">
       <ThemeControl className="admin-workspace__theme" />
 
-      <div className="admin-workspace__identity">
-        <span>Signed in as Admin</span>
-        <strong>{email || "Kobby’s Kitchen administrator"}</strong>
-      </div>
-
-      <Link className="admin-workspace__public-link" href="/">
-        View public site
-      </Link>
-
-      <form action="/api/auth/logout?next=/admin" method="POST">
-        <button className="button-link button-link--secondary" type="submit">
-          Sign Out
-        </button>
-      </form>
+      <AdminAccountMenu presentation={presentation} />
     </div>
   );
 }
@@ -35,13 +23,13 @@ function AdminBrand() {
   );
 }
 
-export default function AdminWorkspace({ children, user }) {
+export default function AdminWorkspace({ children, presentation }) {
   return (
     <div className="admin-workspace">
       <aside className="admin-sidebar" aria-label="Administration workspace">
         <AdminBrand />
         <AdminNavigation />
-        <AdminUtility email={user.email} />
+        <AdminUtility presentation={presentation} />
         <p className="admin-workspace__copyright">
           &copy; {new Date().getFullYear()}{" "}Kobby&rsquo;s Kitchen
         </p>
@@ -69,7 +57,7 @@ export default function AdminWorkspace({ children, user }) {
             </summary>
             <div className="admin-mobile-drawer__panel" id="admin-mobile-drawer-panel">
               <AdminNavigation closeDetailsOnClick />
-              <AdminUtility email={user.email} />
+              <AdminUtility presentation={presentation} />
             </div>
           </details>
         </header>

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import AdminWorkspace from "@/components/admin/AdminWorkspace";
 import ThemeControl from "@/components/theme/ThemeControl";
 import { getAdminAccess } from "@/lib/auth/guards";
+import { getUserProfile } from "@/lib/auth/guards";
+import { getAdminPresentation } from "@/lib/admin/profile";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +12,7 @@ export default async function AdminLayout({ children }) {
   const { user, role } = await getAdminAccess();
 
   if (user && role !== "ADMIN") {
-    redirect("/");
+    redirect("/access-denied?area=admin");
   }
 
   if (!user) {
@@ -24,5 +26,11 @@ export default async function AdminLayout({ children }) {
     );
   }
 
-  return <AdminWorkspace user={user}>{children}</AdminWorkspace>;
+  const profile = await getUserProfile(user.id);
+
+  return (
+    <AdminWorkspace presentation={getAdminPresentation(user, profile)} user={user}>
+      {children}
+    </AdminWorkspace>
+  );
 }

@@ -4,7 +4,11 @@ import { useState } from "react";
 
 import { validateProfileUpdatePayload } from "@/lib/validation/auth";
 
-export default function ProfileForm({ initialProfile }) {
+export default function ProfileForm({
+  accountContext = "customer",
+  endpoint = "/api/account/profile",
+  initialProfile,
+}) {
   const [displayName, setDisplayName] = useState(initialProfile.displayName);
   const [phone, setPhone] = useState(initialProfile.phone);
   const [savedProfile, setSavedProfile] = useState(initialProfile);
@@ -47,7 +51,7 @@ export default function ProfileForm({ initialProfile }) {
     setFeedback({ type: "saving", message: "Saving your profile…" });
 
     try {
-      const response = await fetch("/api/account/profile", {
+      const response = await fetch(endpoint, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(validation.data),
@@ -119,7 +123,9 @@ export default function ProfileForm({ initialProfile }) {
             aria-describedby={`displayName-help${errors.displayName ? " displayName-error" : ""}`}
           />
           <p id="displayName-help" className="form-field__help">
-            Use the name staff should recognize for pickup.
+            {accountContext === "admin"
+              ? "Use the name shown in the administration workspace."
+              : "Use the name staff should recognize for pickup."}
           </p>
           {errors.displayName ? (
             <p id="displayName-error" className="form-field__error" role="alert">
@@ -146,7 +152,9 @@ export default function ProfileForm({ initialProfile }) {
           <p id="phone-help" className="form-field__help">
             {phone
               ? "Ghana local and +233 formats are accepted."
-              : "Not added yet. Add a Ghana phone number for future pickup updates."}
+              : accountContext === "admin"
+                ? "Not added yet. You may add a Ghana phone number."
+                : "Not added yet. Add a Ghana phone number for future pickup updates."}
           </p>
           {errors.phone ? (
             <p id="phone-error" className="form-field__error" role="alert">
