@@ -2746,6 +2746,7 @@ select:focus-visible {
 .admin-navigation__link {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   min-height: 44px;
   border-left: 3px solid transparent;
   border-radius: 0.7rem;
@@ -2757,6 +2758,20 @@ select:focus-visible {
     border-color 160ms ease,
     color 160ms ease,
     background-color 160ms ease;
+}
+
+.admin-navigation__badge {
+  display: inline-flex;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background-color: var(--color-brand-orange);
+  color: var(--color-white);
+  padding-inline: 0.4rem;
+  font-size: 0.72rem;
+  line-height: 1;
 }
 
 .admin-navigation__link:hover,
@@ -3467,6 +3482,7 @@ select:focus-visible {
   color: var(--color-warning-text);
 }
 
+.order-status--confirmed,
 .order-status--preparing {
   background-color: var(--color-info-background);
   color: var(--color-info-text);
@@ -3591,6 +3607,113 @@ select:focus-visible {
   display: grid;
   gap: 0.75rem;
   list-style: none;
+}
+
+.admin-order-note,
+.admin-order-actions__feedback,
+.order-again__notice {
+  margin: 0.65rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-order-actions,
+.admin-order-cancel__panel,
+.order-contact-actions,
+.order-again {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.admin-order-actions .button-link,
+.admin-order-cancel__panel .button-link {
+  width: 100%;
+}
+
+.admin-order-cancel summary {
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--color-danger-text);
+  font-weight: 800;
+}
+
+.admin-order-cancel__panel {
+  min-width: min(18rem, 70vw);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background-color: var(--color-surface-elevated);
+  padding: 0.75rem;
+}
+
+.order-tracker,
+.order-cancelled {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.order-tracker h2,
+.order-cancelled h2,
+.order-cancelled p {
+  margin: 0;
+}
+
+.order-tracker__steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+  list-style: none;
+}
+
+.order-tracker__step {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 0.5rem;
+  border-top: 3px solid var(--color-border);
+  padding-top: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+.order-tracker__step > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.order-tracker__step small {
+  font-size: 0.72rem;
+}
+
+.order-tracker__step--complete,
+.order-tracker__step--current {
+  border-color: var(--color-brand-orange);
+  color: var(--color-text-strong);
+}
+
+.order-tracker__step--current {
+  background-color: var(--color-warning-background);
+  border-radius: 0 0 0.65rem 0.65rem;
+  padding-inline: 0.4rem;
+}
+
+.order-tracker__marker {
+  font-weight: 900;
+}
+
+.order-cancelled {
+  border-left: 5px solid var(--color-danger-text);
+  background-color: var(--color-cancelled-background);
+  color: var(--color-cancelled-text);
+}
+
+.order-contact-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .checkout-summary__items li,
@@ -3827,6 +3950,27 @@ select:focus-visible {
 
   .admin-table td > .admin-status {
     margin-top: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .order-tracker__steps {
+    grid-template-columns: 1fr;
+  }
+
+  .order-tracker__step {
+    border-top: 0;
+    border-left: 3px solid var(--color-border);
+    padding: 0.55rem 0 0.55rem 0.75rem;
+  }
+
+  .order-tracker__step--complete,
+  .order-tracker__step--current {
+    border-left-color: var(--color-brand-orange);
+  }
+
+  .order-contact-actions {
+    grid-template-columns: 1fr;
   }
 }
 

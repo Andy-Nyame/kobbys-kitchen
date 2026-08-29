@@ -22,7 +22,8 @@ describe("account analytics", () => {
     ]);
     assert.match(analytics, /Account Analytics/);
     assert.doesNotMatch(analytics, /Paid revenue|Gross order value|Average order value/);
-    assert.match(orders, /Active Orders/);
+    assert.match(orders, /New Orders/);
+    assert.match(orders, /In Progress/);
     assert.match(orders, /History/);
     assert.match(orders, /Revenue & Analytics/);
     assert.match(payments, /Payment/);

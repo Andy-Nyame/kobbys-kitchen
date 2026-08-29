@@ -23,12 +23,12 @@ function AdminBrand() {
   );
 }
 
-export default function AdminWorkspace({ children, presentation }) {
+export default function AdminWorkspace({ children, presentation, pendingOrderCount = 0 }) {
   return (
     <div className="admin-workspace">
       <aside className="admin-sidebar" aria-label="Administration workspace">
         <AdminBrand />
-        <AdminNavigation />
+        <AdminNavigation pendingOrderCount={pendingOrderCount} />
         <AdminUtility presentation={presentation} />
         <p className="admin-workspace__copyright">
           &copy; {new Date().getFullYear()}{" "}Kobby&rsquo;s Kitchen
@@ -56,7 +56,7 @@ export default function AdminWorkspace({ children, presentation }) {
               </span>
             </summary>
             <div className="admin-mobile-drawer__panel" id="admin-mobile-drawer-panel">
-              <AdminNavigation closeDetailsOnClick />
+              <AdminNavigation closeDetailsOnClick pendingOrderCount={pendingOrderCount} />
               <AdminUtility presentation={presentation} />
             </div>
           </details>

@@ -1,0 +1,64 @@
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { describe, it } from "node:test";
+
+import { prepareAdminOrderMutation } from "../lib/orders/admin-domain.js";
+import { executeAdminOrderMutation } from "../lib/orders/admin-mutations.js";
+
+const integrationDescribe = process.env.RUN_DEVELOPMENT_INTEGRATION_TESTS === "1" ? describe : describe.skip;
+class RollbackAcceptance extends Error {}
+
+integrationDescribe("Development Neon operational order flow", () => {
+  it("runs lifecycle and cancellation fixtures transactionally without changing stable orders or payments", async () => {
+    const { verifyDevelopmentDatabase } = await import("../../scripts/database-safety.js");
+    const { prisma } = await import("../lib/prisma.js");
+    await verifyDevelopmentDatabase();
+    const stableOrders = await prisma.order.findMany({ orderBy: { id: "asc" }, select: { id: true, status: true, paymentStatus: true, updatedAt: true } });
+    const stablePayments = await prisma.payment.findMany({ orderBy: { id: "asc" }, select: { id: true, status: true, updatedAt: true } });
+
+    await assert.rejects(prisma.$transaction(async (transaction) => {
+      const suffix = randomUUID().slice(0, 8).toUpperCase();
+      const admin = await transaction.user.create({ data: { email: `ops-admin-${suffix}@example.test`, role: "ADMIN", profile: { create: { displayName: "Operations Admin" } } } });
+      const customer = await transaction.user.create({ data: { email: `ops-customer-${suffix}@example.test`, role: "CUSTOMER", profile: { create: { displayName: "Operations Customer" } } } });
+      const createOrder = (reference) => transaction.order.create({ data: {
+        reference,
+        userId: customer.id,
+        status: "PENDING",
+        fulfillmentType: "PICKUP",
+        paymentMethod: "CASH",
+        paymentStatus: "UNPAID",
+        customerNameSnapshot: "Operations Customer",
+        customerEmailSnapshot: customer.email,
+        customerPhoneSnapshot: "+233201234567",
+        subtotalMinor: 2500,
+        totalMinor: 2500,
+        currency: "GHS",
+        idempotencyKey: randomUUID(),
+        payment: { create: { method: "CASH", status: "UNPAID", amountMinor: 2500, currency: "GHS" } },
+      }, include: { payment: true } });
+      const transactionClient = { $transaction: async (callback) => callback(transaction) };
+      const lifecycle = await createOrder(`KK-20260829-${suffix}A`);
+      for (const action of ["ACCEPT", "START_PREPARING", "MARK_READY", "COMPLETE"]) {
+        await executeAdminOrderMutation({ prismaClient: transactionClient, adminUserId: admin.id, mutation: prepareAdminOrderMutation({ reference: lifecycle.reference, action }) });
+      }
+      const completed = await transaction.order.findUnique({ where: { id: lifecycle.id }, include: { payment: true, statusHistory: true } });
+      assert.equal(completed.status, "COMPLETED");
+      assert.equal(completed.paymentStatus, "UNPAID");
+      assert.equal(completed.payment.status, "UNPAID");
+      assert.equal(completed.statusHistory.length, 4);
+      assert.ok(completed.statusHistory.every((event) => event.changedById === admin.id));
+
+      const cancelledFixture = await createOrder(`KK-20260829-${suffix}B`);
+      await executeAdminOrderMutation({ prismaClient: transactionClient, adminUserId: admin.id, mutation: prepareAdminOrderMutation({ reference: cancelledFixture.reference, action: "CANCEL", cancellationReason: "Item unavailable" }) });
+      const cancelled = await transaction.order.findUnique({ where: { id: cancelledFixture.id }, include: { payment: true, statusHistory: true } });
+      assert.equal(cancelled.status, "CANCELLED");
+      assert.equal(cancelled.cancellationReason, "Item unavailable");
+      assert.equal(cancelled.payment.status, "UNPAID");
+      assert.equal(cancelled.statusHistory.length, 1);
+      throw new RollbackAcceptance("Rollback disposable operational fixtures.");
+    }, { maxWait: 10_000, timeout: 30_000 }), RollbackAcceptance);
+
+    assert.deepEqual(await prisma.order.findMany({ orderBy: { id: "asc" }, select: { id: true, status: true, paymentStatus: true, updatedAt: true } }), stableOrders);
+    assert.deepEqual(await prisma.payment.findMany({ orderBy: { id: "asc" }, select: { id: true, status: true, updatedAt: true } }), stablePayments);
+  });
+});

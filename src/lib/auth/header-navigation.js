@@ -10,6 +10,7 @@ const SIGNED_OUT_LINKS = Object.freeze([
 const CUSTOMER_ACCOUNT_LINKS = Object.freeze([
   Object.freeze({ label: "Profile", href: "/account/profile" }),
   Object.freeze({ label: "My Orders", href: "/account/orders" }),
+  Object.freeze({ label: "Cart", href: "/cart" }),
 ]);
 
 const ADMIN_ACCOUNT_LINKS = Object.freeze([

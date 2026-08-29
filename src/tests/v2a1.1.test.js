@@ -61,7 +61,11 @@ describe("state transition rules", () => {
       true
     );
     assert.equal(
-      canTransitionOrderStatus(ORDER_STATUS.PENDING, ORDER_STATUS.PREPARING),
+      canTransitionOrderStatus(ORDER_STATUS.PENDING, ORDER_STATUS.CONFIRMED),
+      true
+    );
+    assert.equal(
+      canTransitionOrderStatus(ORDER_STATUS.CONFIRMED, ORDER_STATUS.PREPARING),
       true
     );
     assert.equal(

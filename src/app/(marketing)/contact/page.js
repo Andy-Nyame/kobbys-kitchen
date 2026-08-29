@@ -126,7 +126,7 @@ export default async function ContactPage() {
 
         <ContentSection
           title="Opening Hours"
-          description="Our normal weekly restaurant hours, shown in GMT."
+          description="Our normal weekly restaurant hours."
         >
           <OpeningHours schedule={openingHours} />
         </ContentSection>

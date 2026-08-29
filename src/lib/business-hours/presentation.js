@@ -10,10 +10,10 @@ export const BUSINESS_WEEKDAYS = Object.freeze([
   { dayOfWeek: 7, label: "Sunday" },
 ]);
 
-function formatHour(hour, minute, { timezone = false } = {}) {
+function formatHour(hour, minute) {
   const suffix = hour >= 12 ? "PM" : "AM";
   const displayHour = hour % 12 || 12;
-  return `${displayHour}:${String(minute).padStart(2, "0")} ${suffix}${timezone ? " GMT" : ""}`;
+  return `${displayHour}:${String(minute).padStart(2, "0")} ${suffix}`;
 }
 
 export function formatBusinessMinute(value, options) {
@@ -72,7 +72,7 @@ export function formatBusinessTransition(targetValue, currentValue, verb) {
   const target = dateParts(targetValue);
   const current = dateParts(currentValue);
   const tomorrow = dateParts(new Date(current.date.getTime() + 24 * 60 * 60 * 1000));
-  const clock = formatHour(target.hour, target.minute, { timezone: true });
+  const clock = formatHour(target.hour, target.minute);
 
   if (target.dateKey === current.dateKey) return `${verb} at ${clock}`;
   if (target.dateKey === tomorrow.dateKey) return `${verb} tomorrow at ${clock}`;

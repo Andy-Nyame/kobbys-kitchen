@@ -13,7 +13,7 @@ export const WEEKDAYS = Object.freeze([
 function formatHour(hour, minute) {
   const suffix = hour >= 12 ? "PM" : "AM";
   const displayHour = hour % 12 || 12;
-  return `${displayHour}:${String(minute).padStart(2, "0")} ${suffix} GMT`;
+  return `${displayHour}:${String(minute).padStart(2, "0")} ${suffix}`;
 }
 
 export function formatScheduleMinuteGmt(value) {
@@ -21,7 +21,7 @@ export function formatScheduleMinuteGmt(value) {
     throw new TypeError("Schedule time is invalid.");
   }
 
-  if (value === 1440) return "12:00 AM GMT";
+  if (value === 1440) return "12:00 AM";
   return formatHour(Math.floor(value / 60), value % 60);
 }
 
@@ -99,7 +99,7 @@ export function presentPublicOrderingState(state) {
   const base = {
     isOpen: state?.acceptingOrders === true,
     label: state?.acceptingOrders === true ? "OPEN" : "CLOSED",
-    timezone: "GMT",
+    timezone: "Africa/Accra",
     message: "Online ordering is currently closed.",
     detail: null,
     secondary: null,

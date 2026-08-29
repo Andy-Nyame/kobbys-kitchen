@@ -17,6 +17,29 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
+const ACTIVE_STATUSES = new Set(["AWAITING_PAYMENT", "PENDING", "CONFIRMED", "PREPARING", "READY_FOR_PICKUP"]);
+
+function OrderCards({ orders }) {
+  return (
+    <ul className="order-list">
+      {orders.map((order) => (
+        <li key={order.reference} className="order-list__item">
+          <div className="order-list__header">
+            <div><strong>#{order.reference}</strong><p className="order-list__date">{formatOrderDateTime(order.placedAt)}</p></div>
+            <span className={`order-status order-status--${order.status.toLowerCase()}`}>{formatOrderLabel(order.status)}</span>
+          </div>
+          <dl className="order-list__summary">
+            <div><dt>Total</dt><dd>{formatOrderMoney(order.totalMinor, order.currency)}</dd></div>
+            <div><dt>Payment</dt><dd>{formatOrderLabel(order.paymentMethod)} · {formatOrderLabel(order.paymentStatus)}</dd></div>
+            <div><dt>Fulfillment</dt><dd>{formatOrderLabel(order.fulfillmentType)}</dd></div>
+          </dl>
+          <Link className="text-link" href={`/account/orders/${order.reference}`}>View Order</Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default async function OrdersPage() {
   const user = await requireCustomer("/account/orders");
   let orderList = null;
@@ -26,6 +49,8 @@ export default async function OrdersPage() {
   } catch (error) {
     console.error("[account-orders]", { reason: error?.code || "query_failed" });
   }
+  const activeOrders = orderList?.filter((order) => ACTIVE_STATUSES.has(order.status)) || [];
+  const pastOrders = orderList?.filter((order) => !ACTIVE_STATUSES.has(order.status)) || [];
 
   return (
     <>
@@ -36,54 +61,28 @@ export default async function OrdersPage() {
       />
 
       <ContentSection
-        title="Order History"
+        title="Active Orders"
         description={
           orderList === null
             ? "Order history is temporarily unavailable."
-            : orderList.length === 0
-              ? "You have no orders yet."
-              : `You have ${orderList.length} order${orderList.length === 1 ? "" : "s"}.`
+              : activeOrders.length === 0
+                ? "You have no active orders."
+                : `${activeOrders.length} active order${activeOrders.length === 1 ? "" : "s"}.`
         }
       >
         {orderList === null ? (
-          <p className="admin-data-error" role="alert">
-            Your orders could not be loaded. Please try again shortly.
-          </p>
+          <p className="admin-data-error" role="alert">Your orders could not be loaded. Please try again shortly.</p>
         ) : orderList.length === 0 ? (
-          <div className="order-empty-state">
-            <p>Your first pickup order will appear here after checkout.</p>
-            <Link className="button-link button-link--primary" href="/menu">
-              Browse Menu
-            </Link>
-          </div>
-        ) : (
-          <ul className="order-list">
-            {orderList.map((order) => (
-              <li key={order.reference} className="order-list__item">
-                <div className="order-list__header">
-                  <div>
-                    <strong>#{order.reference}</strong>
-                    <p className="order-list__date">
-                      {formatOrderDateTime(order.placedAt)}
-                    </p>
-                  </div>
-                  <span className={`order-status order-status--${order.status.toLowerCase()}`}>
-                    {formatOrderLabel(order.status)}
-                  </span>
-                </div>
-                <dl className="order-list__summary">
-                  <div><dt>Total</dt><dd>{formatOrderMoney(order.totalMinor, order.currency)}</dd></div>
-                  <div><dt>Payment</dt><dd>{formatOrderLabel(order.paymentMethod)} · {formatOrderLabel(order.paymentStatus)}</dd></div>
-                  <div><dt>Fulfillment</dt><dd>{formatOrderLabel(order.fulfillmentType)}</dd></div>
-                </dl>
-                <Link className="text-link" href={`/account/orders/${order.reference}`}>
-                  View Order
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+          <div className="order-empty-state"><p>Your first pickup order will appear here after checkout.</p><Link className="button-link button-link--primary" href="/menu">Browse Menu</Link></div>
+        ) : activeOrders.length ? <OrderCards orders={activeOrders} /> : <p className="order-empty-state">No orders currently need attention.</p>}
       </ContentSection>
+
+      {orderList?.length ? <ContentSection
+        title="Past Orders"
+        description={pastOrders.length === 0 ? "Completed and cancelled orders will appear here." : `${pastOrders.length} past order${pastOrders.length === 1 ? "" : "s"}.`}
+      >
+        {pastOrders.length ? <OrderCards orders={pastOrders} /> : <p className="order-empty-state">No past orders yet.</p>}
+      </ContentSection> : null}
     </>
   );
 }

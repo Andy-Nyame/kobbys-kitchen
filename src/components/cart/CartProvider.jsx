@@ -7,6 +7,7 @@ import {
   CART_STORAGE_KEY,
   getCartItemCount,
   parsePersistedCart,
+  normalizeCartLines,
   removeCartItem,
   serializeCart,
   setCartItemQuantity,
@@ -80,6 +81,7 @@ export function CartProvider({ children }) {
       removeItem: (menuItemId, priceTier) =>
         setLines((current) => removeCartItem(current, menuItemId, priceTier)),
       clearCart: () => setLines([]),
+      replaceCart: (nextLines) => setLines(normalizeCartLines(nextLines)),
     }),
     [hasLoaded, lines]
   );

@@ -27,6 +27,7 @@ describe("Auth.js role-aware navigation policy", () => {
     assert.deepEqual(navigation.accountMenu.links, [
       { label: "Profile", href: "/account/profile" },
       { label: "My Orders", href: "/account/orders" },
+      { label: "Cart", href: "/cart" },
     ]);
   });
 

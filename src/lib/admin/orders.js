@@ -2,10 +2,12 @@ import "server-only";
 
 import { ADMIN_PAGE_SIZE, getDateRangeBounds } from "@/lib/admin/filters";
 import { ORDER_STATUS } from "@/lib/orders/domain";
+import { executeAdminOrderMutation } from "@/lib/orders/admin-mutations";
 import { prisma } from "@/lib/prisma";
 const ACTIVE_ORDER_STATUSES = [
   ORDER_STATUS.AWAITING_PAYMENT,
   ORDER_STATUS.PENDING,
+  ORDER_STATUS.CONFIRMED,
   ORDER_STATUS.PREPARING,
   ORDER_STATUS.READY_FOR_PICKUP,
 ];
@@ -15,6 +17,13 @@ export const HISTORY_ORDER_STATUSES = [
 ];
 
 export { ACTIVE_ORDER_STATUSES };
+
+export const NEW_ORDER_STATUSES = [ORDER_STATUS.PENDING];
+export const IN_PROGRESS_ORDER_STATUSES = [
+  ORDER_STATUS.CONFIRMED,
+  ORDER_STATUS.PREPARING,
+  ORDER_STATUS.READY_FOR_PICKUP,
+];
 
 function normalizeOrders(orders) {
   return (orders || []).map((order) => ({
@@ -27,6 +36,8 @@ function normalizeOrders(orders) {
     created_at: order.createdAt,
     payment: order.payment || null,
     items: order.items || [],
+    note: order.note || null,
+    cancellation_reason: order.cancellationReason || null,
   }));
 }
 
@@ -45,6 +56,8 @@ const orderSelect = {
   totalMinor: true,
   currency: true,
   status: true,
+  note: true,
+  cancellationReason: true,
   createdAt: true,
   payment: { select: { method: true, status: true } },
   items: {
@@ -84,6 +97,14 @@ export async function getRecentAdminOrders(limit = 8) {
   }
 
   return normalizeOrders([...uniqueOrders.values()].slice(0, safeLimit));
+}
+
+export function mutateAdminOrder({ adminUserId, mutation }) {
+  return executeAdminOrderMutation({ prismaClient: prisma, adminUserId, mutation });
+}
+
+export function countNewAdminOrders() {
+  return prisma.order.count({ where: { status: ORDER_STATUS.PENDING } });
 }
 
 export async function listAdminOrders(filters, { statuses = null } = {}) {

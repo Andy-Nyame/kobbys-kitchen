@@ -21,6 +21,7 @@ enum ReviewStatus {
 enum OrderStatus {
   AWAITING_PAYMENT
   PENDING
+  CONFIRMED
   PREPARING
   READY_FOR_PICKUP
   COMPLETED
@@ -79,6 +80,8 @@ model User {
   orders               Order[]
   orderingChanges      OrderingSetting[]      @relation("OrderingSettingChangedBy")
   businessHoursChanges BusinessHoursSetting[] @relation("BusinessHoursSettingChangedBy")
+  cancelledOrders      Order[]                @relation("OrderCancelledBy")
+  orderStatusChanges   OrderStatusHistory[]
 
   @@index([role])
   @@map("users")
@@ -340,18 +343,39 @@ model Order {
   placedAt              DateTime        @default(now())
   completedAt           DateTime?
   cancelledAt           DateTime?
+  cancelledById         String?         @db.Uuid
+  cancellationReason    String?
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
 
-  user    User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  items   OrderItem[]
-  payment Payment?
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  cancelledBy   User?                @relation("OrderCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+  items         OrderItem[]
+  payment       Payment?
+  statusHistory OrderStatusHistory[]
 
   @@unique([userId, idempotencyKey])
   @@index([status, placedAt])
   @@index([userId, placedAt])
   @@index([paymentStatus, placedAt])
+  @@index([cancelledById])
   @@map("orders")
+}
+
+model OrderStatusHistory {
+  id          String      @id @default(uuid()) @db.Uuid
+  orderId     String      @db.Uuid
+  fromStatus  OrderStatus
+  toStatus    OrderStatus
+  changedById String      @db.Uuid
+  changedAt   DateTime    @default(now())
+
+  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy User  @relation(fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@index([orderId, changedAt])
+  @@index([changedById, changedAt])
+  @@map("order_status_history")
 }
 
 model OrderItem {

@@ -5,6 +5,7 @@ import ThemeControl from "@/components/theme/ThemeControl";
 import { getAdminAccess } from "@/lib/auth/guards";
 import { getUserProfile } from "@/lib/auth/guards";
 import { getAdminPresentation } from "@/lib/admin/profile";
+import { countNewAdminOrders } from "@/lib/admin/orders";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +28,15 @@ export default async function AdminLayout({ children }) {
   }
 
   const profile = await getUserProfile(user.id);
+  let pendingOrderCount = 0;
+  try {
+    pendingOrderCount = await countNewAdminOrders();
+  } catch (error) {
+    console.error("[admin-new-order-count]", { category: error?.code || "query_failed" });
+  }
 
   return (
-    <AdminWorkspace presentation={getAdminPresentation(user, profile)} user={user}>
+    <AdminWorkspace pendingOrderCount={pendingOrderCount} presentation={getAdminPresentation(user, profile)} user={user}>
       {children}
     </AdminWorkspace>
   );

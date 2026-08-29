@@ -1,4 +1,5 @@
 import AdminStatusBadge from "@/components/admin/AdminStatusBadge";
+import AdminOrderActions from "@/components/admin/AdminOrderActions";
 import {
   formatAdminDateTime,
   formatMoneyMinor,
@@ -22,6 +23,7 @@ export default function AdminOrderTable({ orders, emptyMessage = "No orders yet.
             <th scope="col">Payment</th>
             <th scope="col">Order status</th>
             <th scope="col">Created</th>
+            <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -32,7 +34,7 @@ export default function AdminOrderTable({ orders, emptyMessage = "No orders yet.
               </td>
               <td data-label="Customer">
                 <strong>{order.customer_name_snapshot}</strong>
-                <span className="admin-table__secondary">{order.phone_snapshot}</span>
+                <a className="admin-table__secondary inline-link" href={`tel:${order.phone_snapshot}`}>{order.phone_snapshot}</a>
               </td>
               <td data-label="Items">
                 <ul className="admin-order-items">
@@ -43,6 +45,7 @@ export default function AdminOrderTable({ orders, emptyMessage = "No orders yet.
                     </li>
                   ))}
                 </ul>
+                {order.note ? <p className="admin-order-note"><strong>Note:</strong> {order.note}</p> : null}
               </td>
               <td data-label="Total">
                 {formatMoneyMinor(order.total_minor, order.currency)}
@@ -55,6 +58,7 @@ export default function AdminOrderTable({ orders, emptyMessage = "No orders yet.
                 <AdminStatusBadge status={order.status} />
               </td>
               <td data-label="Created">{formatAdminDateTime(order.created_at)}</td>
+              <td data-label="Actions"><AdminOrderActions reference={order.reference} status={order.status} /></td>
             </tr>
           ))}
         </tbody>

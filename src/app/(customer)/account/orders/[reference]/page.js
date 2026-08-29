@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import PageIntro from "@/components/ui/PageIntro";
+import OrderAgainButton from "@/components/orders/OrderAgainButton";
+import OrderTracker from "@/components/orders/OrderTracker";
+import { businessData } from "@/data/businessData";
 import { requireCustomer } from "@/lib/auth/guards";
 import { getCustomerOrderByReference } from "@/lib/orders/customer-orders";
 import {
@@ -9,6 +12,7 @@ import {
   formatOrderLabel,
   formatOrderMoney,
 } from "@/lib/orders/presentation";
+import { deriveMenuPriceMinor } from "@/lib/menu/pricing";
 
 export const metadata = {
   title: "Order Details | Kobby's Kitchen",
@@ -27,13 +31,17 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
   if (!order) {
     notFound();
   }
+  const reorderLines = order.items
+    .filter((item) => item.menuItem?.active && item.menuItem?.available && item.menuItem?.category?.active && deriveMenuPriceMinor(item.menuItem, item.priceTier) !== null)
+    .map((item) => ({ menuItemId: item.menuItemId, priceTier: item.priceTier, quantity: item.quantity }));
+  const unavailableReorderCount = order.items.length - reorderLines.length;
 
   return (
     <>
       {query?.placed === "1" ? (
         <div className="order-confirmation-banner" role="status">
           <strong>Order placed successfully.</strong>
-          <span>Your cart was cleared after Kobby&rsquo;s Kitchen accepted the order.</span>
+          <span>We&rsquo;ve received your order and the restaurant will confirm it shortly.</span>
         </div>
       ) : null}
       <PageIntro
@@ -41,6 +49,8 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
         title={`Order ${order.reference}`}
         description={`Placed ${formatOrderDateTime(order.placedAt)}. Keep this reference for pickup support.`}
       />
+
+      <OrderTracker cancellationReason={order.cancellationReason} status={order.status} />
 
       <div className="order-detail-grid">
         <section className="order-detail-card" aria-labelledby="order-items-title">
@@ -79,12 +89,17 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
             <div><dt>Phone</dt><dd>{order.customerPhoneSnapshot}</dd></div>
             <div><dt>Email</dt><dd>{order.customerEmailSnapshot}</dd></div>
             {order.note ? <div><dt>Order note</dt><dd>{order.note}</dd></div> : null}
+            {order.cancellationReason ? <div><dt>Cancellation reason</dt><dd>{order.cancellationReason}</dd></div> : null}
           </dl>
+          <div className="order-contact-actions">
+            <a className="button-link button-link--secondary" href={businessData.phone.href}>Call Restaurant</a>
+            <a className="button-link button-link--secondary" href={businessData.whatsapp.href} rel="noreferrer" target="_blank">WhatsApp</a>
+          </div>
         </aside>
       </div>
       <div className="section-actions">
         <Link className="button-link button-link--secondary" href="/account/orders">All Orders</Link>
-        <Link className="button-link button-link--primary" href="/menu">Order Again</Link>
+        {order.status === "COMPLETED" ? <OrderAgainButton lines={reorderLines} unavailableCount={unavailableReorderCount} /> : <Link className="button-link button-link--primary" href="/menu">Browse Menu</Link>}
       </div>
     </>
   );

@@ -9,7 +9,7 @@ describe("online ordering-hours presentation", () => {
   it("keeps all seven configurable online-ordering days", () => {
     const schedule = presentWeeklySchedule([{ dayOfWeek: 1, startMinute: 600, endMinute: 1200 }]);
     assert.equal(schedule.length, 7);
-    assert.equal(schedule[0].windows[0].label, "10:00 AM GMT – 8:00 PM GMT");
+    assert.equal(schedule[0].windows[0].label, "10:00 AM – 8:00 PM");
     assert.equal(schedule[1].label, "Tuesday");
     assert.deepEqual(schedule[1].windows, []);
   });
@@ -40,10 +40,11 @@ describe("safe public ordering status", () => {
     return resolveEffectiveOrderingState({ featureEnabled: true, setting: { emergencyPaused: false, overrideMode: "NONE" }, scheduleWindows: schedule, now: new Date("2026-08-31T12:00:00Z"), ...overrides });
   }
 
-  it("presents OPEN and next close in GMT without raw codes", () => {
+  it("presents OPEN and next close without raw codes or repeated timezone labels", () => {
     const publicState = presentPublicOrderingState(state());
     assert.equal(publicState.label, "OPEN");
-    assert.match(publicState.detail, /8:00 PM GMT/);
+    assert.match(publicState.detail, /8:00 PM/);
+    assert.doesNotMatch(publicState.detail, /GMT/);
     assert.equal("reason" in publicState, false);
   });
 

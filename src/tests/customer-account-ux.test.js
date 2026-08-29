@@ -19,6 +19,7 @@ describe("customer account navigation", () => {
     assert.deepEqual(navigation.accountMenu.links, [
       { href: "/account/profile", label: "Profile" },
       { href: "/account/orders", label: "My Orders" },
+      { href: "/cart", label: "Cart" },
     ]);
   });
 

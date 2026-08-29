@@ -17,10 +17,6 @@ export default function OpeningHours({ schedule }) {
           )}
         </li>
       ))}
-      <li className="hours-list__item hours-list__item--timezone">
-        <span>Timezone</span>
-        <strong>GMT</strong>
-      </li>
     </ul>
   );
 }

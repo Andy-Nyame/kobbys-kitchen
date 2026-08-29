@@ -126,7 +126,7 @@ describe("admin metrics and payment breakdown", () => {
     assert.equal(metrics.paidRevenueMinor, 0);
     assert.equal(metrics.unpaidCashValueMinor, 0);
     assert.equal(metrics.averagePaidOrderValueMinor, 0);
-    assert.deepEqual(Object.values(metrics.orderStatusCounts), [0, 0, 0, 0, 0, 0]);
+    assert.deepEqual(Object.values(metrics.orderStatusCounts), [0, 0, 0, 0, 0, 0, 0]);
   });
 
   it("calculates status counts, paid revenue and method breakdown correctly", () => {

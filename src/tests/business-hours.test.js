@@ -182,7 +182,7 @@ describe("physical and online ordering separation", () => {
     });
     const openPresentation = presentPublicOrderingState(physicallyOpen);
     assert.equal(openPresentation.message, "Online ordering is currently closed.");
-    assert.equal(openPresentation.secondary, "Kobby’s Kitchen is open until 12:00 AM GMT.");
+    assert.equal(openPresentation.secondary, "Kobby’s Kitchen is open until 12:00 AM.");
 
     const tuesday = combineBusinessAndOnlineOrderingState({
       onlineState: online(true, { reason: "FORCED_OPEN", source: "OVERRIDE" }),
@@ -190,6 +190,6 @@ describe("physical and online ordering separation", () => {
     });
     const closedPresentation = presentPublicOrderingState(tuesday);
     assert.match(closedPresentation.message, /Kobby’s Kitchen is currently closed/i);
-    assert.equal(closedPresentation.detail, "Kobby’s Kitchen reopens Wednesday at 4:00 PM GMT.");
+    assert.equal(closedPresentation.detail, "Kobby’s Kitchen reopens Wednesday at 4:00 PM.");
   });
 });
