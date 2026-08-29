@@ -150,6 +150,33 @@ describe("admin weekly ordering schedule", () => {
     assert.equal(state.setting.unrelated, "preserved");
   });
 
+  it("normalizes native start and end time values consistently", () => {
+    const mutation = scheduleMutation([
+      { dayOfWeek: 1, startTime: "17:00", endTime: "22:00" },
+    ]);
+
+    assert.equal(mutation.data.windows[0].startMinute, 1020);
+    assert.equal(mutation.data.windows[0].endMinute, 1320);
+    assert.throws(
+      () => scheduleMutation([{ dayOfWeek: 1, startTime: "17:00", endTime: "5pm" }]),
+      /valid 24-hour time/
+    );
+    assert.throws(
+      () => scheduleMutation([{ dayOfWeek: 1, startTime: "17:00", endTime: "24:00" }]),
+      /valid 24-hour time/
+    );
+  });
+
+  it("round-trips a native midnight end as the exclusive end of day", () => {
+    const mutation = scheduleMutation([
+      { dayOfWeek: 1, startTime: "17:00", endTime: "00:00" },
+    ]);
+    const schedule = serializeScheduleForEditor(mutation.data.windows);
+
+    assert.equal(mutation.data.windows[0].endMinute, 1440);
+    assert.deepEqual(schedule[1], [{ startTime: "17:00", endTime: "00:00" }]);
+  });
+
   it("rejects overlap, duplicates, overnight ranges and invalid ranges", () => {
     assert.throws(
       () =>
@@ -302,12 +329,14 @@ describe("admin overrides and emergency controls", () => {
 
 describe("admin ordering operations route and UI", () => {
   it("uses server guards, exposes the admin route in both navigation surfaces and has accessible confirmations", async () => {
-    const [page, route, navigation, manager, workspace] = await Promise.all([
+    const [page, route, navigation, manager, workspace, operations, orderingServer] = await Promise.all([
       readFile(new URL("../app/admin/operations/page.js", import.meta.url), "utf8"),
       readFile(new URL("../app/api/admin/operations/route.js", import.meta.url), "utf8"),
       readFile(new URL("../components/admin/AdminNavigation.jsx", import.meta.url), "utf8"),
       readFile(new URL("../components/admin/AdminOperationsManager.jsx", import.meta.url), "utf8"),
       readFile(new URL("../components/admin/AdminWorkspace.jsx", import.meta.url), "utf8"),
+      readFile(new URL("../lib/admin/operations.js", import.meta.url), "utf8"),
+      readFile(new URL("../lib/ordering/server.js", import.meta.url), "utf8"),
     ]);
 
     assert.match(page, /requireAdmin\("\/admin\/operations"\)/);
@@ -319,5 +348,10 @@ describe("admin ordering operations route and UI", () => {
     assert.match(manager, /aria-modal="true"/);
     assert.match(manager, /Africa\/Accra/);
     assert.doesNotMatch(manager, /window\.confirm|alert\(/);
+    assert.equal((manager.match(/type="time"/g) || []).length, 2);
+    assert.equal((manager.match(/step="60"/g) || []).length, 2);
+    assert.doesNotMatch(manager, /inputMode="numeric"|type="text"|placeholder="20:00"/);
+    assert.match(operations, /getEffectiveOrderingState/);
+    assert.match(orderingServer, /combineBusinessAndOnlineOrderingState/);
   });
 });

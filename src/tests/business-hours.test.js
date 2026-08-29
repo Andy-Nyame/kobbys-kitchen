@@ -13,6 +13,7 @@ import {
   OrderingClosedForSubmissionError,
   assertOrderingStateOpenForSubmission,
   combineBusinessAndOnlineOrderingState,
+  resolveEffectiveOrderingState,
 } from "../lib/ordering/state.js";
 import { presentPublicOrderingState } from "../lib/ordering/presentation.js";
 
@@ -82,6 +83,53 @@ describe("physical business-hours domain", () => {
 });
 
 describe("physical and online ordering separation", () => {
+  it("automatically follows a 5 PM–10 PM online window inside physical hours", () => {
+    const scheduleWindows = [
+      { dayOfWeek: 1, startMinute: 17 * 60, endMinute: 22 * 60 },
+      { dayOfWeek: 2, startMinute: 17 * 60, endMinute: 22 * 60 },
+    ];
+    const combinedAt = (value) => {
+      const now = new Date(value);
+      return combineBusinessAndOnlineOrderingState({
+        onlineState: resolveEffectiveOrderingState({
+          featureEnabled: true,
+          setting: { emergencyPaused: false, overrideMode: "NONE" },
+          scheduleWindows,
+          now,
+        }),
+        businessState: physical(value),
+      });
+    };
+
+    assert.equal(combinedAt("2026-08-31T16:30:00.000Z").restaurantOpen, true);
+    assert.equal(combinedAt("2026-08-31T16:59:59.000Z").acceptingOrders, false);
+    assert.equal(combinedAt("2026-08-31T17:00:00.000Z").acceptingOrders, true);
+    assert.equal(combinedAt("2026-08-31T21:59:59.000Z").acceptingOrders, true);
+    assert.equal(combinedAt("2026-08-31T22:00:00.000Z").acceptingOrders, false);
+    assert.equal(combinedAt("2026-08-31T22:30:00.000Z").restaurantOpen, true);
+    assert.equal(combinedAt("2026-08-31T22:30:00.000Z").acceptingOrders, false);
+    assert.equal(combinedAt("2026-09-01T00:00:00.000Z").restaurantOpen, false);
+    assert.equal(combinedAt("2026-09-01T18:00:00.000Z").acceptingOrders, false);
+  });
+
+  it("keeps the deployment flag first in effective-state precedence", () => {
+    const onlineState = resolveEffectiveOrderingState({
+      featureEnabled: false,
+      setting: { emergencyPaused: true, overrideMode: "OPEN" },
+      scheduleWindows: [],
+      now: new Date("2026-09-01T18:00:00.000Z"),
+    });
+    const combined = combineBusinessAndOnlineOrderingState({
+      onlineState,
+      businessState: physical("2026-09-01T18:00:00.000Z"),
+    });
+
+    assert.equal(combined.acceptingOrders, false);
+    assert.equal(combined.reason, "BUILD_DISABLED");
+    assert.equal(combined.source, "BUILD_FLAG");
+    assert.equal(combined.restaurantOpen, false);
+  });
+
   it("allows checkout only when both physical and online states are open", () => {
     const combined = combineBusinessAndOnlineOrderingState({
       onlineState: online(true),

@@ -23,7 +23,6 @@ export const ORDERING_DAYS = Object.freeze([
 
 const MAX_SCHEDULE_WINDOWS = 70;
 const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
-const END_TIME_PATTERN = /^(?:(?:[01]\d|2[0-3]):[0-5]\d|24:00)$/;
 const LOCAL_DATE_TIME_PATTERN =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
 const TRUSTED_FIELDS = new Set([
@@ -43,15 +42,17 @@ function assertNoTrustedFields(payload) {
   }
 }
 
-function timeToMinutes(value, field, { allowEndOfDay = false } = {}) {
+function timeToMinutes(value, field, { endOfDayMidnight = false } = {}) {
   const normalized = typeof value === "string" ? value.trim() : "";
-  const pattern = allowEndOfDay ? END_TIME_PATTERN : TIME_PATTERN;
 
-  if (!pattern.test(normalized)) {
+  if (!TIME_PATTERN.test(normalized)) {
     throw new TypeError(`${field} must be a valid 24-hour time.`);
   }
 
-  if (normalized === "24:00") {
+  // Native time controls represent midnight as 00:00. For an end field only,
+  // midnight means the exclusive end of the selected service day (1440), not
+  // an overnight online-ordering window into the following day.
+  if (endOfDayMidnight && normalized === "00:00") {
     return 24 * 60;
   }
 
@@ -66,6 +67,7 @@ export function minutesToTime(value) {
 
   const hours = Math.floor(value / 60);
   const minutes = value % 60;
+  if (value === 24 * 60) return "00:00";
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
@@ -91,7 +93,7 @@ function normalizeSchedule(windows) {
       dayOfWeek: Number(window.dayOfWeek),
       startMinute: timeToMinutes(window.startTime, "Start time"),
       endMinute: timeToMinutes(window.endTime, "End time", {
-        allowEndOfDay: true,
+        endOfDayMidnight: true,
       }),
       sortOrder: index,
     };

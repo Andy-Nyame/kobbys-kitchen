@@ -347,6 +347,25 @@ export function combineBusinessAndOnlineOrderingState({
   const restaurantOpen = businessState?.restaurantOpen === true;
   const onlineOpen = onlineState?.acceptingOrders === true;
 
+  // The deployment switch is the master online-ordering kill switch. Keep its
+  // reason/source authoritative even when physical business hours are closed,
+  // while still attaching the independently resolved restaurant state for UI.
+  if (onlineState?.reason === "BUILD_DISABLED") {
+    return {
+      ...onlineState,
+      acceptingOrders: false,
+      restaurantOpen,
+      businessReason: businessState?.reason || "BUSINESS_CLOSED",
+      businessCurrentTime: businessState?.currentTime || onlineState?.currentTime,
+      businessNextOpenAt: businessState?.nextOpenAt || null,
+      businessNextCloseAt: restaurantOpen ? businessState?.nextCloseAt || null : null,
+      onlineReason: onlineState.reason,
+      onlineSource: onlineState.source,
+      onlineNextOpenAt: onlineState.nextOpenAt || null,
+      onlineNextCloseAt: onlineState.nextCloseAt || null,
+    };
+  }
+
   if (!restaurantOpen) {
     return {
       ...onlineState,

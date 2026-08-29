@@ -332,6 +332,7 @@ export default function AdminOperationsManager({ initialOperations }) {
                         disabled={pending}
                         onChange={(event) => updateWindow(dayOfWeek, window.clientKey, "startTime", event.target.value)}
                         required
+                        step="60"
                         type="time"
                         value={window.startTime}
                       />
@@ -342,10 +343,8 @@ export default function AdminOperationsManager({ initialOperations }) {
                         disabled={pending}
                         onChange={(event) => updateWindow(dayOfWeek, window.clientKey, "endTime", event.target.value)}
                         required
-                        inputMode="numeric"
-                        pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]|24:00"
-                        placeholder="20:00"
-                        type="text"
+                        step="60"
+                        type="time"
                         value={window.endTime}
                       />
                     </label>

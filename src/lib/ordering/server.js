@@ -30,8 +30,11 @@ async function getOrderingConfiguration(client = prisma) {
 export async function getOnlineOrderingState({
   now = new Date(),
   client = prisma,
+  orderingSetting,
 } = {}) {
-  const setting = await getOrderingConfiguration(client);
+  const setting = orderingSetting === undefined
+    ? await getOrderingConfiguration(client)
+    : orderingSetting;
 
   return resolveEffectiveOrderingState({
     featureEnabled: isOrderingEnabled(),
@@ -44,9 +47,10 @@ export async function getOnlineOrderingState({
 export async function getEffectiveOrderingState({
   now = new Date(),
   client = prisma,
+  orderingSetting,
 } = {}) {
   const [onlineState, businessState] = await Promise.all([
-    getOnlineOrderingState({ now, client }),
+    getOnlineOrderingState({ now, client, orderingSetting }),
     getEffectiveBusinessHoursState({ now, client }),
   ]);
 
