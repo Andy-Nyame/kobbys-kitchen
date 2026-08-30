@@ -35,8 +35,8 @@ export default function GoogleAuthButton({ intent = "customer", nextPath = null 
     });
     const params = new URLSearchParams({ next: decision.redirectTo });
 
-    if (decision.intent === "admin") {
-      params.set("intent", "admin");
+    if (decision.intent !== "customer") {
+      params.set("intent", decision.intent);
     }
 
     window.location.assign(`/api/auth/google?${params.toString()}`);

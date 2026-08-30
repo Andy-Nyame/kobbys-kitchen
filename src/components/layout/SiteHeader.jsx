@@ -26,7 +26,7 @@ export default async function SiteHeader() {
 
     if (role === "CUSTOMER") {
       profile = await ensureCustomerProfile(user);
-    } else if (role === "ADMIN") {
+    } else if (role === "ADMIN" || role === "CHEF") {
       profile = await getUserProfile(user.id);
     }
   } catch (error) {

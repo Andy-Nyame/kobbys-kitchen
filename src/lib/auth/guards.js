@@ -83,6 +83,29 @@ export const requireAdmin = cache(async function requireAdmin(
   return user;
 });
 
+export const getKitchenAccess = cache(async function getKitchenAccess() {
+  const user = await getAuthenticatedUser();
+  const role = user ? await getUserRole(user.id) : null;
+
+  return { user, role, allowed: role === "ADMIN" || role === "CHEF" };
+});
+
+export const requireKitchen = cache(async function requireKitchen(
+  intendedPath = "/kitchen"
+) {
+  const { user, allowed } = await getKitchenAccess();
+
+  if (!user) {
+    redirect(`/kitchen?next=${encodeURIComponent(intendedPath)}`);
+  }
+
+  if (!allowed) {
+    redirect("/access-denied?area=kitchen");
+  }
+
+  return user;
+});
+
 export async function getUserRole(userId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },

@@ -53,6 +53,7 @@ describe("trusted operational order transitions", () => {
   it("allows only the linear lifecycle and bounded cancellation states", () => {
     assert.equal(canTransitionOrderStatus(ORDER_STATUS.PENDING, ORDER_STATUS.CONFIRMED), true);
     assert.equal(canTransitionOrderStatus(ORDER_STATUS.CONFIRMED, ORDER_STATUS.PREPARING), true);
+    assert.equal(canTransitionOrderStatus(ORDER_STATUS.CONFIRMED, ORDER_STATUS.READY_FOR_PICKUP), true);
     assert.equal(canTransitionOrderStatus(ORDER_STATUS.PREPARING, ORDER_STATUS.READY_FOR_PICKUP), true);
     assert.equal(canTransitionOrderStatus(ORDER_STATUS.READY_FOR_PICKUP, ORDER_STATUS.COMPLETED), true);
     for (const status of [ORDER_STATUS.PENDING, ORDER_STATUS.CONFIRMED, ORDER_STATUS.PREPARING]) {
@@ -61,7 +62,6 @@ describe("trusted operational order transitions", () => {
     for (const [from, to] of [
       ["PENDING", "PREPARING"],
       ["PENDING", "COMPLETED"],
-      ["CONFIRMED", "READY_FOR_PICKUP"],
       ["PREPARING", "COMPLETED"],
       ["COMPLETED", "PREPARING"],
       ["CANCELLED", "CONFIRMED"],
@@ -82,17 +82,18 @@ describe("trusted operational order transitions", () => {
     assert.throws(() => prepareAdminOrderMutation({ reference: "KK-20260829-TEST1", action: "PROMOTE" }), /not supported/);
   });
 
-  it("executes the full lifecycle with audit attribution while payment stays UNPAID", async () => {
+  it("executes admin acceptance/preparation but refuses the old completion shortcut", async () => {
     const { client, state } = createTransaction();
     const now = new Date("2026-08-29T19:00:00.000Z");
-    for (const action of ["ACCEPT", "START_PREPARING", "MARK_READY", "COMPLETE"]) {
+    for (const action of ["ACCEPT", "START_PREPARING"]) {
       const mutation = prepareAdminOrderMutation({ reference: "KK-20260829-TEST1", action });
       const result = await executeAdminOrderMutation({ prismaClient: client, adminUserId: "admin-1", mutation, now });
       assert.equal(result.paymentStatus, "UNPAID");
     }
-    assert.equal(state.status, "COMPLETED");
+    assert.throws(() => prepareAdminOrderMutation({ reference: "KK-20260829-TEST1", action: "COMPLETE" }), /not supported/);
+    assert.equal(state.status, "PREPARING");
     assert.equal(state.paymentStatus, "UNPAID");
-    assert.equal(state.history.length, 4);
+    assert.equal(state.history.length, 2);
     assert.ok(state.history.every((event) => event.changedById === "admin-1"));
     assert.ok(state.updates.every((entry) => !("paymentStatus" in entry.data)));
   });
@@ -148,7 +149,8 @@ describe("customer and admin order experience wiring", () => {
     assert.match(actions, /Accept Order/);
     assert.match(actions, /Start Preparing/);
     assert.match(actions, /Mark Ready for Pickup/);
-    assert.match(actions, /Complete Order/);
+    assert.doesNotMatch(actions, /Complete Order/);
+    assert.match(adminPage, /PickupVerification/);
     assert.match(tracker, /aria-current/);
     assert.match(tracker, /Order Cancelled/);
     assert.match(adminPage, /New Orders/);

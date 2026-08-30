@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 
 import { prepareAdminOrderMutation } from "../lib/orders/admin-domain.js";
 import { executeAdminOrderMutation } from "../lib/orders/admin-mutations.js";
+import { completePickup, markOrderReadyForPickup, recordCashReceived } from "../lib/pickup/service.js";
 
 const integrationDescribe = process.env.RUN_DEVELOPMENT_INTEGRATION_TESTS === "1" ? describe : describe.skip;
 class RollbackAcceptance extends Error {}
@@ -38,13 +39,18 @@ integrationDescribe("Development Neon operational order flow", () => {
       }, include: { payment: true } });
       const transactionClient = { $transaction: async (callback) => callback(transaction) };
       const lifecycle = await createOrder(`KK-20260829-${suffix}A`);
-      for (const action of ["ACCEPT", "START_PREPARING", "MARK_READY", "COMPLETE"]) {
+      for (const action of ["ACCEPT", "START_PREPARING"]) {
         await executeAdminOrderMutation({ prismaClient: transactionClient, adminUserId: admin.id, mutation: prepareAdminOrderMutation({ reference: lifecycle.reference, action }) });
       }
+      const ready = await markOrderReadyForPickup({ prismaClient: transactionClient, actorId: admin.id, reference: lifecycle.reference, generateCode: () => "A123" });
+      await recordCashReceived({ prismaClient: transactionClient, actorId: admin.id, code: ready.pickupCode });
+      await completePickup({ prismaClient: transactionClient, actorId: admin.id, code: ready.pickupCode });
       const completed = await transaction.order.findUnique({ where: { id: lifecycle.id }, include: { payment: true, statusHistory: true } });
       assert.equal(completed.status, "COMPLETED");
-      assert.equal(completed.paymentStatus, "UNPAID");
-      assert.equal(completed.payment.status, "UNPAID");
+      assert.equal(completed.paymentStatus, "PAID");
+      assert.equal(completed.payment.status, "PAID");
+      assert.equal(completed.pickupCode, null);
+      assert.equal(completed.pickupCompletedById, admin.id);
       assert.equal(completed.statusHistory.length, 4);
       assert.ok(completed.statusHistory.every((event) => event.changedById === admin.id));
 

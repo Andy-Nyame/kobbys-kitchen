@@ -51,12 +51,30 @@ export function getSafeCustomerRedirectPath(value, fallback = "/account") {
   return fallback;
 }
 
+export function getSafeKitchenRedirectPath(value, fallback = "/kitchen") {
+  const safePath = getSafeRedirectPath(value, fallback);
+
+  if (safePath === "/kitchen" || safePath.startsWith("/kitchen?")) {
+    return safePath;
+  }
+
+  return fallback;
+}
+
 export function getGoogleAuthStartDecision({ intent, intendedPath } = {}) {
   if (intent === "admin") {
     return {
       intent: "admin",
       redirectTo: getSafeAdminRedirectPath(intendedPath),
       errorPath: "/admin?error=oauth_unavailable",
+    };
+  }
+
+  if (intent === "kitchen") {
+    return {
+      intent: "kitchen",
+      redirectTo: getSafeKitchenRedirectPath(intendedPath),
+      errorPath: "/kitchen?error=oauth_unavailable",
     };
   }
 

@@ -12,6 +12,7 @@ import { formatStatusLabel } from "@/lib/admin/presentation";
 import { getOrderMetrics } from "@/lib/analytics/order-queries";
 import { requireAdmin } from "@/lib/auth/guards";
 import { PAYMENT_METHOD, PAYMENT_STATUS } from "@/lib/orders/domain";
+import PickupVerification from "@/components/pickup/PickupVerification";
 
 export const metadata = { title: "Admin Orders | Kobby's Kitchen", description: "Kobby's Kitchen active orders, history and revenue analytics." };
 
@@ -44,6 +45,7 @@ export default async function AdminOrdersPage({ searchParams }) {
 
   return <>
     <PageIntro eyebrow="Admin operations" title="Orders" description="Manage active work, review order history, and inspect server-authoritative revenue analytics." />
+    <PickupVerification compact />
     <nav className="admin-domain-tabs" aria-label="Order sections">
       {Object.entries(VIEWS).map(([key, item]) => <Link key={key} href={`/admin/orders?view=${key}`} aria-current={view === key ? "page" : undefined} className={view === key ? "admin-domain-tabs__link admin-domain-tabs__link--current" : "admin-domain-tabs__link"}>{item.label}</Link>)}
     </nav>

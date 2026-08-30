@@ -3,7 +3,7 @@ import { formatGhs } from "../cart/domain.js";
 const STATUS_LABELS = Object.freeze({
   AWAITING_PAYMENT: "Awaiting Payment",
   PENDING: "Awaiting Confirmation",
-  CONFIRMED: "Order Accepted",
+  CONFIRMED: "Order Accepted · Food is Being Prepared",
   PREPARING: "Food is Being Prepared",
   READY_FOR_PICKUP: "Ready for Pickup",
   COMPLETED: "Completed",

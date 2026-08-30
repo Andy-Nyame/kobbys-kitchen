@@ -3,6 +3,7 @@ import "server-only";
 import { ADMIN_PAGE_SIZE, getDateRangeBounds } from "@/lib/admin/filters";
 import { ORDER_STATUS } from "@/lib/orders/domain";
 import { executeAdminOrderMutation } from "@/lib/orders/admin-mutations";
+import { markOrderReadyForPickup } from "@/lib/pickup/service";
 import { prisma } from "@/lib/prisma";
 const ACTIVE_ORDER_STATUSES = [
   ORDER_STATUS.AWAITING_PAYMENT,
@@ -100,6 +101,13 @@ export async function getRecentAdminOrders(limit = 8) {
 }
 
 export function mutateAdminOrder({ adminUserId, mutation }) {
+  if (mutation.action === "MARK_READY") {
+    return markOrderReadyForPickup({
+      prismaClient: prisma,
+      actorId: adminUserId,
+      reference: mutation.reference,
+    });
+  }
   return executeAdminOrderMutation({ prismaClient: prisma, adminUserId, mutation });
 }
 

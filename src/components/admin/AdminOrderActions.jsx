@@ -9,7 +9,6 @@ const PRIMARY_ACTION = {
   PENDING: { action: ADMIN_ORDER_ACTION.ACCEPT, label: "Accept Order" },
   CONFIRMED: { action: ADMIN_ORDER_ACTION.START_PREPARING, label: "Start Preparing" },
   PREPARING: { action: ADMIN_ORDER_ACTION.MARK_READY, label: "Mark Ready for Pickup" },
-  READY_FOR_PICKUP: { action: ADMIN_ORDER_ACTION.COMPLETE, label: "Complete Order" },
 };
 
 const CANCELLABLE = new Set(["PENDING", "CONFIRMED", "PREPARING"]);

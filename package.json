@@ -18,6 +18,8 @@
     "test:development:admin-menu": "node --env-file-if-exists=.env.local scripts/acceptance/admin-menu.js",
     "provision:primary-admin": "node --env-file-if-exists=.env.local scripts/provision-primary-admin.js",
     "provision:primary-admin:production": "node --env-file-if-exists=.env.admin-production.local scripts/provision-primary-admin-production.js",
+    "provision:primary-chef": "node --env-file-if-exists=.env.local scripts/provision-primary-chef.js",
+    "provision:primary-chef:production": "node --env-file-if-exists=.env.admin-production.local scripts/provision-primary-chef-production.js",
     "cleanup:dummy-customers:production": "node --env-file-if-exists=.env.admin-production.local scripts/cleanup-production-dummy-customers.js"
   },
   "dependencies": {

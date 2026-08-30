@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import PageIntro from "@/components/ui/PageIntro";
 import OrderAgainButton from "@/components/orders/OrderAgainButton";
 import OrderTracker from "@/components/orders/OrderTracker";
+import PickupCodeCard from "@/components/orders/PickupCodeCard";
 import { businessData } from "@/data/businessData";
 import { requireCustomer } from "@/lib/auth/guards";
 import { getCustomerOrderByReference } from "@/lib/orders/customer-orders";
@@ -51,6 +52,10 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
       />
 
       <OrderTracker cancellationReason={order.cancellationReason} status={order.status} />
+
+      {order.status === "READY_FOR_PICKUP" && order.pickupCode ? (
+        <PickupCodeCard code={order.pickupCode} />
+      ) : null}
 
       <div className="order-detail-grid">
         <section className="order-detail-card" aria-labelledby="order-items-title">

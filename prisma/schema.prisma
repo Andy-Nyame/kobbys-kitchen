@@ -10,6 +10,7 @@ datasource db {
 enum AppRole {
   CUSTOMER
   ADMIN
+  CHEF
 }
 
 enum ReviewStatus {
@@ -81,7 +82,9 @@ model User {
   orderingChanges      OrderingSetting[]      @relation("OrderingSettingChangedBy")
   businessHoursChanges BusinessHoursSetting[] @relation("BusinessHoursSettingChangedBy")
   cancelledOrders      Order[]                @relation("OrderCancelledBy")
+  completedPickups     Order[]                @relation("OrderPickupCompletedBy")
   orderStatusChanges   OrderStatusHistory[]
+  cashPaymentsReceived Payment[]              @relation("PaymentCashReceivedBy")
 
   @@index([role])
   @@map("users")
@@ -342,23 +345,29 @@ model Order {
   idempotencyKey        String
   placedAt              DateTime        @default(now())
   completedAt           DateTime?
+  pickupCode            String?         @unique @db.VarChar(4)
+  pickupCodeGeneratedAt DateTime?
+  pickedUpAt            DateTime?
+  pickupCompletedById   String?         @db.Uuid
   cancelledAt           DateTime?
   cancelledById         String?         @db.Uuid
   cancellationReason    String?
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
 
-  user          User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
-  cancelledBy   User?                @relation("OrderCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
-  items         OrderItem[]
-  payment       Payment?
-  statusHistory OrderStatusHistory[]
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  cancelledBy       User?                @relation("OrderCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+  pickupCompletedBy User?                @relation("OrderPickupCompletedBy", fields: [pickupCompletedById], references: [id], onDelete: SetNull)
+  items             OrderItem[]
+  payment           Payment?
+  statusHistory     OrderStatusHistory[]
 
   @@unique([userId, idempotencyKey])
   @@index([status, placedAt])
   @@index([userId, placedAt])
   @@index([paymentStatus, placedAt])
   @@index([cancelledById])
+  @@index([pickupCompletedById])
   @@map("orders")
 }
 
@@ -397,24 +406,27 @@ model OrderItem {
 }
 
 model Payment {
-  id          String        @id @default(uuid()) @db.Uuid
-  orderId     String        @unique @db.Uuid
-  method      PaymentMethod
-  status      PaymentStatus @default(UNPAID)
-  amountMinor Int
-  currency    String        @default("GHS")
-  provider    String?
-  providerRef String?       @unique
-  paidAt      DateTime?
-  failedAt    DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id               String        @id @default(uuid()) @db.Uuid
+  orderId          String        @unique @db.Uuid
+  method           PaymentMethod
+  status           PaymentStatus @default(UNPAID)
+  amountMinor      Int
+  currency         String        @default("GHS")
+  provider         String?
+  providerRef      String?       @unique
+  paidAt           DateTime?
+  cashReceivedById String?       @db.Uuid
+  failedAt         DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
-  order    Order            @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  attempts PaymentAttempt[]
+  order          Order            @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  cashReceivedBy User?            @relation("PaymentCashReceivedBy", fields: [cashReceivedById], references: [id], onDelete: SetNull)
+  attempts       PaymentAttempt[]
 
   @@index([orderId, status])
   @@index([status, paidAt])
+  @@index([cashReceivedById])
   @@map("payments")
 }
 

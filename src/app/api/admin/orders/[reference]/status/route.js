@@ -5,6 +5,7 @@ import { getAdminAuthorization } from "@/lib/auth/authorization";
 import { getAuthenticatedUser, getUserRole } from "@/lib/auth/guards";
 import { prepareAdminOrderMutation } from "@/lib/orders/admin-domain";
 import { AdminOrderMutationError } from "@/lib/orders/admin-mutations";
+import { PickupWorkflowError } from "@/lib/pickup/domain";
 
 export async function POST(request, { params }) {
   const user = await getAuthenticatedUser();
@@ -34,6 +35,12 @@ export async function POST(request, { params }) {
       return NextResponse.json({ ok: false, message: error.message }, { status: 400 });
     }
     if (error instanceof AdminOrderMutationError) {
+      return NextResponse.json(
+        { ok: false, code: error.code, message: error.message },
+        { status: error.status }
+      );
+    }
+    if (error instanceof PickupWorkflowError) {
       return NextResponse.json(
         { ok: false, code: error.code, message: error.message },
         { status: error.status }

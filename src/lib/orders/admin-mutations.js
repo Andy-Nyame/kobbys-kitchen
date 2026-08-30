@@ -15,6 +15,13 @@ export async function executeAdminOrderMutation({
   mutation,
   now = new Date(),
 }) {
+  if (mutation?.nextStatus === "READY_FOR_PICKUP" || mutation?.nextStatus === "COMPLETED") {
+    throw new AdminOrderMutationError(
+      "Use the secure pickup workflow for ready and completed orders.",
+      409,
+      "PICKUP_WORKFLOW_REQUIRED"
+    );
+  }
   return prismaClient.$transaction(async (transaction) => {
     const admin = await transaction.user.findUnique({
       where: { id: adminUserId },
