@@ -732,6 +732,24 @@ select:focus-visible {
   stroke-linejoin: round;
 }
 
+.theme-control__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.theme-control__option--light {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-control__option--dark {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-control__option--light {
+  display: inline-flex;
+}
+
 .theme-control--compact {
   width: 44px;
   padding: 0;

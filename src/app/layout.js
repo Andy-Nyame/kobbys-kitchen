@@ -5,20 +5,22 @@ import { THEME_STORAGE_KEY } from "@/lib/theme";
 
 const themeInitializationScript = `(() => {
   const root = document.documentElement;
-  let preference = "system";
+  let preference = null;
 
   try {
     const savedPreference = window.localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});
-    if (["system", "light", "dark"].includes(savedPreference)) {
+    if (["light", "dark"].includes(savedPreference)) {
       preference = savedPreference;
+    } else if (savedPreference !== null) {
+      window.localStorage.removeItem(${JSON.stringify(THEME_STORAGE_KEY)});
     }
   } catch {}
 
-  const resolvedTheme = preference === "system"
-    ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-    : preference;
+  const resolvedTheme = preference
+    || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 
-  root.dataset.themePreference = preference;
+  root.dataset.themePreference = resolvedTheme;
+  root.dataset.themeSource = preference ? "manual" : "system";
   root.dataset.theme = resolvedTheme;
   root.style.colorScheme = resolvedTheme;
 })();`;
