@@ -17,6 +17,7 @@
   --color-brand-yellow: #ffd000;
   --color-brand-yellow-hover: #e8ba00;
   --color-brand-orange: #f36b16;
+  --color-loader-foreground: #70401f;
   --color-accent-contrast: #0b0b0b;
   --color-white: #ffffff;
   --color-header-background: rgba(255, 253, 247, 0.92);
@@ -63,6 +64,7 @@
   --color-brand-yellow: #ffd34e;
   --color-brand-yellow-hover: #e9bb16;
   --color-brand-orange: #ff9450;
+  --color-loader-foreground: var(--color-text-strong);
   --color-header-background: rgba(23, 18, 14, 0.92);
   --color-header-border: rgba(85, 69, 55, 0.9);
   --color-footer-background: #1d1712;
@@ -779,6 +781,51 @@ select:focus-visible {
 
 .page {
   padding-top: 0.5rem;
+}
+
+.kitchen-loader {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.85rem;
+  min-height: clamp(20rem, 58dvh, 40rem);
+  width: 100%;
+  padding: 2rem 1rem;
+  background-color: var(--color-background);
+  color: var(--color-loader-foreground);
+  text-align: center;
+}
+
+.kitchen-loader__icon {
+  display: block;
+  width: clamp(4rem, 12vw, 5.5rem);
+  height: clamp(4rem, 12vw, 5.5rem);
+  overflow: visible;
+}
+
+.kitchen-loader__utensils {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kitchen-loader-spin-pause 1.65s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+
+.kitchen-loader__label {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+@keyframes kitchen-loader-spin-pause {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  58%,
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .content-stack {
@@ -2073,6 +2120,11 @@ select:focus-visible {
     scroll-behavior: auto !important;
     transition-duration: 0ms !important;
     animation-duration: 0ms !important;
+  }
+
+  .kitchen-loader__utensils {
+    animation: none;
+    will-change: auto;
   }
 }
 
