@@ -816,16 +816,28 @@ select:focus-visible {
 
 .kitchen-loader__icon {
   display: block;
-  width: clamp(4rem, 12vw, 5.5rem);
-  height: clamp(4rem, 12vw, 5.5rem);
+  width: clamp(3rem, 10vw, 4rem);
+  height: clamp(3rem, 10vw, 4rem);
   overflow: visible;
+  animation: kitchen-loader-rotate 0.9s linear infinite;
+  transform-origin: center;
+  will-change: transform;
 }
 
-.kitchen-loader__utensils {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: kitchen-loader-spin-pause 1.65s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  will-change: transform;
+.kitchen-loader__track,
+.kitchen-loader__spinner {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 5;
+}
+
+.kitchen-loader__track {
+  opacity: 0.18;
+}
+
+.kitchen-loader__spinner {
+  stroke-dasharray: 72 28;
+  stroke-linecap: round;
 }
 
 .kitchen-loader__label {
@@ -835,13 +847,8 @@ select:focus-visible {
   letter-spacing: 0.02em;
 }
 
-@keyframes kitchen-loader-spin-pause {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  58%,
-  100% {
+@keyframes kitchen-loader-rotate {
+  to {
     transform: rotate(360deg);
   }
 }
@@ -2140,7 +2147,7 @@ select:focus-visible {
     animation-duration: 0ms !important;
   }
 
-  .kitchen-loader__utensils {
+  .kitchen-loader__icon {
     animation: none;
     will-change: auto;
   }
