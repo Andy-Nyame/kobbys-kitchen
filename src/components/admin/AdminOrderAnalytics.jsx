@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import AnalyticsBarChart from "@/components/admin/AnalyticsBarChart";
 import AdminMetricCard from "@/components/admin/AdminMetricCard";
 import AdminQueryNotice from "@/components/admin/AdminQueryNotice";
 import ContentSection from "@/components/ui/ContentSection";
@@ -25,9 +26,16 @@ function buildDailyRows(metrics) {
 
 export default function AdminOrderAnalytics({ metrics, filters, errors }) {
   const dailyRows = metrics ? buildDailyRows(metrics) : [];
+  const chronologicalRows = [...dailyRows].reverse();
+
   return (
-    <>
-      <ContentSection title="Date Range" description="Order counts use creation time; recognized revenue uses the trusted paid timestamp." className="admin-section">
+    <div className="analytics-dashboard">
+      <section className="analytics-toolbar" aria-labelledby="analytics-range-title">
+        <div>
+          <p className="admin-section-eyebrow">Dashboard filters</p>
+          <h2 id="analytics-range-title">Date Range</h2>
+          <p>Order counts use creation time; recognized revenue uses the trusted paid timestamp.</p>
+        </div>
         <AdminQueryNotice errors={errors} />
         <form className="admin-filter-form admin-filter-form--dates" action="/admin/orders" method="GET">
           <input type="hidden" name="view" value="analytics" />
@@ -38,22 +46,55 @@ export default function AdminOrderAnalytics({ metrics, filters, errors }) {
             <Link className="button-link button-link--secondary" href="/admin/orders?view=analytics">Clear</Link>
           </div>
         </form>
-      </ContentSection>
+      </section>
 
       <ContentSection title="Order and Revenue Summary" description="Cancelled, refunded, unpaid, pending and failed payments are excluded from recognized revenue." className="admin-section">
-        {metrics ? <div className="admin-metric-grid">
-          <AdminMetricCard label="Recognized revenue" value={formatMoneyMinor(metrics.paidRevenueMinor)} note="PAID, non-cancelled orders only" />
+        {metrics ? <div className="analytics-kpi-grid">
+          <AdminMetricCard label="Recognized revenue" value={formatMoneyMinor(metrics.paidRevenueMinor)} note="Paid, non-cancelled orders" tone="success" />
           <AdminMetricCard label="Gross order value" value={formatMoneyMinor(metrics.grossOrderValueMinor)} note="Non-cancelled orders" />
-          <AdminMetricCard label="Paid orders" value={metrics.paidOrderCount} />
-          <AdminMetricCard label="Average order value" value={formatMoneyMinor(metrics.averageOrderValueMinor)} />
-          <AdminMetricCard label="Average paid order" value={formatMoneyMinor(metrics.averagePaidOrderValueMinor)} />
-          <AdminMetricCard label="Unpaid cash" value={formatMoneyMinor(metrics.unpaidCashValueMinor)} note="Not revenue" tone="warning" />
-          {Object.values(PAYMENT_METHOD).map((method) => <AdminMetricCard key={method} label={`${formatStatusLabel(method)} paid`} value={formatMoneyMinor(metrics.revenueByPaymentMethodMinor[method])} />)}
+          <AdminMetricCard label="Paid orders" value={metrics.paidOrderCount} note="Recognized payments" />
+          <AdminMetricCard label="Average order value" value={formatMoneyMinor(metrics.averageOrderValueMinor)} note="All non-cancelled orders" />
+          <AdminMetricCard label="Average paid order" value={formatMoneyMinor(metrics.averagePaidOrderValueMinor)} note="Paid orders only" />
         </div> : <p className="admin-data-error">Order analytics are temporarily unavailable.</p>}
       </ContentSection>
 
+      <ContentSection title="Payment Breakdown" description="Recognized revenue by payment method, with unpaid cash shown separately." className="admin-section">
+        {metrics ? <div className="analytics-kpi-grid analytics-kpi-grid--payments">
+          {Object.values(PAYMENT_METHOD).map((method) => <AdminMetricCard key={method} label={`${formatStatusLabel(method)} paid`} value={formatMoneyMinor(metrics.revenueByPaymentMethodMinor[method])} note="Recognized revenue" tone="info" />)}
+          <AdminMetricCard label="Unpaid cash" value={formatMoneyMinor(metrics.unpaidCashValueMinor)} note="Not recognized revenue" tone="warning" />
+        </div> : <p className="admin-data-error">Payment analytics are temporarily unavailable.</p>}
+      </ContentSection>
+
+      <div className="analytics-chart-grid">
+        <ContentSection title="Revenue Trend" description="Recognized revenue by trusted paid date." className="admin-section analytics-chart-card">
+          {metrics ? <AnalyticsBarChart
+            ariaLabel="Recognized revenue by date"
+            data={chronologicalRows}
+            emptyWhenZero
+            emptyMessage="No recognized revenue exists for this range."
+            formatValue={formatMoneyMinor}
+            getKey={(row) => `revenue-${row.day}`}
+            getLabel={(row) => formatAdminDate(row.day)}
+            getShortLabel={(row) => row.day.slice(5)}
+            getValue={(row) => row.revenueMinor}
+          /> : <p className="admin-data-error">Revenue trends are temporarily unavailable.</p>}
+        </ContentSection>
+
+        <ContentSection title="Order Activity" description="Orders created on each recorded date." className="admin-section analytics-chart-card">
+          {metrics ? <AnalyticsBarChart
+            ariaLabel="Order activity by date"
+            data={chronologicalRows}
+            emptyMessage="No order activity exists for this range."
+            getKey={(row) => `orders-${row.day}`}
+            getLabel={(row) => formatAdminDate(row.day)}
+            getShortLabel={(row) => row.day.slice(5)}
+            getValue={(row) => row.orderCount}
+          /> : <p className="admin-data-error">Order trends are temporarily unavailable.</p>}
+        </ContentSection>
+      </div>
+
       <ContentSection title="Orders by Status" description="Counts for orders created in the selected range." className="admin-section">
-        {metrics ? <div className="admin-metric-grid">{Object.values(ORDER_STATUS).map((status) => <AdminMetricCard key={status} label={formatStatusLabel(status)} value={metrics.orderStatusCounts[status]} />)}</div> : <p className="admin-data-error">Order analytics are temporarily unavailable.</p>}
+        {metrics ? <div className="analytics-kpi-grid analytics-kpi-grid--breakdown">{Object.values(ORDER_STATUS).map((status) => <AdminMetricCard key={status} label={formatStatusLabel(status)} value={metrics.orderStatusCounts[status]} />)}</div> : <p className="admin-data-error">Order analytics are temporarily unavailable.</p>}
       </ContentSection>
 
       <ContentSection title="Daily Activity" description="Only dates with recorded orders or recognized revenue are shown." className="admin-section">
@@ -61,8 +102,8 @@ export default function AdminOrderAnalytics({ metrics, filters, errors }) {
       </ContentSection>
 
       <ContentSection title="Top Completed Items" description="Quantity and snapshot revenue from completed, paid orders." className="admin-section">
-        {metrics && metrics.topItems.length ? <div className="admin-table-shell" tabIndex="0" role="region" aria-label="Top completed items"><table className="admin-table admin-table--compact"><thead><tr><th scope="col">Item</th><th scope="col">Quantity</th><th scope="col">Item revenue</th></tr></thead><tbody>{metrics.topItems.map((item) => <tr key={item.item_name}><td data-label="Item">{item.item_name}</td><td data-label="Quantity">{Number(item.quantity || 0)}</td><td data-label="Item revenue">{formatMoneyMinor(Number(item.revenue_minor || 0))}</td></tr>)}</tbody></table></div> : metrics ? <p className="admin-empty-state">Top items will appear after paid orders are completed.</p> : <p className="admin-data-error">Item analytics are temporarily unavailable.</p>}
+        {metrics && metrics.topItems.length ? <div className="admin-table-shell" tabIndex="0" role="region" aria-label="Top completed items"><table className="admin-table admin-table--compact"><thead><tr><th scope="col">Rank</th><th scope="col">Item</th><th scope="col">Quantity</th><th scope="col">Item revenue</th></tr></thead><tbody>{metrics.topItems.map((item, index) => <tr key={item.item_name}><td data-label="Rank">{index + 1}</td><td data-label="Item">{item.item_name}</td><td data-label="Quantity">{Number(item.quantity || 0)}</td><td data-label="Item revenue">{formatMoneyMinor(Number(item.revenue_minor || 0))}</td></tr>)}</tbody></table></div> : metrics ? <p className="admin-empty-state">Top items will appear after paid orders are completed.</p> : <p className="admin-data-error">Item analytics are temporarily unavailable.</p>}
       </ContentSection>
-    </>
+    </div>
   );
 }
