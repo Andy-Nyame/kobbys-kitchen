@@ -3,6 +3,7 @@ import Link from "next/link";
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
 import { requireCustomer } from "@/lib/auth/guards";
+import { isCustomerActiveOrderStatus } from "@/lib/orders/customer-active";
 import { listCustomerOrders } from "@/lib/orders/customer-orders";
 import {
   formatOrderDateTime,
@@ -16,8 +17,6 @@ export const metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-const ACTIVE_STATUSES = new Set(["AWAITING_PAYMENT", "PENDING", "CONFIRMED", "PREPARING", "READY_FOR_PICKUP"]);
 
 function OrderCards({ orders }) {
   return (
@@ -49,8 +48,8 @@ export default async function OrdersPage() {
   } catch (error) {
     console.error("[account-orders]", { reason: error?.code || "query_failed" });
   }
-  const activeOrders = orderList?.filter((order) => ACTIVE_STATUSES.has(order.status)) || [];
-  const pastOrders = orderList?.filter((order) => !ACTIVE_STATUSES.has(order.status)) || [];
+  const activeOrders = orderList?.filter((order) => isCustomerActiveOrderStatus(order.status)) || [];
+  const pastOrders = orderList?.filter((order) => !isCustomerActiveOrderStatus(order.status)) || [];
 
   return (
     <>

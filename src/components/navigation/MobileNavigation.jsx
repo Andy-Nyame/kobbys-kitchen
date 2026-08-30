@@ -1,10 +1,14 @@
 import HeaderAuthNavigation from "@/components/navigation/HeaderAuthNavigation";
 import CartLink from "@/components/cart/CartLink";
+import CustomerOrdersNavigationLink from "@/components/navigation/CustomerOrdersNavigationLink";
 import NavigationLink from "@/components/navigation/NavigationLink";
 import ThemeControl from "@/components/theme/ThemeControl";
 import { primaryNavigation } from "@/data/navigation";
 
-export default function MobileNavigation({ authNavigation }) {
+export default function MobileNavigation({
+  authNavigation,
+  customerOrdersNavigation = null,
+}) {
   return (
     <details className="mobile-navigation">
       <summary
@@ -45,7 +49,21 @@ export default function MobileNavigation({ authNavigation }) {
               </NavigationLink>
             </li>
           ))}
-          <HeaderAuthNavigation mobile navigation={authNavigation} />
+          {customerOrdersNavigation ? (
+            <li>
+              <CustomerOrdersNavigationLink
+                activeOrderCount={customerOrdersNavigation.activeOrderCount}
+                mobile
+              />
+            </li>
+          ) : null}
+          <HeaderAuthNavigation
+            excludedMobileAccountHrefs={
+              customerOrdersNavigation ? ["/account/orders"] : []
+            }
+            mobile
+            navigation={authNavigation}
+          />
         </ul>
 
         <div className="mobile-navigation__actions">

@@ -2,13 +2,16 @@ import { Suspense } from "react";
 import Image from "next/image";
 
 import OpeningHours from "@/components/ordering/OpeningHours";
+import CustomerHomeOrders from "@/components/orders/CustomerHomeOrders";
 import HomeReviewSummary from "@/components/reviews/HomeReviewSummary";
 import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
 import MealCard from "@/components/ui/MealCard";
 import { businessData } from "@/data/businessData";
 import { menuItems } from "@/data/menuData";
+import { getCustomerAccess } from "@/lib/auth/guards";
 import { getPublicBusinessHours } from "@/lib/business-hours/server";
+import { getCustomerActiveOrderOverview } from "@/lib/orders/customer-orders";
 
 export const metadata = {
   title: "Kobby's Kitchen | Fast Food in Tema Community Two",
@@ -23,7 +26,22 @@ export default async function Home() {
   const phoneLink = businessData.phone.href;
   const whatsappLink = businessData.whatsapp.href;
   const directionsLink = businessData.googleMapsLink;
-  const openingHours = await getPublicBusinessHours();
+  const [openingHours, { user, role }] = await Promise.all([
+    getPublicBusinessHours(),
+    getCustomerAccess(),
+  ]);
+  let customerOrderOverview;
+
+  if (user && role === "CUSTOMER") {
+    try {
+      customerOrderOverview = await getCustomerActiveOrderOverview(user.id);
+    } catch (error) {
+      customerOrderOverview = null;
+      console.error("[customer-home-orders]", {
+        reason: error?.code || "query_failed",
+      });
+    }
+  }
 
   return (
     <main className="page">
@@ -31,32 +49,38 @@ export default async function Home() {
         <section className="hero">
           <div className="hero__grid">
             <div className="hero__content">
-              <p className="hero__eyebrow">Welcome to Kobby&apos;s Kitchen</p>
-              <h1>{businessData.tagline}</h1>
-              <p className="hero__description">{businessData.heroDescription}</p>
+              {role === "CUSTOMER" ? (
+                <CustomerHomeOrders overview={customerOrderOverview} />
+              ) : (
+                <>
+                  <p className="hero__eyebrow">Welcome to Kobby&apos;s Kitchen</p>
+                  <h1>{businessData.tagline}</h1>
+                  <p className="hero__description">{businessData.heroDescription}</p>
 
-              <div className="button-row">
-                <ButtonLink href="/menu" variant="primary">
-                  View Menu
-                </ButtonLink>
-                <ButtonLink
-                  ariaLabel="Order on WhatsApp"
-                  href={whatsappLink}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  variant="secondary"
-                >
-                  Order on WhatsApp
-                </ButtonLink>
-                <ButtonLink href={directionsLink} variant="secondary">
-                  Get Directions
-                </ButtonLink>
-              </div>
+                  <div className="button-row">
+                    <ButtonLink href="/menu" variant="primary">
+                      View Menu
+                    </ButtonLink>
+                    <ButtonLink
+                      ariaLabel="Order on WhatsApp"
+                      href={whatsappLink}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                      variant="secondary"
+                    >
+                      Order on WhatsApp
+                    </ButtonLink>
+                    <ButtonLink href={directionsLink} variant="secondary">
+                      Get Directions
+                    </ButtonLink>
+                  </div>
 
-              <div className="hero__location">
-                <strong>{businessData.location.area}</strong>
-                <span>{businessData.location.landmark}</span>
-              </div>
+                  <div className="hero__location">
+                    <strong>{businessData.location.area}</strong>
+                    <span>{businessData.location.landmark}</span>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="hero__visual">

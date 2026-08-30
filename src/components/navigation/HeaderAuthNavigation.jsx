@@ -6,6 +6,7 @@ export default function HeaderAuthNavigation({
   mobile = false,
   includeAccount = true,
   includeLinks = true,
+  excludedMobileAccountHrefs = [],
 }) {
   const linkClassName = mobile
     ? "mobile-navigation__link"
@@ -13,7 +14,9 @@ export default function HeaderAuthNavigation({
   const activeClassName = mobile
     ? "mobile-navigation__link--current"
     : "navigation-link--current";
-  const accountLinks = navigation.accountMenu?.links || [];
+  const accountLinks = (navigation.accountMenu?.links || []).filter(
+    (item) => !mobile || !excludedMobileAccountHrefs.includes(item.href)
+  );
 
   return (
     <>

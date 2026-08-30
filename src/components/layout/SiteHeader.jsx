@@ -14,18 +14,32 @@ import {
   getUserProfile,
   getUserRole,
 } from "@/lib/auth/guards";
+import { getCustomerActiveOrderOverview } from "@/lib/orders/customer-orders";
 
 export default async function SiteHeader() {
   let user = null;
   let role = null;
   let profile = null;
+  let customerOrdersNavigation = null;
 
   try {
     user = await getAuthenticatedUser();
     role = user ? await getUserRole(user.id) : null;
 
     if (role === "CUSTOMER") {
+      customerOrdersNavigation = { activeOrderCount: 0 };
       profile = await ensureCustomerProfile(user);
+
+      try {
+        const overview = await getCustomerActiveOrderOverview(user.id, {
+          limit: 0,
+        });
+        customerOrdersNavigation.activeOrderCount = overview.totalCount;
+      } catch (error) {
+        console.error("[site-header-active-orders]", {
+          reason: error?.code || "query_failed",
+        });
+      }
     } else if (role === "ADMIN" || role === "CHEF") {
       profile = await getUserProfile(user.id);
     }
@@ -55,7 +69,9 @@ export default async function SiteHeader() {
         </Link>
 
         <div className="site-header__desktop-actions">
-          <DesktopNavigation />
+          <DesktopNavigation
+            customerOrdersNavigation={customerOrdersNavigation}
+          />
           <ThemeControl compact />
           {authNavigation.links.length > 0 ? (
             <ul className="site-header__auth-actions">
@@ -76,7 +92,10 @@ export default async function SiteHeader() {
           ) : null}
         </div>
 
-        <MobileNavigation authNavigation={authNavigation} />
+        <MobileNavigation
+          authNavigation={authNavigation}
+          customerOrdersNavigation={customerOrdersNavigation}
+        />
       </div>
     </header>
   );

@@ -31,7 +31,8 @@ describe("public authenticated account header", () => {
     );
 
     assert.match(source, /<details className="mobile-navigation">/);
-    assert.match(source, /<HeaderAuthNavigation mobile navigation=\{authNavigation\} \/>/);
+    assert.match(source, /<HeaderAuthNavigation[\s\S]*mobile[\s\S]*navigation=\{authNavigation\}[\s\S]*\/>/);
+    assert.match(source, /<CustomerOrdersNavigationLink[\s\S]*mobile[\s\S]*\/>/);
     assert.match(source, /<CartLink mobile \/>/);
     assert.match(source, /<ThemeControl className="mobile-navigation__theme" \/>/);
   });

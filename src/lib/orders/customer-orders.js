@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import { queryCustomerActiveOrderOverview } from "@/lib/orders/customer-active";
 
 const customerOrderSelect = {
   reference: true,
@@ -71,4 +72,8 @@ export function getCustomerOrderByReference(userId, reference) {
     where: { userId, reference },
     select: customerOrderSelect,
   });
+}
+
+export function getCustomerActiveOrderOverview(userId, options) {
+  return queryCustomerActiveOrderOverview(prisma, userId, options);
 }
