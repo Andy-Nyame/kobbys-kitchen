@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 import { useCart } from "@/components/cart/CartProvider";
+import { useLiveOrderingStatus } from "@/components/operations/OperationalStatusProvider";
 import { formatGhs, resolveCartLines } from "@/lib/cart/domain";
 import { MAX_ORDER_NOTE_LENGTH } from "@/lib/orders/checkout-constants";
 
@@ -16,8 +17,9 @@ function getIdempotencyKey() {
   return null;
 }
 
-export default function CheckoutForm({ catalogueItems, customer, orderingStatus }) {
+export default function CheckoutForm({ catalogueItems, customer, orderingStatus: initialOrderingStatus }) {
   const router = useRouter();
+  const orderingStatus = useLiveOrderingStatus(initialOrderingStatus);
   const { clearCart, hasLoaded, lines } = useCart();
   const [customerName, setCustomerName] = useState(customer.displayName);
   const [customerPhone, setCustomerPhone] = useState(customer.phone);

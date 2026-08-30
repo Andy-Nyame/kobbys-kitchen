@@ -10,9 +10,8 @@ import { businessData } from "@/data/businessData";
 import { getHeaderAuthNavigation } from "@/lib/auth/header-navigation";
 import {
   ensureCustomerProfile,
-  getAuthenticatedUser,
+  getCustomerAccess,
   getUserProfile,
-  getUserRole,
 } from "@/lib/auth/guards";
 import { getCustomerActiveOrderOverview } from "@/lib/orders/customer-orders";
 
@@ -23,8 +22,7 @@ export default async function SiteHeader() {
   let customerOrdersNavigation = null;
 
   try {
-    user = await getAuthenticatedUser();
-    role = user ? await getUserRole(user.id) : null;
+    ({ user, role } = await getCustomerAccess());
 
     if (role === "CUSTOMER") {
       customerOrdersNavigation = { activeOrderCount: 0 };

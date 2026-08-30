@@ -1,4 +1,5 @@
 import CartPageContent from "@/components/cart/CartPageContent";
+import CartOrderingNote from "@/components/cart/CartOrderingNote";
 import PageIntro from "@/components/ui/PageIntro";
 import OrderingStatusNotice from "@/components/ordering/OrderingStatusNotice";
 import { getPublicMenuCatalogue } from "@/lib/menu/catalogue";
@@ -26,13 +27,7 @@ export default async function CartPage() {
           description="Review your selections before secure, server-verified pickup checkout."
         />
         <OrderingStatusNotice context="cart" status={orderingStatus} />
-        {!orderingStatus.isOpen ? (
-          <p className="cart-ordering-note">
-            {orderingStatus.businessDayClosed
-              ? "Your cart is saved. Kobby’s Kitchen is closed today."
-              : "Your cart is saved. Online ordering is currently closed."}
-          </p>
-        ) : null}
+        <CartOrderingNote status={orderingStatus} />
         {catalogue.ok ? (
           <CartPageContent
             catalogueItems={catalogue.items}

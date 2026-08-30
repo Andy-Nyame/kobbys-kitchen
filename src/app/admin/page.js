@@ -1,6 +1,7 @@
 import AdminLoginForm from "@/components/admin/AdminLoginForm";
 import AdminMetricCard from "@/components/admin/AdminMetricCard";
 import AdminOrderTable from "@/components/admin/AdminOrderTable";
+import OperationalAutoRefresh from "@/components/operations/OperationalAutoRefresh";
 import ButtonLink from "@/components/ui/ButtonLink";
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
@@ -43,6 +44,7 @@ export default async function AdminDashboardPage({ searchParams }) {
   const transition = state?.acceptingOrders ? formatGmtTransition(state.nextCloseAt, state.currentTime, "Closes") : formatGmtTransition(state?.nextOpenAt, state?.currentTime, "Opens");
 
   return <>
+    <OperationalAutoRefresh exactPaths={["/admin"]} />
     <PageIntro eyebrow="Admin operations" title="Overview" description="A concise view of ordering, active work, customer accounts and review activity." />
     <section className="admin-operational-status" aria-labelledby="ordering-state-title"><div><p className="admin-section-eyebrow">Current ordering status</p><h2 id="ordering-state-title">{state ? state.acceptingOrders ? "OPEN" : "CLOSED" : "Unavailable"}</h2><p>{state ? `${orderingReasonLabels[state.reason] || "Ordering state resolved"}${transition ? ` · ${transition}` : ""}` : "The authoritative ordering state could not be loaded."}</p></div><span className={`admin-availability admin-availability--${state?.acceptingOrders ? "open" : "closed"}`}>{state?.acceptingOrders ? "Open" : "Closed"}</span></section>
     <ContentSection title="At a Glance" description="High-level indicators link to their detailed administrative domains." className="admin-section">

@@ -1,11 +1,16 @@
+"use client";
+
 import NavigationLink from "@/components/navigation/NavigationLink";
+import { useLiveCustomerOrderOverview } from "@/components/operations/OperationalStatusProvider";
 
 export default function CustomerOrdersNavigationLink({
   activeOrderCount = 0,
   mobile = false,
 }) {
-  const count = Number.isInteger(activeOrderCount) && activeOrderCount > 0
-    ? activeOrderCount
+  const liveOverview = useLiveCustomerOrderOverview();
+  const resolvedCount = liveOverview?.totalCount ?? activeOrderCount;
+  const count = Number.isInteger(resolvedCount) && resolvedCount > 0
+    ? resolvedCount
     : 0;
   const visibleCount = count > 99 ? "99+" : count;
   const className = mobile ? "mobile-navigation__link" : "navigation-link";

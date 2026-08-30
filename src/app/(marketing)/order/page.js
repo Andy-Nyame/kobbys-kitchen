@@ -1,5 +1,6 @@
 import ButtonLink from "@/components/ui/ButtonLink";
 import PageIntro from "@/components/ui/PageIntro";
+import OrderingAvailabilityBadge from "@/components/ordering/OrderingAvailabilityBadge";
 import OrderingStatusNotice from "@/components/ordering/OrderingStatusNotice";
 import { businessData } from "@/data/businessData";
 import { getPublicOrderingStatus } from "@/lib/ordering/server";
@@ -31,9 +32,7 @@ export default async function OrderPage() {
             className="order-option-card order-option-card--available"
             aria-labelledby="whatsapp-order-title"
           >
-            <span className="order-option-card__status order-option-card__status--available">
-              {orderingStatus.restaurantOpen ? "Restaurant open" : "Restaurant closed"}
-            </span>
+            <OrderingAvailabilityBadge status={orderingStatus} type="restaurant" />
             <div className="order-option-card__content">
               <p className="order-option-card__eyebrow">Direct ordering</p>
               <h2 id="whatsapp-order-title">Order on WhatsApp</h2>
@@ -63,9 +62,7 @@ export default async function OrderPage() {
             className="order-option-card"
             aria-labelledby="online-pickup-title"
           >
-            <span className="order-option-card__status">
-              {orderingStatus.isOpen ? "Available now" : "Currently closed"}
-            </span>
+            <OrderingAvailabilityBadge status={orderingStatus} />
             <div className="order-option-card__content">
               <p className="order-option-card__eyebrow">Online pickup preview</p>
               <h2 id="online-pickup-title">Online pickup</h2>

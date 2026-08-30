@@ -3,9 +3,11 @@
 import Link from "next/link";
 
 import { useCart } from "@/components/cart/CartProvider";
+import { useLiveOrderingStatus } from "@/components/operations/OperationalStatusProvider";
 import { formatGhs, getCartSubtotalMinor, resolveCartLines } from "@/lib/cart/domain";
 
-export default function CartPageContent({ catalogueItems, orderingStatus }) {
+export default function CartPageContent({ catalogueItems, orderingStatus: initialOrderingStatus }) {
+  const orderingStatus = useLiveOrderingStatus(initialOrderingStatus);
   const { clearCart, decreaseItem, increaseItem, lines, removeItem } = useCart();
   const { resolvedLines: cartLines, unresolvedLines } = resolveCartLines(
     lines,

@@ -1,4 +1,10 @@
-export default function OrderingStatusNotice({ status, context = "default" }) {
+"use client";
+
+import { useLiveOrderingStatus } from "@/components/operations/OperationalStatusProvider";
+
+export default function OrderingStatusNotice({ status: initialStatus, context = "default" }) {
+  const status = useLiveOrderingStatus(initialStatus);
+
   return (
     <aside
       className={`ordering-status-notice ordering-status-notice--${status.isOpen ? "open" : "closed"}`}

@@ -1,3 +1,6 @@
+"use client";
+
+import { useLiveCustomerOrderOverview } from "@/components/operations/OperationalStatusProvider";
 import ButtonLink from "@/components/ui/ButtonLink";
 import {
   formatOrderDateTime,
@@ -9,7 +12,8 @@ function orderDetailPath(reference) {
   return `/account/orders/${encodeURIComponent(reference)}`;
 }
 
-export default function CustomerHomeOrders({ overview }) {
+export default function CustomerHomeOrders({ overview: initialOverview }) {
+  const overview = useLiveCustomerOrderOverview(initialOverview);
   const orders = overview?.orders || [];
   const totalCount = overview?.totalCount || 0;
 

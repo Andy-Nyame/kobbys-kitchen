@@ -4,6 +4,7 @@ import AdminOrderAnalytics from "@/components/admin/AdminOrderAnalytics";
 import AdminOrderTable from "@/components/admin/AdminOrderTable";
 import AdminPagination from "@/components/admin/AdminPagination";
 import AdminQueryNotice from "@/components/admin/AdminQueryNotice";
+import OperationalAutoRefresh from "@/components/operations/OperationalAutoRefresh";
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
 import { parseAnalyticsFilters, parseOrderFilters } from "@/lib/admin/filters";
@@ -44,6 +45,7 @@ export default async function AdminOrdersPage({ searchParams }) {
   }
 
   return <>
+    {view === "analytics" ? null : <OperationalAutoRefresh exactPaths={["/admin/orders"]} />}
     <PageIntro eyebrow="Admin operations" title="Orders" description="Manage active work, review order history, and inspect server-authoritative revenue analytics." />
     <PickupVerification compact />
     <nav className="admin-domain-tabs" aria-label="Order sections">
