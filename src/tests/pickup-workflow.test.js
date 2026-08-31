@@ -21,7 +21,7 @@ import {
 } from "../lib/pickup/rate-limit.js";
 import { getGoogleAuthStartDecision, getSafeKitchenRedirectPath } from "../lib/auth/redirects.js";
 
-function databaseDouble({ role = "CHEF", status = "CONFIRMED", paymentStatus = "UNPAID" } = {}) {
+function databaseDouble({ role = "CHEF", status = "PREPARING", paymentStatus = "UNPAID" } = {}) {
   const state = {
     order: {
       id: "order-1",
@@ -101,7 +101,7 @@ describe("pickup-code domain", () => {
 });
 
 describe("trusted kitchen and pickup lifecycle", () => {
-  it("allows CHEF and ADMIN to mark accepted work ready and creates exactly one code", async () => {
+  it("allows CHEF and ADMIN to mark preparing work ready and creates exactly one code", async () => {
     for (const role of ["CHEF", "ADMIN"]) {
       const { client, state } = databaseDouble({ role });
       const result = await markOrderReadyForPickup({ prismaClient: client, actorId: `${role}-1`, reference: state.order.reference, generateCode: () => "1A23" });
@@ -132,6 +132,22 @@ describe("trusted kitchen and pickup lifecycle", () => {
   it("denies CUSTOMER and never accepts browser role input", async () => {
     const { client, state } = databaseDouble({ role: "CUSTOMER" });
     await assert.rejects(markOrderReadyForPickup({ prismaClient: client, actorId: "customer-1", reference: state.order.reference, generateCode: () => "A123" }), (error) => error.status === 403);
+  });
+
+  it("denies the direct CONFIRMED to READY shortcut and creates no pickup code", async () => {
+    const { client, state } = databaseDouble({ status: "CONFIRMED" });
+    await assert.rejects(
+      markOrderReadyForPickup({
+        prismaClient: client,
+        actorId: "chef-1",
+        reference: state.order.reference,
+        generateCode: () => "A123",
+      }),
+      (error) => error.code === "INVALID_ORDER_STATE"
+    );
+    assert.equal(state.order.status, "CONFIRMED");
+    assert.equal(state.order.pickupCode, null);
+    assert.equal(state.history.length, 0);
   });
 
   it("returns no email or phone after generic code verification", async () => {

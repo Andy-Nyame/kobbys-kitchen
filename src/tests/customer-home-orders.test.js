@@ -116,12 +116,9 @@ describe("trusted customer active-order overview", () => {
   });
 
   it("reuses the existing customer-facing order labels", () => {
-    assert.equal(formatOrderLabel("PENDING"), "Awaiting Confirmation");
-    assert.equal(
-      formatOrderLabel("CONFIRMED"),
-      "Order Accepted · Food is Being Prepared"
-    );
-    assert.equal(formatOrderLabel("PREPARING"), "Food is Being Prepared");
+    assert.equal(formatOrderLabel("PENDING"), "Order Placed / Awaiting Confirmation");
+    assert.equal(formatOrderLabel("CONFIRMED"), "Order Accepted");
+    assert.equal(formatOrderLabel("PREPARING"), "Food is being prepared");
     assert.equal(formatOrderLabel("READY_FOR_PICKUP"), "Ready for Pickup");
   });
 });

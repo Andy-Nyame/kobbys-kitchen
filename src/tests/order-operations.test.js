@@ -53,7 +53,7 @@ describe("trusted operational order transitions", () => {
   it("allows only the linear lifecycle and bounded cancellation states", () => {
     assert.equal(canTransitionOrderStatus(ORDER_STATUS.PENDING, ORDER_STATUS.CONFIRMED), true);
     assert.equal(canTransitionOrderStatus(ORDER_STATUS.CONFIRMED, ORDER_STATUS.PREPARING), true);
-    assert.equal(canTransitionOrderStatus(ORDER_STATUS.CONFIRMED, ORDER_STATUS.READY_FOR_PICKUP), true);
+    assert.equal(canTransitionOrderStatus(ORDER_STATUS.CONFIRMED, ORDER_STATUS.READY_FOR_PICKUP), false);
     assert.equal(canTransitionOrderStatus(ORDER_STATUS.PREPARING, ORDER_STATUS.READY_FOR_PICKUP), true);
     assert.equal(canTransitionOrderStatus(ORDER_STATUS.READY_FOR_PICKUP, ORDER_STATUS.COMPLETED), true);
     for (const status of [ORDER_STATUS.PENDING, ORDER_STATUS.CONFIRMED, ORDER_STATUS.PREPARING]) {
@@ -63,7 +63,9 @@ describe("trusted operational order transitions", () => {
       ["PENDING", "PREPARING"],
       ["PENDING", "COMPLETED"],
       ["PREPARING", "COMPLETED"],
+      ["READY_FOR_PICKUP", "PREPARING"],
       ["COMPLETED", "PREPARING"],
+      ["CANCELLED", "PREPARING"],
       ["CANCELLED", "CONFIRMED"],
       ["READY_FOR_PICKUP", "CANCELLED"],
     ]) assert.equal(canTransitionOrderStatus(from, to), false, `${from} -> ${to}`);

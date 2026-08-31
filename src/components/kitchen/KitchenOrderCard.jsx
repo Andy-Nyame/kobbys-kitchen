@@ -1,4 +1,5 @@
 import KitchenReadyButton from "@/components/kitchen/KitchenReadyButton";
+import KitchenStartPreparingButton from "@/components/kitchen/KitchenStartPreparingButton";
 import { formatOrderDateTime, formatOrderLabel, formatOrderMoney } from "@/lib/orders/presentation";
 
 export default function KitchenOrderCard({ order, actionable = true }) {
@@ -12,7 +13,12 @@ export default function KitchenOrderCard({ order, actionable = true }) {
       <ul className="kitchen-order-card__items">{order.items.map((item, index) => <li key={`${item.nameSnapshot}:${item.priceTier}:${index}`}><strong>{item.quantity} ×</strong><span>{item.nameSnapshot}</span>{item.priceTier ? <small>{formatOrderLabel(item.priceTier)}</small> : null}</li>)}</ul>
       {order.note ? <p className="kitchen-order-card__note"><strong>Customer note:</strong> {order.note}</p> : null}
       <dl className="kitchen-order-card__facts"><div><dt>Payment</dt><dd>{formatOrderLabel(order.payment?.method)} · {formatOrderLabel(order.payment?.status)}</dd></div><div><dt>Total</dt><dd>{formatOrderMoney(order.totalMinor, order.currency)}</dd></div></dl>
-      {actionable ? <KitchenReadyButton reference={order.reference} /> : null}
+      {actionable && order.status === "CONFIRMED" ? (
+        <KitchenStartPreparingButton reference={order.reference} />
+      ) : null}
+      {actionable && order.status === "PREPARING" ? (
+        <KitchenReadyButton reference={order.reference} />
+      ) : null}
     </article>
   );
 }

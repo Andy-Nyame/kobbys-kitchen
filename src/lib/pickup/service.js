@@ -65,8 +65,8 @@ export async function markOrderReadyForPickup({
         if (order.status === "READY_FOR_PICKUP" && order.pickupCode) {
           return { ...getPickupPresentation(order), pickupCode: order.pickupCode, idempotent: true };
         }
-        if (!new Set(["CONFIRMED", "PREPARING"]).has(order.status)) {
-          throw new PickupWorkflowError("Only accepted or preparing orders can be marked ready.", 409, "INVALID_ORDER_STATE");
+        if (order.status !== "PREPARING") {
+          throw new PickupWorkflowError("Only an order being prepared can be marked ready.", 409, "INVALID_ORDER_STATE");
         }
 
         const changed = await transaction.order.updateMany({
