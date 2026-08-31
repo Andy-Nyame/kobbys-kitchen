@@ -1,5 +1,10 @@
 import "server-only";
 
+import {
+  ACTIVE_KITCHEN_STATUSES,
+  sortActiveKitchenOrders,
+  sortReadyKitchenOrders,
+} from "@/lib/kitchen/queue";
 import { prisma } from "@/lib/prisma";
 
 const KITCHEN_SELECT = {
@@ -10,6 +15,7 @@ const KITCHEN_SELECT = {
   totalMinor: true,
   currency: true,
   createdAt: true,
+  pickupCodeGeneratedAt: true,
   payment: { select: { method: true, status: true } },
   items: {
     orderBy: { createdAt: "asc" },
@@ -32,6 +38,7 @@ function normalize(order) {
     totalMinor: order.totalMinor,
     currency: order.currency,
     acceptedAt: order.statusHistory[0]?.changedAt || order.createdAt,
+    readyAt: order.pickupCodeGeneratedAt || order.createdAt,
     payment: order.payment,
     items: order.items,
   };
@@ -40,18 +47,17 @@ function normalize(order) {
 export async function listKitchenOrders(prismaClient = prisma) {
   const [active, ready] = await Promise.all([
     prismaClient.order.findMany({
-      where: { status: { in: ["CONFIRMED", "PREPARING"] } },
+      where: { status: { in: ACTIVE_KITCHEN_STATUSES } },
       select: KITCHEN_SELECT,
     }),
     prismaClient.order.findMany({
       where: { status: "READY_FOR_PICKUP" },
       select: KITCHEN_SELECT,
-      orderBy: { pickupCodeGeneratedAt: "asc" },
     }),
   ]);
 
   return {
-    active: active.map(normalize).sort((a, b) => new Date(a.acceptedAt) - new Date(b.acceptedAt)),
-    ready: ready.map(normalize),
+    active: sortActiveKitchenOrders(active.map(normalize)),
+    ready: sortReadyKitchenOrders(ready.map(normalize)),
   };
 }
