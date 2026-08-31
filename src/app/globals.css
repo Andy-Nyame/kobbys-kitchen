@@ -3940,6 +3940,14 @@ select:focus-visible {
   width: 100%;
 }
 
+.admin-history-receipt-actions {
+  display: flex;
+  min-width: 11rem;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin-top: 0.55rem;
+}
+
 .admin-order-cancel summary {
   min-height: 44px;
   cursor: pointer;
@@ -5158,6 +5166,15 @@ select:focus-visible {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.receipt-document__footer {
+  display: grid;
+  gap: 0.25rem;
+  border-top: 1px dashed var(--color-border);
+  padding-top: 1rem;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .receipt-document__items li {

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import AdminStatusBadge from "@/components/admin/AdminStatusBadge";
 import AdminOrderActions from "@/components/admin/AdminOrderActions";
 import {
@@ -6,7 +8,7 @@ import {
   formatStatusLabel,
 } from "@/lib/admin/presentation";
 
-export default function AdminOrderTable({ orders, emptyMessage = "No orders yet." }) {
+export default function AdminOrderTable({ orders, emptyMessage = "No orders yet.", showReceiptActions = false }) {
   if (orders.length === 0) {
     return <p className="admin-empty-state">{emptyMessage}</p>;
   }
@@ -58,7 +60,15 @@ export default function AdminOrderTable({ orders, emptyMessage = "No orders yet.
                 <AdminStatusBadge status={order.status} />
               </td>
               <td data-label="Created">{formatAdminDateTime(order.created_at)}</td>
-              <td data-label="Actions"><AdminOrderActions payment={order.payment} reference={order.reference} status={order.status} /></td>
+              <td data-label="Actions">
+                <AdminOrderActions payment={order.payment} reference={order.reference} status={order.status} />
+                {showReceiptActions && order.payment?.receipt?.receiptNumber && ["PAID", "REFUNDED"].includes(order.payment.status) ? (
+                  <div className="admin-history-receipt-actions">
+                    <Link className="inline-link" href={`/admin/payments/${encodeURIComponent(order.reference)}/receipt`}>View Receipt</Link>
+                    <a className="inline-link" href={`/api/receipts/${encodeURIComponent(order.reference)}/pdf`}>Download Original Receipt</a>
+                  </div>
+                ) : null}
+              </td>
             </tr>
           ))}
         </tbody>

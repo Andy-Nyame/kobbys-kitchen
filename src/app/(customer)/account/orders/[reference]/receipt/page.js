@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import ReceiptDocument from "@/components/payments/ReceiptDocument";
 import { requireCustomer } from "@/lib/auth/guards";
 import { getAuthorizedReceipt } from "@/lib/payments/receipts";
+import { RECEIPT_COPY } from "@/lib/payments/receipt-presentation";
 import { prisma } from "@/lib/prisma";
 
 export const metadata = { title: "Payment Receipt | Kobby's Kitchen" };
@@ -16,10 +17,10 @@ export default async function CustomerReceiptPage({ params }) {
   if (!receipt) notFound();
   return (
     <div className="receipt-page">
-      <ReceiptDocument receipt={receipt} />
+      <ReceiptDocument receipt={receipt} copyType={RECEIPT_COPY.CUSTOMER} />
       <div className="section-actions receipt-page__actions">
         <Link className="button-link button-link--secondary" href={`/account/orders/${encodeURIComponent(reference)}`}>Back to Order</Link>
-        <a className="button-link button-link--primary" href={`/api/receipts/${encodeURIComponent(reference)}/pdf`}>Download PDF</a>
+        <a className="button-link button-link--primary" href={`/api/receipts/${encodeURIComponent(reference)}/pdf`}>Download Receipt</a>
       </div>
     </div>
   );

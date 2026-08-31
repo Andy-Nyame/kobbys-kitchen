@@ -65,7 +65,7 @@ export default async function AdminOrdersPage({ searchParams }) {
         </form>
       </ContentSection>
       <ContentSection title={view === "new" ? "New Order Queue" : view === "progress" ? "Orders In Progress" : "Order History"} description={result ? `${result.total} matching order${result.total === 1 ? "" : "s"}.` : "Order data is currently unavailable."} className="admin-section">
-        {result ? <><AdminOrderTable orders={result.rows} emptyMessage={view === "new" ? "There are no new orders awaiting confirmation." : view === "progress" ? "There are no orders currently being prepared." : "There is no completed or cancelled order history yet."} /><AdminPagination basePath="/admin/orders" page={result.page} pageSize={result.pageSize} total={result.total} query={{ ...orderFilters.values, view }} /></> : <p className="admin-data-error">Orders could not be loaded. No data has been changed.</p>}
+        {result ? <><AdminOrderTable orders={result.rows} showReceiptActions={view === "history"} emptyMessage={view === "new" ? "There are no new orders awaiting confirmation." : view === "progress" ? "There are no orders currently being prepared." : "There is no completed or cancelled order history yet."} /><AdminPagination basePath="/admin/orders" page={result.page} pageSize={result.pageSize} total={result.total} query={{ ...orderFilters.values, view }} /></> : <p className="admin-data-error">Orders could not be loaded. No data has been changed.</p>}
       </ContentSection>
     </>}
   </>;
