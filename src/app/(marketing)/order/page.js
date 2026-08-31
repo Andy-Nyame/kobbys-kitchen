@@ -4,17 +4,24 @@ import OrderingAvailabilityBadge from "@/components/ordering/OrderingAvailabilit
 import OrderingStatusNotice from "@/components/ordering/OrderingStatusNotice";
 import { businessData } from "@/data/businessData";
 import { getPublicOrderingStatus } from "@/lib/ordering/server";
+import { getPaymentAvailability } from "@/lib/payments/domain";
 
 export const metadata = {
   title: "Order | Kobby's Kitchen",
   description:
-    "Choose how to order from Kobby's Kitchen, including our available WhatsApp ordering service.",
+    "Order online for pickup from Kobby's Kitchen or contact the restaurant directly on WhatsApp.",
 };
 
 export const dynamic = "force-dynamic";
 
 export default async function OrderPage() {
   const orderingStatus = await getPublicOrderingStatus();
+  const paymentAvailability = getPaymentAvailability();
+  const paymentNotice = paymentAvailability.paystackAvailable
+    ? paymentAvailability.cashAvailable
+      ? "Choose Cash at Pickup, Mobile Money, or Card at checkout. Pickup orders only."
+      : "Choose Mobile Money or Card through secure hosted checkout. Pickup orders only."
+    : "Cash at Pickup is currently available for online orders.";
 
   return (
     <main className="page">
@@ -22,7 +29,7 @@ export default async function OrderPage() {
         <PageIntro
           eyebrow="Order"
           title="How would you like to order?"
-          description="Choose the ordering option that works today, or see what we are preparing for online pickup."
+          description="Choose online pickup or contact the restaurant directly."
         />
 
         <OrderingStatusNotice context="order" status={orderingStatus} />
@@ -64,16 +71,16 @@ export default async function OrderPage() {
           >
             <OrderingAvailabilityBadge status={orderingStatus} />
             <div className="order-option-card__content">
-              <p className="order-option-card__eyebrow">Online pickup preview</p>
+              <p className="order-option-card__eyebrow">Online pickup</p>
               <h2 id="online-pickup-title">Online pickup</h2>
               <p>
                 Browse trusted menu prices, build your cart, and place a secure
-                cash-at-pickup order when online ordering is open.
+                pickup order with an available payment method when online
+                ordering is open.
               </p>
             </div>
             <p className="order-option-card__notice" role="status">
-              Mobile Money, Card, and delivery are coming soon. Cash at Pickup
-              is the only live checkout method.
+              {paymentNotice}
             </p>
             <ButtonLink href="/menu" variant="secondary">Browse Menu</ButtonLink>
           </section>
@@ -81,7 +88,7 @@ export default async function OrderPage() {
 
         <section className="order-journey" aria-labelledby="order-journey-title">
           <div className="order-journey__header">
-            <p className="order-option-card__eyebrow">What we are building</p>
+            <p className="order-option-card__eyebrow">How online pickup works</p>
             <h2 id="order-journey-title">A straightforward pickup journey</h2>
             <p>
               The Menu page is the place to browse current meals and build your

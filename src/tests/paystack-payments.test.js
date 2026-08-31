@@ -125,6 +125,14 @@ function refundDouble(role = "ADMIN") {
 }
 
 describe("Paystack configuration and hosted provider boundary", () => {
+  it("keeps the public order page aligned with live payment availability", async () => {
+    const orderPage = await readFile("src/app/(marketing)/order/page.js", "utf8");
+    assert.match(orderPage, /getPaymentAvailability/);
+    assert.match(orderPage, /Cash at Pickup, Mobile Money, or Card at checkout/);
+    assert.doesNotMatch(orderPage, /Mobile Money, Card, and delivery are coming soon/);
+    assert.doesNotMatch(orderPage, /only live checkout method/);
+  });
+
   it("keeps Cash available until Paystack is configured and deliberately required", () => {
     delete process.env.PAYSTACK_SECRET_KEY;
     process.env.PAYSTACK_ENABLED = "true";
