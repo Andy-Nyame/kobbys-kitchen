@@ -12,6 +12,8 @@ const STATUS_LABELS = Object.freeze({
   PAID: "Paid",
   FAILED: "Failed",
   REFUNDED: "Refunded",
+  PROCESSING: "Processing",
+  NEEDS_ATTENTION: "Needs Attention",
   CASH: "Cash at Pickup",
   MOBILE_MONEY: "Mobile Money",
   CARD: "Card",

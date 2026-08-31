@@ -7,6 +7,7 @@ import {
   MAX_ORDER_NOTE_LENGTH,
 } from "./checkout-constants.js";
 import { PAYMENT_METHOD } from "./domain.js";
+import { assertPaymentMethodAvailable } from "../payments/domain.js";
 import {
   normalizeDisplayName,
   normalizeGhanaPhone,
@@ -166,7 +167,7 @@ export function validateCheckoutLines(lines) {
   return [...normalized.values()];
 }
 
-export function validateCheckoutPayload(payload) {
+export function validateCheckoutPayload(payload, paymentAvailability) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new CheckoutDomainError(
       "CHECKOUT_INVALID",
@@ -184,11 +185,13 @@ export function validateCheckoutPayload(payload) {
     );
   }
 
-  if (payload.paymentMethod !== PAYMENT_METHOD.CASH) {
-    throw new CheckoutDomainError(
-      "PAYMENT_METHOD_UNAVAILABLE",
-      "Mobile Money and Card checkout are coming soon. Choose Cash at Pickup."
+  try {
+    assertPaymentMethodAvailable(
+      payload.paymentMethod,
+      paymentAvailability || { methods: { [PAYMENT_METHOD.CASH]: true } }
     );
+  } catch (error) {
+    throw new CheckoutDomainError(error.code, error.message);
   }
 
   const customer = validateCustomerDetails(payload);
@@ -196,7 +199,7 @@ export function validateCheckoutPayload(payload) {
   return {
     ...customer,
     note: normalizeCheckoutNote(payload.note),
-    paymentMethod: PAYMENT_METHOD.CASH,
+    paymentMethod: payload.paymentMethod,
     idempotencyKey: payload.idempotencyKey.toLowerCase(),
     lines: validateCheckoutLines(payload.lines),
   };

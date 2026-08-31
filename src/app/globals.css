@@ -5074,6 +5074,131 @@ select:focus-visible {
   }
 }
 
+/* Hosted payments and permanent receipts */
+.payment-result-card,
+.receipt-document {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+  padding: clamp(1rem, 4vw, 2rem);
+}
+
+.payment-result-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.payment-result-card h2,
+.payment-result-card p,
+.receipt-document h1,
+.receipt-document h2,
+.receipt-document p {
+  margin: 0;
+}
+
+.receipt-page {
+  width: min(100%, 48rem);
+  margin-inline: auto;
+}
+
+.receipt-document {
+  display: grid;
+  gap: 1.5rem;
+  color: var(--color-text);
+}
+
+.receipt-document__header {
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 1rem;
+}
+
+.receipt-document__header p {
+  color: var(--color-brand-orange);
+  font-weight: 800;
+}
+
+.receipt-document__facts {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.receipt-document__facts > div {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.45fr) minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.receipt-document__facts dt {
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.receipt-document__facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.receipt-document__items {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+  list-style: none;
+}
+
+.receipt-document__items li,
+.receipt-document__total {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.receipt-document__items li {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.65rem;
+}
+
+.receipt-document__items li > span:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.receipt-document__items small {
+  color: var(--color-text-secondary);
+}
+
+.receipt-document__total {
+  border-top: 2px solid var(--color-border);
+  padding-top: 1rem;
+  font-size: 1.2rem;
+}
+
+.receipt-page__actions {
+  margin-top: 1rem;
+}
+
+@media (max-width: 480px) {
+  .receipt-document__facts > div {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+}
+
+@media print {
+  .receipt-document {
+    border: 0;
+    background: #fff;
+    box-shadow: none;
+    color: #111;
+  }
+
+  .receipt-page__actions {
+    display: none;
+  }
+}
+
 .admin-schedule-window {
   display: grid;
   gap: 0.75rem;

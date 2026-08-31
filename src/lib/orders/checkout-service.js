@@ -4,6 +4,11 @@ import {
   deriveTrustedOrderLines,
 } from "./checkout-domain.js";
 import { getInitialOrderPaymentState } from "./domain.js";
+import {
+  createPaystackReference,
+  isPaystackMethod,
+  PAYSTACK_PROVIDER,
+} from "../payments/domain.js";
 
 const orderResultInclude = {
   items: {
@@ -22,6 +27,19 @@ const orderResultInclude = {
       status: true,
       amountMinor: true,
       currency: true,
+      id: true,
+      provider: true,
+      providerRef: true,
+      attempts: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: {
+          id: true,
+          status: true,
+          providerRef: true,
+          authorizationUrl: true,
+        },
+      },
     },
   },
 };
@@ -61,6 +79,7 @@ export async function createTrustedPickupOrder({
   checkout,
   assertOrderingOpen,
   createReference = createOrderReference,
+  createProviderReference = createPaystackReference,
 }) {
   if (!prismaClient || typeof prismaClient.$transaction !== "function") {
     throw new TypeError("A Prisma transaction client is required.");
@@ -132,6 +151,9 @@ export async function createTrustedPickupOrder({
         });
         const trustedCart = deriveTrustedOrderLines(checkout.lines, menuItems);
         const initialState = getInitialOrderPaymentState(checkout.paymentMethod);
+        const paystackReference = isPaystackMethod(checkout.paymentMethod)
+          ? createProviderReference()
+          : null;
 
         // Availability controls new submissions only. This transaction never
         // revisits, cancels, or mutates an already accepted Order.
@@ -160,6 +182,21 @@ export async function createTrustedPickupOrder({
                 status: initialState.paymentStatus,
                 amountMinor: trustedCart.totalMinor,
                 currency: "GHS",
+                ...(paystackReference
+                  ? {
+                      provider: PAYSTACK_PROVIDER,
+                      attempts: {
+                        create: {
+                          provider: PAYSTACK_PROVIDER,
+                          status: "CREATED",
+                          amountMinor: trustedCart.totalMinor,
+                          currency: "GHS",
+                          providerRef: paystackReference,
+                          idempotencyKey: `${checkout.idempotencyKey}:1`,
+                        },
+                      },
+                    }
+                  : {}),
               },
             },
           },

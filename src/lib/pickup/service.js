@@ -6,6 +6,7 @@ import {
   isValidPickupCode,
   normalizePickupCode,
 } from "./domain.js";
+import { issueReceipt } from "../payments/receipts.js";
 
 const PICKUP_ORDER_SELECT = {
   id: true,
@@ -129,7 +130,8 @@ export async function recordCashReceived({ prismaClient, actorId, code, now = ne
       throw new PickupWorkflowError("Only cash-at-pickup payments can be recorded here.", 409, "NOT_CASH_PAYMENT");
     }
     if (order.paymentStatus === "PAID" && order.payment?.status === "PAID") {
-      return { ...getPickupPresentation(order), paymentStatus: "PAID", idempotent: true };
+      const receipt = await issueReceipt({ client: transaction, paymentId: order.payment.id, issuedById: actorId, now });
+      return { ...getPickupPresentation(order), paymentStatus: "PAID", receiptNumber: receipt.receiptNumber, idempotent: true };
     }
     if (order.paymentStatus !== "UNPAID" || order.payment?.status !== "UNPAID") {
       throw new PickupWorkflowError("This payment cannot be recorded in its current state.", 409, "INVALID_PAYMENT_STATE");
@@ -146,7 +148,8 @@ export async function recordCashReceived({ prismaClient, actorId, code, now = ne
     if (paymentChanged.count !== 1 || orderChanged.count !== 1) {
       throw new PickupWorkflowError("This payment changed. Verify the order again.", 409, "STALE_PAYMENT");
     }
-    return { ...getPickupPresentation(order), paymentStatus: "PAID", idempotent: false };
+    const receipt = await issueReceipt({ client: transaction, paymentId: order.payment.id, issuedById: actorId, now });
+    return { ...getPickupPresentation(order), paymentStatus: "PAID", receiptNumber: receipt.receiptNumber, idempotent: false };
   });
 }
 

@@ -6,10 +6,11 @@ import PageIntro from "@/components/ui/PageIntro";
 import { ensureCustomerProfile, requireCustomer } from "@/lib/auth/guards";
 import { getPublicMenuCatalogue } from "@/lib/menu/catalogue";
 import { getPublicOrderingStatus } from "@/lib/ordering/server";
+import { getPaymentAvailability } from "@/lib/payments/domain";
 
 export const metadata = {
   title: "Checkout | Kobby's Kitchen",
-  description: "Place a trusted cash-at-pickup order with Kobby's Kitchen.",
+  description: "Place a trusted pickup order with Kobby's Kitchen.",
 };
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,7 @@ export default async function CheckoutPage() {
             phone: profile.phone || "",
           }}
           orderingStatus={orderingStatus}
+          paymentOptions={getPaymentAvailability()}
         />
       ) : (
         <section className="cart-empty-state" role="alert">

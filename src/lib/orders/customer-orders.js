@@ -55,6 +55,10 @@ const customerOrderSelect = {
       status: true,
       amountMinor: true,
       currency: true,
+      provider: true,
+      providerRef: true,
+      receipt: { select: { receiptNumber: true, issuedAt: true } },
+      refund: { select: { status: true, amountMinor: true, processedAt: true } },
     },
   },
 };

@@ -21,6 +21,9 @@ integrationDescribe("confirmed development Neon activation", () => {
       prisma.review,
       prisma.order,
       prisma.payment,
+      prisma.paymentAttempt,
+      prisma.receipt,
+      prisma.refund,
     ]) {
       counts.push(await model.count());
     }

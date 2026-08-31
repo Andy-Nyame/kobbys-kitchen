@@ -16,15 +16,16 @@ describe("pickup checkout authorization and UI boundaries", () => {
     assert.doesNotMatch(route, /payload\.(userId|role)/);
   });
 
-  it("keeps Cash functional while Mobile Money, Card and Delivery are unavailable", async () => {
+  it("keeps Cash as the safe fallback and gates Mobile Money/Card from server options", async () => {
     const source = await readFile(
       "src/components/checkout/CheckoutForm.jsx",
       "utf8"
     );
 
-    assert.match(source, /defaultChecked name="paymentMethod" type="radio" value="CASH"/);
-    assert.match(source, /disabled name="paymentMethod" type="radio" value="MOBILE_MONEY"/);
-    assert.match(source, /disabled name="paymentMethod" type="radio" value="CARD"/);
+    assert.match(source, /disabled=\{!paymentOptions\.cashAvailable\}/);
+    assert.match(source, /disabled=\{!paymentOptions\.methods\.MOBILE_MONEY\}/);
+    assert.match(source, /disabled=\{!paymentOptions\.methods\.CARD\}/);
+    assert.match(source, /Unavailable for online orders/);
     assert.match(source, /Delivery/);
     assert.match(source, /Coming soon/);
   });
@@ -36,7 +37,7 @@ describe("pickup checkout authorization and UI boundaries", () => {
     );
     const successCheck = source.indexOf("if (!response.ok || !result?.ok)");
     const clearPosition = source.indexOf("clearCart();");
-    const redirectPosition = source.indexOf("router.push(result.redirectTo)");
+    const redirectPosition = source.lastIndexOf("router.push(result.redirectTo)");
 
     assert.ok(successCheck > -1);
     assert.ok(clearPosition > successCheck);

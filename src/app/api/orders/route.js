@@ -7,6 +7,7 @@ import {
   validateCheckoutPayload,
 } from "@/lib/orders/checkout-domain";
 import { createPickupOrderForCustomer } from "@/lib/orders/server";
+import { getPaymentAvailability, PaymentDomainError } from "@/lib/payments/domain";
 
 const conflictCodes = new Set([
   "ORDERING_CLOSED",
@@ -48,6 +49,13 @@ function errorResponse(error) {
         errors: {},
       },
       { status: 409 }
+    );
+  }
+
+  if (error instanceof PaymentDomainError) {
+    return NextResponse.json(
+      { ok: false, code: error.code, message: error.message, errors: {} },
+      { status: error.status }
     );
   }
 
@@ -102,7 +110,7 @@ export async function POST(request) {
   }
 
   try {
-    const checkout = validateCheckoutPayload(payload);
+    const checkout = validateCheckoutPayload(payload, getPaymentAvailability());
     const order = await createPickupOrderForCustomer(user.id, checkout);
 
     return NextResponse.json(
@@ -117,7 +125,10 @@ export async function POST(request) {
           totalMinor: order.totalMinor,
           currency: order.currency,
         },
-        redirectTo: `/account/orders/${encodeURIComponent(order.reference)}?placed=1`,
+        redirectTo: `/account/orders/${encodeURIComponent(order.reference)}?${order.paymentStatus === "PAID" ? "payment=success" : order.paymentInitializationFailed ? "payment=failed" : order.paymentInitializationPending ? "payment=pending" : "placed=1"}`,
+        ...(order.paymentCheckout
+          ? { paymentRedirectTo: order.paymentCheckout.authorizationUrl }
+          : {}),
       },
       { status: order.idempotent ? 200 : 201 }
     );

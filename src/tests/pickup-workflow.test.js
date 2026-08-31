@@ -41,6 +41,7 @@ function databaseDouble({ role = "CHEF", status = "CONFIRMED", paymentStatus = "
     history: [],
     paymentUpdates: [],
     orderUpdates: [],
+    receipt: null,
   };
   const transaction = {
     user: { findUnique: async () => ({ role }) },
@@ -55,11 +56,20 @@ function databaseDouble({ role = "CHEF", status = "CONFIRMED", paymentStatus = "
       },
     },
     payment: {
+      findUnique: async ({ where }) => where.id === state.order.payment.id
+        ? { id: state.order.payment.id, status: state.order.payment.status, receipt: state.receipt }
+        : null,
       updateMany: async ({ where, data }) => {
         if (where.id !== state.order.payment.id || where.status !== state.order.payment.status) return { count: 0 };
         state.paymentUpdates.push(data);
         Object.assign(state.order.payment, data);
         return { count: 1 };
+      },
+    },
+    receipt: {
+      create: async ({ data }) => {
+        state.receipt = { id: "receipt-1", ...data, receiptNumber: "KKR-20260830-ABC123" };
+        return state.receipt;
       },
     },
     orderStatusHistory: { create: async ({ data }) => { state.history.push(data); return data; } },
@@ -139,6 +149,7 @@ describe("trusted kitchen and pickup lifecycle", () => {
     const payment = await recordCashReceived({ prismaClient: client, actorId: "chef-1", code: "A123" });
     assert.equal(payment.paymentStatus, "PAID");
     assert.equal(state.paymentUpdates[0].cashReceivedById, "chef-1");
+    assert.equal(payment.receiptNumber, "KKR-20260830-ABC123");
     const repeatedPayment = await recordCashReceived({ prismaClient: client, actorId: "chef-1", code: "A123" });
     assert.equal(repeatedPayment.idempotent, true);
     const result = await completePickup({ prismaClient: client, actorId: "chef-1", code: "A123" });

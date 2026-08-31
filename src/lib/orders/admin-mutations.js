@@ -33,10 +33,27 @@ export async function executeAdminOrderMutation({
 
     const order = await transaction.order.findUnique({
       where: { reference: mutation.reference },
-      select: { id: true, reference: true, status: true, paymentStatus: true },
+      select: {
+        id: true,
+        reference: true,
+        status: true,
+        paymentStatus: true,
+        payment: { select: { status: true, provider: true } },
+      },
     });
     if (!order) {
       throw new AdminOrderMutationError("Order not found.", 404, "ORDER_NOT_FOUND");
+    }
+    if (
+      mutation.nextStatus === "CANCELLED" &&
+      order.payment?.status === "PAID" &&
+      order.payment.provider === "PAYSTACK"
+    ) {
+      throw new AdminOrderMutationError(
+        "Use Cancel & Refund for a paid Paystack order.",
+        409,
+        "REFUND_REQUIRED"
+      );
     }
 
     try {

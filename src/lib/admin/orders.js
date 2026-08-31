@@ -60,7 +60,15 @@ const orderSelect = {
   note: true,
   cancellationReason: true,
   createdAt: true,
-  payment: { select: { method: true, status: true } },
+  payment: {
+    select: {
+      method: true,
+      status: true,
+      provider: true,
+      receipt: { select: { receiptNumber: true } },
+      refund: { select: { status: true } },
+    },
+  },
   items: {
     orderBy: { createdAt: "asc" },
     select: {

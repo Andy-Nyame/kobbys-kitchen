@@ -114,5 +114,7 @@ export function assertMinorAmount(value, fieldName = "amountMinor") {
 }
 
 export function isRevenuePayment(payment) {
-  return payment?.status === PAYMENT_STATUS.PAID;
+  const refundExcludesRevenue =
+    payment?.refund_status && payment.refund_status !== "FAILED";
+  return payment?.status === PAYMENT_STATUS.PAID && !refundExcludesRevenue;
 }

@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test src/tests/*.test.js",
-    "test:development:integration": "RUN_DEVELOPMENT_INTEGRATION_TESTS=1 node --env-file-if-exists=.env.local --test --test-concurrency=1 src/tests/admin-menu.integration.test.js src/tests/admin-ordering-operations.integration.test.js src/tests/business-hours.integration.test.js src/tests/checkout-order.integration.test.js src/tests/development-neon.integration.test.js src/tests/menu-catalogue.integration.test.js src/tests/order-operations.integration.test.js src/tests/reviews-moderation.integration.test.js src/tests/universal-customer-profile.integration.test.js",
+    "test:development:integration": "RUN_DEVELOPMENT_INTEGRATION_TESTS=1 node --env-file-if-exists=.env.local --test --test-concurrency=1 src/tests/admin-menu.integration.test.js src/tests/admin-ordering-operations.integration.test.js src/tests/business-hours.integration.test.js src/tests/checkout-order.integration.test.js src/tests/development-neon.integration.test.js src/tests/menu-catalogue.integration.test.js src/tests/order-operations.integration.test.js src/tests/paystack-payments.integration.test.js src/tests/reviews-moderation.integration.test.js src/tests/universal-customer-profile.integration.test.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "seed:development": "node --env-file-if-exists=.env.local scripts/seed-development.js",

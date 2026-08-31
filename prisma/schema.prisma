@@ -55,6 +55,14 @@ enum PaymentAttemptStatus {
   ABANDONED
 }
 
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  NEEDS_ATTENTION
+  PROCESSED
+  FAILED
+}
+
 enum OrderingOverrideMode {
   NONE
   OPEN
@@ -85,6 +93,8 @@ model User {
   completedPickups     Order[]                @relation("OrderPickupCompletedBy")
   orderStatusChanges   OrderStatusHistory[]
   cashPaymentsReceived Payment[]              @relation("PaymentCashReceivedBy")
+  receiptsIssued       Receipt[]              @relation("ReceiptIssuedBy")
+  refundsInitiated     Refund[]               @relation("RefundInitiatedBy")
 
   @@index([role])
   @@map("users")
@@ -423,6 +433,8 @@ model Payment {
   order          Order            @relation(fields: [orderId], references: [id], onDelete: Restrict)
   cashReceivedBy User?            @relation("PaymentCashReceivedBy", fields: [cashReceivedById], references: [id], onDelete: SetNull)
   attempts       PaymentAttempt[]
+  receipt        Receipt?
+  refund         Refund?
 
   @@index([orderId, status])
   @@index([status, paidAt])
@@ -431,22 +443,63 @@ model Payment {
 }
 
 model PaymentAttempt {
-  id             String               @id @default(uuid()) @db.Uuid
-  paymentId      String               @db.Uuid
-  provider       String
-  status         PaymentAttemptStatus @default(CREATED)
-  amountMinor    Int
-  currency       String               @default("GHS")
-  providerRef    String?              @unique
-  idempotencyKey String               @unique
-  failureCode    String?
-  failureMessage String?
-  completedAt    DateTime?
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  id                    String               @id @default(uuid()) @db.Uuid
+  paymentId             String               @db.Uuid
+  provider              String
+  status                PaymentAttemptStatus @default(CREATED)
+  amountMinor           Int
+  currency              String               @default("GHS")
+  providerRef           String?              @unique
+  idempotencyKey        String               @unique
+  failureCode           String?
+  failureMessage        String?
+  authorizationUrl      String?
+  providerStatus        String?
+  providerTransactionId String?              @unique
+  initializedAt         DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
 
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
   @@index([paymentId, createdAt])
   @@map("payment_attempts")
+}
+
+model Receipt {
+  id            String   @id @default(uuid()) @db.Uuid
+  receiptNumber String   @unique
+  paymentId     String   @unique @db.Uuid
+  issuedById    String?  @db.Uuid
+  issuedAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  payment  Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  issuedBy User?   @relation("ReceiptIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)
+
+  @@index([issuedById])
+  @@map("receipts")
+}
+
+model Refund {
+  id               String       @id @default(uuid()) @db.Uuid
+  paymentId        String       @unique @db.Uuid
+  provider         String
+  providerRefundId String?      @unique
+  amountMinor      Int
+  currency         String       @default("GHS")
+  status           RefundStatus @default(PENDING)
+  reason           String
+  initiatedById    String       @db.Uuid
+  processedAt      DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  payment     Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  initiatedBy User    @relation("RefundInitiatedBy", fields: [initiatedById], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@index([initiatedById])
+  @@map("refunds")
 }

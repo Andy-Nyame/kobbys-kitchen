@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import AdminStatusBadge from "@/components/admin/AdminStatusBadge";
 import {
   formatAdminDateTime,
@@ -25,6 +27,7 @@ export default function AdminPaymentTable({ payments }) {
             <th scope="col">Amount</th>
             <th scope="col">Provider reference</th>
             <th scope="col">Paid</th>
+            <th scope="col">Receipt / Refund</th>
             <th scope="col">Created</th>
           </tr>
         </thead>
@@ -51,6 +54,16 @@ export default function AdminPaymentTable({ payments }) {
                 </span>
               </td>
               <td data-label="Paid">{formatAdminDateTime(payment.paid_at)}</td>
+              <td data-label="Receipt / Refund">
+                {payment.receipt_number ? (
+                  <Link className="inline-link" href={`/admin/payments/${encodeURIComponent(payment.order.reference)}/receipt`}>
+                    {payment.receipt_number}
+                  </Link>
+                ) : <span>No receipt</span>}
+                <span className="admin-table__secondary">
+                  {payment.refund_status ? `Refund: ${formatStatusLabel(payment.refund_status)}` : "No refund"}
+                </span>
+              </td>
               <td data-label="Created">{formatAdminDateTime(payment.created_at)}</td>
             </tr>
           ))}

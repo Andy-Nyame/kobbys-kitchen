@@ -40,6 +40,7 @@ export async function getOrderMetrics(dateRange = {}) {
         status: true,
         amountMinor: true,
         paidAt: true,
+        refund: { select: { status: true } },
         order: { select: { status: true } },
       },
     }),
@@ -73,6 +74,7 @@ export async function getOrderMetrics(dateRange = {}) {
       status: payment.status,
       amount_minor: payment.amountMinor,
       order_status: payment.order.status,
+      refund_status: payment.refund?.status || null,
     })),
   });
   const ordersByDay = new Map();
@@ -88,6 +90,7 @@ export async function getOrderMetrics(dateRange = {}) {
     if (
       payment.status !== "PAID" ||
       payment.order.status === "CANCELLED" ||
+      (payment.refund && payment.refund.status !== "FAILED") ||
       !payment.paidAt
     ) {
       continue;

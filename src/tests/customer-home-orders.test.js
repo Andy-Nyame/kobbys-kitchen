@@ -176,7 +176,7 @@ describe("customer Home and public Orders navigation", () => {
     assert.match(orderLink, /active order/);
   });
 
-  it("keeps owned order details and checkout success behavior unchanged", async () => {
+  it("keeps owned order details and routes every server-confirmed checkout result safely", async () => {
     const [queries, checkout, route] = await Promise.all([
       readFile("src/lib/orders/customer-orders.js", "utf8"),
       readFile("src/components/checkout/CheckoutForm.jsx", "utf8"),
@@ -187,7 +187,7 @@ describe("customer Home and public Orders navigation", () => {
     assert.match(checkout, /clearCart\(\);\s*\n\s*router\.push\(result\.redirectTo\)/);
     assert.match(
       route,
-      /redirectTo: `\/account\/orders\/\$\{encodeURIComponent\(order\.reference\)\}\?placed=1`/
+      /order\.paymentStatus === "PAID" \? "payment=success" : order\.paymentInitializationFailed \? "payment=failed" : order\.paymentInitializationPending \? "payment=pending" : "placed=1"/
     );
   });
 });

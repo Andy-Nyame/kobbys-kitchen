@@ -13,7 +13,7 @@ import { PAYMENT_METHOD, PAYMENT_STATUS } from "@/lib/orders/domain";
 
 export const metadata = {
   title: "Admin Payments | Kobby's Kitchen",
-  description: "Read-only Kobby's Kitchen payment operations.",
+  description: "Kobby's Kitchen payment and receipt operations.",
 };
 
 export default async function AdminPaymentsPage({ searchParams }) {
@@ -34,7 +34,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
       <PageIntro
         eyebrow="Admin operations"
         title="Payments"
-        description="Review logical payment records without mutation controls or raw provider data."
+        description="Review trusted payments, provider references, receipts and refund states without exposing provider secrets."
       />
 
       <ContentSection title="Payment Filters" description="Filter by order reference, method, state or creation date." className="admin-section">

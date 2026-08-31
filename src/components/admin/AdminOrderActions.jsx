@@ -13,13 +13,14 @@ const PRIMARY_ACTION = {
 
 const CANCELLABLE = new Set(["PENDING", "CONFIRMED", "PREPARING"]);
 
-export default function AdminOrderActions({ reference, status }) {
+export default function AdminOrderActions({ payment, reference, status }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [reasonChoice, setReasonChoice] = useState("");
   const [otherReason, setOtherReason] = useState("");
   const primary = PRIMARY_ACTION[status];
+  const requiresRefund = payment?.status === "PAID" && payment?.provider === "PAYSTACK";
 
   async function submit(action, cancellationReason = null) {
     setPending(true);
@@ -36,6 +37,26 @@ export default function AdminOrderActions({ reference, status }) {
       router.refresh();
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "Order update failed.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function submitRefund(reason) {
+    setPending(true);
+    setFeedback("");
+    try {
+      const response = await fetch(`/api/admin/orders/${encodeURIComponent(reference)}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.ok) throw new Error(result?.message || "Refund could not be initiated.");
+      setFeedback(result.message);
+      router.refresh();
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Refund could not be initiated.");
     } finally {
       setPending(false);
     }
@@ -58,7 +79,7 @@ export default function AdminOrderActions({ reference, status }) {
       ) : null}
       {CANCELLABLE.has(status) ? (
         <details className="admin-order-cancel">
-          <summary>Cancel Order</summary>
+          <summary>{requiresRefund ? "Cancel & Refund" : "Cancel Order"}</summary>
           <div className="admin-order-cancel__panel">
             <label className="form-field">
               <span>Cancellation reason <small>(optional)</small></span>
@@ -76,11 +97,13 @@ export default function AdminOrderActions({ reference, status }) {
             ) : null}
             <button
               className="button-link button-link--secondary"
-              disabled={pending || (reasonChoice === "Other" && !otherReason.trim())}
-              onClick={() => submit(ADMIN_ORDER_ACTION.CANCEL, cancellationReason || null)}
+              disabled={pending || (reasonChoice === "Other" && !otherReason.trim()) || (requiresRefund && !cancellationReason)}
+              onClick={() => requiresRefund
+                ? submitRefund(cancellationReason)
+                : submit(ADMIN_ORDER_ACTION.CANCEL, cancellationReason || null)}
               type="button"
             >
-              {pending ? "Cancelling…" : "Confirm Cancellation"}
+              {pending ? "Updating…" : requiresRefund ? "Confirm Cancel & Refund" : "Confirm Cancellation"}
             </button>
           </div>
         </details>

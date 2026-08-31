@@ -36,6 +36,8 @@ export async function listAdminPayments(filters) {
         providerRef: true,
         paidAt: true,
         createdAt: true,
+        receipt: { select: { receiptNumber: true } },
+        refund: { select: { status: true } },
         order: {
           select: { reference: true, customerNameSnapshot: true, status: true },
         },
@@ -54,6 +56,8 @@ export async function listAdminPayments(filters) {
       provider_reference: payment.providerRef,
       paid_at: payment.paidAt,
       created_at: payment.createdAt,
+      receipt_number: payment.receipt?.receiptNumber || null,
+      refund_status: payment.refund?.status || null,
       order: {
         reference: payment.order.reference,
         customer_name_snapshot: payment.order.customerNameSnapshot,

@@ -17,13 +17,19 @@ function getIdempotencyKey() {
   return null;
 }
 
-export default function CheckoutForm({ catalogueItems, customer, orderingStatus: initialOrderingStatus }) {
+export default function CheckoutForm({ catalogueItems, customer, orderingStatus: initialOrderingStatus, paymentOptions }) {
   const router = useRouter();
   const orderingStatus = useLiveOrderingStatus(initialOrderingStatus);
   const { clearCart, hasLoaded, lines } = useCart();
   const [customerName, setCustomerName] = useState(customer.displayName);
   const [customerPhone, setCustomerPhone] = useState(customer.phone);
   const [note, setNote] = useState("");
+  const initialPaymentMethod = paymentOptions.cashAvailable
+    ? "CASH"
+    : paymentOptions.methods.MOBILE_MONEY
+      ? "MOBILE_MONEY"
+      : "CARD";
+  const [paymentMethod, setPaymentMethod] = useState(initialPaymentMethod);
   const [feedback, setFeedback] = useState({ type: "idle", message: "" });
   const [fieldErrors, setFieldErrors] = useState({});
   const idempotencyKeyRef = useRef(null);
@@ -70,7 +76,7 @@ export default function CheckoutForm({ catalogueItems, customer, orderingStatus:
           customerName,
           customerPhone,
           note,
-          paymentMethod: "CASH",
+          paymentMethod,
           lines: resolvedLines.map((line) => ({
             menuItemId: line.menuItemId,
             priceTier: line.priceTier,
@@ -93,6 +99,28 @@ export default function CheckoutForm({ catalogueItems, customer, orderingStatus:
         if (result?.code === "PRICE_CHANGED") {
           router.refresh();
         }
+        return;
+      }
+
+      if (result.paymentRedirectTo) {
+        setFeedback({
+          type: "success",
+          message: "Opening secure Paystack checkout…",
+        });
+        window.location.assign(result.paymentRedirectTo);
+        return;
+      }
+
+      if (paymentMethod !== "CASH") {
+        if (result.order?.paymentStatus === "PAID") {
+          router.push(result.redirectTo);
+          return;
+        }
+        setFeedback({
+          type: "error",
+          message: "Secure payment could not start. Opening your saved payment attempt…",
+        });
+        router.push(result.redirectTo);
         return;
       }
 
@@ -201,17 +229,17 @@ export default function CheckoutForm({ catalogueItems, customer, orderingStatus:
 
         <fieldset className="checkout-card checkout-payment">
           <legend>Payment method</legend>
-          <label className="checkout-payment__option checkout-payment__option--selected">
-            <input defaultChecked name="paymentMethod" type="radio" value="CASH" />
-            <span><strong>Cash at Pickup</strong><small>Pay when collecting your order.</small></span>
+          <label className={`checkout-payment__option ${paymentMethod === "CASH" ? "checkout-payment__option--selected" : ""} ${!paymentOptions.cashAvailable ? "checkout-payment__option--disabled" : ""}`}>
+            <input checked={paymentMethod === "CASH"} disabled={!paymentOptions.cashAvailable} name="paymentMethod" onChange={() => setPaymentMethod("CASH")} type="radio" value="CASH" />
+            <span><strong>Cash at Pickup</strong><small>{paymentOptions.cashAvailable ? "Pay when collecting your order." : "Unavailable for online orders"}</small></span>
           </label>
-          <label className="checkout-payment__option checkout-payment__option--disabled">
-            <input disabled name="paymentMethod" type="radio" value="MOBILE_MONEY" />
-            <span><strong>Mobile Money</strong><small>Coming soon — payment confirmation is not available yet.</small></span>
+          <label className={`checkout-payment__option ${paymentMethod === "MOBILE_MONEY" ? "checkout-payment__option--selected" : ""} ${!paymentOptions.methods.MOBILE_MONEY ? "checkout-payment__option--disabled" : ""}`}>
+            <input checked={paymentMethod === "MOBILE_MONEY"} disabled={!paymentOptions.methods.MOBILE_MONEY} name="paymentMethod" onChange={() => setPaymentMethod("MOBILE_MONEY")} type="radio" value="MOBILE_MONEY" />
+            <span><strong>Mobile Money</strong><small>{paymentOptions.methods.MOBILE_MONEY ? "Pay securely through hosted Paystack checkout." : "Online payment is not currently available."}</small></span>
           </label>
-          <label className="checkout-payment__option checkout-payment__option--disabled">
-            <input disabled name="paymentMethod" type="radio" value="CARD" />
-            <span><strong>Card</strong><small>Coming soon — payment confirmation is not available yet.</small></span>
+          <label className={`checkout-payment__option ${paymentMethod === "CARD" ? "checkout-payment__option--selected" : ""} ${!paymentOptions.methods.CARD ? "checkout-payment__option--disabled" : ""}`}>
+            <input checked={paymentMethod === "CARD"} disabled={!paymentOptions.methods.CARD} name="paymentMethod" onChange={() => setPaymentMethod("CARD")} type="radio" value="CARD" />
+            <span><strong>Card</strong><small>{paymentOptions.methods.CARD ? "Pay securely through hosted Paystack checkout." : "Online payment is not currently available."}</small></span>
           </label>
         </fieldset>
       </div>
@@ -247,7 +275,9 @@ export default function CheckoutForm({ catalogueItems, customer, orderingStatus:
           </p>
         ) : null}
         <button className="button-link button-link--primary checkout-submit" disabled={!canSubmit} type="submit">
-          {feedback.type === "submitting" ? "Placing Order…" : "Place Cash Pickup Order"}
+          {feedback.type === "submitting"
+            ? paymentMethod === "CASH" ? "Placing Order…" : "Starting Secure Payment…"
+            : paymentMethod === "CASH" ? "Place Cash Pickup Order" : "Continue to Secure Payment"}
         </button>
         <Link className="text-link checkout-back-link" href="/cart">Return to Cart</Link>
       </aside>

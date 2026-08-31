@@ -58,7 +58,7 @@ export default function AdminOrderTable({ orders, emptyMessage = "No orders yet.
                 <AdminStatusBadge status={order.status} />
               </td>
               <td data-label="Created">{formatAdminDateTime(order.created_at)}</td>
-              <td data-label="Actions"><AdminOrderActions reference={order.reference} status={order.status} /></td>
+              <td data-label="Actions"><AdminOrderActions payment={order.payment} reference={order.reference} status={order.status} /></td>
             </tr>
           ))}
         </tbody>

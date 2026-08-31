@@ -5,6 +5,7 @@ import PageIntro from "@/components/ui/PageIntro";
 import OrderAgainButton from "@/components/orders/OrderAgainButton";
 import OrderTracker from "@/components/orders/OrderTracker";
 import PickupCodeCard from "@/components/orders/PickupCodeCard";
+import PaymentResultActions from "@/components/payments/PaymentResultActions";
 import { businessData } from "@/data/businessData";
 import { requireCustomer } from "@/lib/auth/guards";
 import { getCustomerOrderByReference } from "@/lib/orders/customer-orders";
@@ -39,6 +40,11 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
 
   return (
     <>
+      <PaymentResultActions
+        orderReference={order.reference}
+        paymentStatus={order.paymentStatus}
+        showSuccess={query?.payment === "success" && order.paymentStatus === "PAID"}
+      />
       {query?.placed === "1" ? (
         <div className="order-confirmation-banner" role="status">
           <strong>Order placed successfully.</strong>
@@ -95,6 +101,7 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
             <div><dt>Email</dt><dd>{order.customerEmailSnapshot}</dd></div>
             {order.note ? <div><dt>Order note</dt><dd>{order.note}</dd></div> : null}
             {order.cancellationReason ? <div><dt>Cancellation reason</dt><dd>{order.cancellationReason}</dd></div> : null}
+            {order.payment?.refund ? <div><dt>Refund status</dt><dd>{formatOrderLabel(order.payment.refund.status)}</dd></div> : null}
           </dl>
           <div className="order-contact-actions">
             <a className="button-link button-link--secondary" href={businessData.phone.href}>Call Restaurant</a>
@@ -105,6 +112,12 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
       <div className="section-actions">
         <Link className="button-link button-link--secondary" href="/account/orders">All Orders</Link>
         {order.status === "COMPLETED" ? <OrderAgainButton lines={reorderLines} unavailableCount={unavailableReorderCount} /> : <Link className="button-link button-link--primary" href="/menu">Browse Menu</Link>}
+        {order.paymentStatus === "PAID" && order.payment?.receipt ? (
+          <>
+            <Link className="button-link button-link--secondary" href={`/account/orders/${encodeURIComponent(order.reference)}/receipt`}>View Receipt</Link>
+            <a className="button-link button-link--secondary" href={`/api/receipts/${encodeURIComponent(order.reference)}/pdf`}>Download Receipt</a>
+          </>
+        ) : null}
       </div>
     </>
   );
