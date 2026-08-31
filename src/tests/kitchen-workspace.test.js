@@ -7,10 +7,7 @@ import {
   sortReadyKitchenOrders,
 } from "../lib/kitchen/queue.js";
 import {
-  KITCHEN_WAKE_LOCK_STORAGE_KEY,
   createKitchenWakeLockController,
-  readKitchenWakeLockPreference,
-  writeKitchenWakeLockPreference,
 } from "../lib/kitchen/wake-lock.js";
 
 class FakeVisibilityTarget {
@@ -55,18 +52,6 @@ function createSentinel() {
   };
 }
 
-function createMemoryStorage() {
-  const values = new Map();
-  return {
-    getItem(key) {
-      return values.get(key) ?? null;
-    },
-    setItem(key, value) {
-      values.set(key, value);
-    },
-  };
-}
-
 describe("kitchen queue arrangement", () => {
   it("keeps confirmed and preparing work FIFO with newest accepted work at the bottom", () => {
     const queue = sortActiveKitchenOrders([
@@ -106,17 +91,7 @@ describe("kitchen queue arrangement", () => {
 });
 
 describe("kitchen screen wake lock", () => {
-  it("defaults off and persists an explicit device-local preference", () => {
-    const storage = createMemoryStorage();
-    assert.equal(readKitchenWakeLockPreference(storage), false);
-    assert.equal(writeKitchenWakeLockPreference(storage, true), true);
-    assert.equal(storage.getItem(KITCHEN_WAKE_LOCK_STORAGE_KEY), "true");
-    assert.equal(readKitchenWakeLockPreference(storage), true);
-    writeKitchenWakeLockPreference(storage, false);
-    assert.equal(readKitchenWakeLockPreference(storage), false);
-  });
-
-  it("requests the screen lock only when enabled and visible", async () => {
+  it("automatically requests the screen lock when the Kitchen workspace is visible", async () => {
     const visibilityTarget = new FakeVisibilityTarget();
     const requests = [];
     const controller = createKitchenWakeLockController({
@@ -124,10 +99,7 @@ describe("kitchen screen wake lock", () => {
       wakeLock: { request: async (type) => { requests.push(type); return createSentinel(); } },
     });
 
-    const stop = controller.start(false);
-    await Promise.resolve();
-    assert.deepEqual(requests, []);
-    controller.setEnabled(true);
+    const stop = controller.start();
     await Promise.resolve();
     assert.deepEqual(requests, ["screen"]);
     stop();
@@ -141,7 +113,7 @@ describe("kitchen screen wake lock", () => {
       wakeLock: { request: async () => { const lock = createSentinel(); sentinels.push(lock); return lock; } },
     });
 
-    const stop = controller.start(true);
+    const stop = controller.start();
     await Promise.resolve();
     assert.equal(sentinels.length, 1);
     assert.equal(visibilityTarget.listenerCount("visibilitychange"), 1);
@@ -164,39 +136,47 @@ describe("kitchen screen wake lock", () => {
 
   it("fails safely when wake lock is unsupported or rejected", async () => {
     const visibilityTarget = new FakeVisibilityTarget();
-    const unsupportedStatuses = [];
+    const unsupportedFailures = [];
     const unsupported = createKitchenWakeLockController({
       visibilityTarget,
       wakeLock: undefined,
-      onStatus: (status) => unsupportedStatuses.push(status),
+      onFailure: (category) => unsupportedFailures.push(category),
     });
-    unsupported.start(true);
+    unsupported.start();
     assert.equal(await unsupported.request(), false);
-    assert.ok(unsupportedStatuses.includes("unsupported"));
+    assert.deepEqual(unsupportedFailures, ["unsupported"]);
     unsupported.stop();
 
-    const rejectedStatuses = [];
+    const rejectedFailures = [];
     const rejected = createKitchenWakeLockController({
       visibilityTarget,
       wakeLock: { request: async () => { throw new Error("not allowed"); } },
-      onStatus: (status) => rejectedStatuses.push(status),
+      onFailure: (category) => rejectedFailures.push(category),
     });
-    rejected.start(true);
+    rejected.start();
     assert.equal(await rejected.request(), false);
-    assert.ok(rejectedStatuses.includes("unavailable"));
+    assert.deepEqual(rejectedFailures, ["request_failed"]);
     rejected.stop();
   });
 
-  it("keeps pickup input state client-local and exposes an accessible switch", async () => {
-    const [control, pickup, page] = await Promise.all([
-      readFile("src/components/kitchen/KitchenWakeLockControl.jsx", "utf8"),
+  it("has no visible control or local preference and mounts only after Kitchen authentication", async () => {
+    const [wakeLock, pickup, page, styles, marketingLayout, adminLayout] = await Promise.all([
+      readFile("src/components/kitchen/KitchenWakeLock.jsx", "utf8"),
       readFile("src/components/pickup/PickupVerification.jsx", "utf8"),
       readFile("src/app/kitchen/page.js", "utf8"),
+      readFile("src/app/globals.css", "utf8"),
+      readFile("src/app/(marketing)/layout.js", "utf8"),
+      readFile("src/app/admin/layout.js", "utf8"),
     ]);
 
-    assert.match(control, /window\.localStorage/);
-    assert.match(control, /role="switch"/);
-    assert.match(control, /Keep screen awake/);
+    assert.match(wakeLock, /return controller\.start\(\)/);
+    assert.match(wakeLock, /return null/);
+    assert.doesNotMatch(wakeLock, /localStorage|checkbox|role="switch"|Keep screen awake/);
+    assert.doesNotMatch(page, /KitchenWakeLockControl|Keep screen awake|checkbox/);
+    assert.doesNotMatch(styles, /kitchen-wake-lock/);
+    assert.ok(page.indexOf("<KitchenWakeLock />") > page.indexOf("if (!user)"));
+    assert.doesNotMatch(marketingLayout, /KitchenWakeLock/);
+    assert.doesNotMatch(adminLayout, /KitchenWakeLock/);
     assert.match(pickup, /const \[code, setCode\] = useState\(""\)/);
     assert.match(page, /OperationalAutoRefresh exactPaths=\{\["\/kitchen"\]\}/);
   });

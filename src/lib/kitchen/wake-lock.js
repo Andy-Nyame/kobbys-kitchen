@@ -1,33 +1,19 @@
-export const KITCHEN_WAKE_LOCK_STORAGE_KEY =
-  "kobbys-kitchen:keep-screen-awake";
-
-export function readKitchenWakeLockPreference(storage) {
-  try {
-    return storage?.getItem(KITCHEN_WAKE_LOCK_STORAGE_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
-
-export function writeKitchenWakeLockPreference(storage, enabled) {
-  try {
-    storage?.setItem(KITCHEN_WAKE_LOCK_STORAGE_KEY, String(Boolean(enabled)));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export function createKitchenWakeLockController({
   wakeLock,
   visibilityTarget,
-  onStatus = () => {},
+  onFailure = () => {},
 }) {
   let active = false;
-  let enabled = false;
   let sentinel = null;
   let requestPromise = null;
   let generation = 0;
+  let lastFailure = null;
+
+  function reportFailure(category) {
+    if (lastFailure === category) return;
+    lastFailure = category;
+    onFailure(category);
+  }
 
   function detachSentinel(current) {
     current?.removeEventListener?.("release", handleRelease);
@@ -36,7 +22,6 @@ export function createKitchenWakeLockController({
   function handleRelease() {
     detachSentinel(sentinel);
     sentinel = null;
-    onStatus(enabled ? "released" : "off");
   }
 
   async function release() {
@@ -53,14 +38,12 @@ export function createKitchenWakeLockController({
         // A browser-managed release is already sufficient for cleanup.
       }
     }
-
-    if (!enabled) onStatus("off");
   }
 
   function request() {
-    if (!active || !enabled || visibilityTarget.hidden) return Promise.resolve(false);
+    if (!active || visibilityTarget.hidden) return Promise.resolve(false);
     if (!wakeLock?.request) {
-      onStatus("unsupported");
+      reportFailure("unsupported");
       return Promise.resolve(false);
     }
     if (sentinel && !sentinel.released) return Promise.resolve(true);
@@ -71,7 +54,6 @@ export function createKitchenWakeLockController({
       .then(async (lock) => {
         if (
           !active ||
-          !enabled ||
           visibilityTarget.hidden ||
           requestGeneration !== generation
         ) {
@@ -81,11 +63,11 @@ export function createKitchenWakeLockController({
 
         sentinel = lock;
         sentinel.addEventListener?.("release", handleRelease);
-        onStatus("active");
+        lastFailure = null;
         return true;
       })
       .catch(() => {
-        onStatus("unavailable");
+        reportFailure("request_failed");
         return false;
       })
       .finally(() => {
@@ -103,16 +85,7 @@ export function createKitchenWakeLockController({
       return;
     }
 
-    if (enabled) void request();
-  }
-
-  function setEnabled(nextEnabled) {
-    enabled = Boolean(nextEnabled);
-    if (enabled) {
-      void request();
-    } else {
-      void release();
-    }
+    void request();
   }
 
   function stop() {
@@ -122,14 +95,13 @@ export function createKitchenWakeLockController({
     void release();
   }
 
-  function start(initialEnabled = false) {
+  function start() {
     if (active) return stop;
     active = true;
-    enabled = Boolean(initialEnabled);
     visibilityTarget.addEventListener("visibilitychange", handleVisibilityChange);
-    if (enabled) void request();
+    void request();
     return stop;
   }
 
-  return { request, setEnabled, start, stop };
+  return { request, start, stop };
 }

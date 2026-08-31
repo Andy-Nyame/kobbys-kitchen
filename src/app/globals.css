@@ -4176,51 +4176,6 @@ select:focus-visible {
   gap: 0;
 }
 
-.kitchen-wake-lock {
-  position: relative;
-}
-
-.kitchen-wake-lock__control {
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 0.45rem;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.kitchen-wake-lock__control input {
-  width: 1rem;
-  height: 1rem;
-  accent-color: var(--color-brand-orange);
-}
-
-.kitchen-wake-lock__control input:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 3px;
-}
-
-.kitchen-wake-lock__control strong {
-  color: var(--color-text-strong);
-  font-size: 0.75rem;
-}
-
-.kitchen-wake-lock__message {
-  position: absolute;
-  top: calc(100% + 0.35rem);
-  right: 0;
-  width: min(17rem, 80vw);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-medium);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-soft);
-  padding: 0.5rem 0.65rem;
-  color: var(--color-text-secondary);
-  font-size: 0.76rem;
-}
-
 .kitchen-header span,
 .kitchen-order-card__accepted,
 .form-hint {
@@ -4411,17 +4366,7 @@ select:focus-visible {
   }
 
   .kitchen-header > div:last-child {
-    flex-wrap: wrap;
     justify-content: space-between;
-  }
-
-  .kitchen-wake-lock {
-    order: 3;
-    width: 100%;
-  }
-
-  .kitchen-wake-lock__control {
-    justify-content: center;
   }
 
   .kitchen-header > div:last-child .button-link {
