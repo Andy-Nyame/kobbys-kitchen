@@ -5,7 +5,9 @@ import {
 } from "./checkout-domain.js";
 import { getInitialOrderPaymentState } from "./domain.js";
 import {
+  assertPaymentMethodAvailable,
   createPaystackReference,
+  getPaymentAvailability,
   isPaystackMethod,
   PAYSTACK_PROVIDER,
 } from "../payments/domain.js";
@@ -80,6 +82,7 @@ export async function createTrustedPickupOrder({
   assertOrderingOpen,
   createReference = createOrderReference,
   createProviderReference = createPaystackReference,
+  resolvePaymentAvailability = getPaymentAvailability,
 }) {
   if (!prismaClient || typeof prismaClient.$transaction !== "function") {
     throw new TypeError("A Prisma transaction client is required.");
@@ -132,6 +135,11 @@ export async function createTrustedPickupOrder({
         if (existing) {
           return presentOrderResult(existing, true);
         }
+
+        assertPaymentMethodAvailable(
+          checkout.paymentMethod,
+          resolvePaymentAvailability({ customerEmail: trustedUser.email })
+        );
 
         await assertOrderingOpen({ client: transaction });
 

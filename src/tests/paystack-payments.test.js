@@ -29,7 +29,7 @@ import {
 const originalEnv = { ...process.env };
 
 function resetPaystackEnv() {
-  for (const name of ["PAYSTACK_SECRET_KEY", "PAYSTACK_ENABLED", "ONLINE_PAYMENT_REQUIRED", "AUTH_URL"]) {
+  for (const name of ["PAYSTACK_SECRET_KEY", "PAYSTACK_ENABLED", "ONLINE_PAYMENT_REQUIRED", "CASH_ON_PICKUP_ALLOWED_EMAILS", "AUTH_URL"]) {
     if (originalEnv[name] === undefined) delete process.env[name];
     else process.env[name] = originalEnv[name];
   }
@@ -128,18 +128,21 @@ describe("Paystack configuration and hosted provider boundary", () => {
   it("keeps the public order page aligned with live payment availability", async () => {
     const orderPage = await readFile("src/app/(marketing)/order/page.js", "utf8");
     assert.match(orderPage, /getPaymentAvailability/);
-    assert.match(orderPage, /Cash at Pickup, Mobile Money, or Card at checkout/);
+    assert.match(orderPage, /Eligible accounts may also see Cash on Pickup/);
     assert.doesNotMatch(orderPage, /Mobile Money, Card, and delivery are coming soon/);
     assert.doesNotMatch(orderPage, /only live checkout method/);
   });
 
-  it("keeps Cash available until Paystack is configured and deliberately required", () => {
+  it("keeps Cash fail-closed while preserving Paystack availability", () => {
     delete process.env.PAYSTACK_SECRET_KEY;
+    delete process.env.CASH_ON_PICKUP_ALLOWED_EMAILS;
     process.env.PAYSTACK_ENABLED = "true";
     process.env.ONLINE_PAYMENT_REQUIRED = "true";
-    assert.deepEqual(getPaymentAvailability().methods, { CASH: true, MOBILE_MONEY: false, CARD: false });
+    assert.deepEqual(getPaymentAvailability().methods, { CASH: false, MOBILE_MONEY: false, CARD: false });
     process.env.PAYSTACK_SECRET_KEY = "sk_test_redacted";
     assert.deepEqual(getPaymentAvailability().methods, { CASH: false, MOBILE_MONEY: true, CARD: true });
+    process.env.CASH_ON_PICKUP_ALLOWED_EMAILS = "customer@example.test";
+    assert.deepEqual(getPaymentAvailability({ customerEmail: "customer@example.test" }).methods, { CASH: true, MOBILE_MONEY: true, CARD: true });
     resetPaystackEnv();
   });
 

@@ -110,7 +110,10 @@ export async function POST(request) {
   }
 
   try {
-    const checkout = validateCheckoutPayload(payload, getPaymentAvailability());
+    const checkout = validateCheckoutPayload(
+      payload,
+      getPaymentAvailability({ customerEmail: user.email })
+    );
     const order = await createPickupOrderForCustomer(user.id, checkout);
 
     return NextResponse.json(

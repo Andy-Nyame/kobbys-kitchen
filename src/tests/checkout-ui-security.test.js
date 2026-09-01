@@ -16,7 +16,7 @@ describe("pickup checkout authorization and UI boundaries", () => {
     assert.doesNotMatch(route, /payload\.(userId|role)/);
   });
 
-  it("keeps Cash as the safe fallback and gates Mobile Money/Card from server options", async () => {
+  it("gates Cash by trusted account policy and Mobile Money/Card by server options", async () => {
     const source = await readFile(
       "src/components/checkout/CheckoutForm.jsx",
       "utf8"
@@ -25,7 +25,7 @@ describe("pickup checkout authorization and UI boundaries", () => {
     assert.match(source, /disabled=\{!paymentOptions\.cashAvailable\}/);
     assert.match(source, /disabled=\{!paymentOptions\.methods\.MOBILE_MONEY\}/);
     assert.match(source, /disabled=\{!paymentOptions\.methods\.CARD\}/);
-    assert.match(source, /Unavailable for online orders/);
+    assert.match(source, /Cash on Pickup is unavailable for this account/);
     assert.match(source, /Delivery/);
     assert.match(source, /Coming soon/);
   });

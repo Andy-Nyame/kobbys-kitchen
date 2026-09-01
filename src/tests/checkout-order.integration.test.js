@@ -124,6 +124,7 @@ integrationDescribe("Development Neon trusted pickup checkout", () => {
             checkout,
             assertOrderingOpen: assertAcceptanceOrderingOpen,
             createReference: () => `KK-20260829-${suffix.toUpperCase()}`,
+            resolvePaymentAvailability: () => ({ methods: { CASH: true } }),
           };
 
           const created = await createTrustedPickupOrder(options);

@@ -44,7 +44,7 @@ export default async function CheckoutPage() {
             phone: profile.phone || "",
           }}
           orderingStatus={orderingStatus}
-          paymentOptions={getPaymentAvailability()}
+          paymentOptions={getPaymentAvailability({ customerEmail: user.email })}
         />
       ) : (
         <section className="cart-empty-state" role="alert">

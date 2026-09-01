@@ -7,6 +7,7 @@ import { createTrustedPickupOrder } from "../lib/orders/checkout-service.js";
 const ITEM_ID = "11111111-1111-4111-8111-111111111111";
 const CUSTOMER_ID = "22222222-2222-4222-8222-222222222222";
 const SECOND_CUSTOMER_ID = "33333333-3333-4333-8333-333333333333";
+const allowCash = () => ({ methods: { CASH: true } });
 
 function validCheckout(idempotencyKey = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa") {
   return validateCheckoutPayload({
@@ -80,6 +81,7 @@ describe("atomic trusted pickup order creation", () => {
       checkout: validCheckout(),
       assertOrderingOpen: async () => ({ acceptingOrders: true }),
       createReference: () => "KK-20260829-A1B2C3D4",
+      resolvePaymentAvailability: allowCash,
     });
 
     assert.equal(prisma.state.createCount, 1);
@@ -101,6 +103,7 @@ describe("atomic trusted pickup order creation", () => {
       checkout: validCheckout(),
       assertOrderingOpen: async () => ({ acceptingOrders: true }),
       createReference: () => "KK-20260829-A1B2C3D4",
+      resolvePaymentAvailability: allowCash,
     };
     const first = await createTrustedPickupOrder(options);
     const retry = await createTrustedPickupOrder({
@@ -122,6 +125,7 @@ describe("atomic trusted pickup order creation", () => {
       prismaClient: prisma,
       checkout,
       assertOrderingOpen: async () => ({ acceptingOrders: true }),
+      resolvePaymentAvailability: allowCash,
     };
     await createTrustedPickupOrder({ ...shared, userId: CUSTOMER_ID, createReference: () => "KK-20260829-11111111" });
     await createTrustedPickupOrder({ ...shared, userId: SECOND_CUSTOMER_ID, createReference: () => "KK-20260829-22222222" });
@@ -140,6 +144,7 @@ describe("atomic trusted pickup order creation", () => {
           error.code = "ORDERING_CLOSED";
           throw error;
         },
+        resolvePaymentAvailability: allowCash,
       }),
       (error) => error.code === "ORDERING_CLOSED"
     );
@@ -152,6 +157,7 @@ describe("atomic trusted pickup order creation", () => {
         userId: CUSTOMER_ID,
         checkout: validCheckout(),
         assertOrderingOpen: async () => ({ acceptingOrders: true }),
+        resolvePaymentAvailability: allowCash,
       }),
       (error) => error.code === "ITEM_REMOVED"
     );
@@ -169,6 +175,26 @@ describe("atomic trusted pickup order creation", () => {
       }),
       (error) => error.code === "CUSTOMER_REQUIRED"
     );
+    assert.equal(prisma.state.createCount, 0);
+  });
+
+  it("rejects manipulated Cash submission using the trusted database email", async () => {
+    const prisma = createFakePrisma();
+    let checkedEmail = null;
+    await assert.rejects(
+      createTrustedPickupOrder({
+        prismaClient: prisma,
+        userId: CUSTOMER_ID,
+        checkout: { ...validCheckout(), customerEmail: "allowlisted@example.test" },
+        assertOrderingOpen: async () => ({ acceptingOrders: true }),
+        resolvePaymentAvailability: ({ customerEmail }) => {
+          checkedEmail = customerEmail;
+          return { methods: { CASH: false } };
+        },
+      }),
+      (error) => error.code === "PAYMENT_METHOD_UNAVAILABLE"
+    );
+    assert.equal(checkedEmail, "ama@example.test");
     assert.equal(prisma.state.createCount, 0);
   });
 });

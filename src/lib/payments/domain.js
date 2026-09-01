@@ -29,19 +29,41 @@ function enabled(name) {
   return process.env[name]?.trim().toLowerCase() === "true";
 }
 
-export function getPaymentAvailability() {
+const ALLOWLIST_EMAIL_PATTERN = /^[^\s@,]+@[^\s@,]+\.[^\s@,]+$/;
+
+export function parseCashOnPickupAllowedEmails(value) {
+  const normalizedEmails = String(value || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter((email) => ALLOWLIST_EMAIL_PATTERN.test(email));
+
+  return Object.freeze([...new Set(normalizedEmails)]);
+}
+
+export function isCashOnPickupAllowedForEmail(
+  email,
+  configuredEmails = process.env.CASH_ON_PICKUP_ALLOWED_EMAILS
+) {
+  const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+  if (!ALLOWLIST_EMAIL_PATTERN.test(normalizedEmail)) return false;
+
+  return parseCashOnPickupAllowedEmails(configuredEmails).includes(normalizedEmail);
+}
+
+export function getPaymentAvailability({ customerEmail } = {}) {
   const paystackConfigured = Boolean(process.env.PAYSTACK_SECRET_KEY?.trim());
   const paystackAvailable = enabled("PAYSTACK_ENABLED") && paystackConfigured;
   const onlinePaymentRequired =
     paystackAvailable && enabled("ONLINE_PAYMENT_REQUIRED");
+  const cashAvailable = isCashOnPickupAllowedForEmail(customerEmail);
 
   return Object.freeze({
     paystackAvailable,
     paystackConfigured,
     onlinePaymentRequired,
-    cashAvailable: !onlinePaymentRequired,
+    cashAvailable,
     methods: Object.freeze({
-      [PAYMENT_METHOD.CASH]: !onlinePaymentRequired,
+      [PAYMENT_METHOD.CASH]: cashAvailable,
       [PAYMENT_METHOD.MOBILE_MONEY]: paystackAvailable,
       [PAYMENT_METHOD.CARD]: paystackAvailable,
     }),
@@ -52,8 +74,8 @@ export function assertPaymentMethodAvailable(method, availability) {
   if (!availability?.methods?.[method]) {
     throw new PaymentDomainError(
       "PAYMENT_METHOD_UNAVAILABLE",
-      method === PAYMENT_METHOD.CASH && availability?.onlinePaymentRequired
-        ? "Cash at Pickup is unavailable for online orders. Choose Mobile Money or Card."
+      method === PAYMENT_METHOD.CASH
+        ? "Cash on Pickup is unavailable for this account. Please pay securely online."
         : "That payment method is not currently available.",
       400
     );

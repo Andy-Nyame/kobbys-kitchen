@@ -18,10 +18,8 @@ export default async function OrderPage() {
   const orderingStatus = await getPublicOrderingStatus();
   const paymentAvailability = getPaymentAvailability();
   const paymentNotice = paymentAvailability.paystackAvailable
-    ? paymentAvailability.cashAvailable
-      ? "Choose Cash at Pickup, Mobile Money, or Card at checkout. Pickup orders only."
-      : "Choose Mobile Money or Card through secure hosted checkout. Pickup orders only."
-    : "Cash at Pickup is currently available for online orders.";
+    ? "Choose Mobile Money or Card through secure hosted checkout. Eligible accounts may also see Cash on Pickup."
+    : "Available payment methods are shown securely at checkout.";
 
   return (
     <main className="page">
@@ -100,7 +98,7 @@ export default async function OrderPage() {
             <li>Choose meals</li>
             <li>Add them to your cart</li>
             <li>Sign in when needed</li>
-            <li>Choose Cash, Mobile Money, or Card</li>
+            <li>Choose an available payment method</li>
             <li>Collect and track your pickup order</li>
           </ol>
         </section>

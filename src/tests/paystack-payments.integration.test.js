@@ -63,6 +63,7 @@ integrationDescribe("Development Neon Paystack/receipt/refund acceptance", () =>
         assertOrderingOpen: async () => ({ acceptingOrders: true }),
         createReference: () => `KK-20260830-${suffix.toUpperCase()}`,
         createProviderReference: () => `KKP-${suffix}-acceptance`,
+        resolvePaymentAvailability: () => ({ methods: { CARD: true } }),
       });
       assert.equal(created.status, "AWAITING_PAYMENT");
       assert.equal(created.paymentStatus, "PENDING");
