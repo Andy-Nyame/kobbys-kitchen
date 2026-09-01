@@ -130,7 +130,27 @@ describe("customer Home and public Orders navigation", () => {
     assert.match(home, /role === "CUSTOMER"/);
     assert.match(home, /<CustomerHomeOrders overview=\{customerOrderOverview\} \/>/);
     assert.match(home, /Welcome to Kobby&apos;s Kitchen/);
+    assert.match(home, /Online ordering available\./);
+    assert.match(home, /Sign up or sign in to place your pickup order\./);
+    assert.match(home, /href="\/menu"[\s\S]*Order Online/);
+    assert.match(home, /href="\/login"[\s\S]*Sign In/);
+    assert.match(home, /href="\/signup"[\s\S]*Sign Up/);
     assert.doesNotMatch(home, /searchParams|query\.userId|userId=/);
+  });
+
+  it("keeps signed-in ordering live without stale Coming Soon copy", async () => {
+    const [account, customerHome] = await Promise.all([
+      readFile("src/app/(customer)/account/page.js", "utf8"),
+      readFile("src/components/orders/CustomerHomeOrders.jsx", "utf8"),
+    ]);
+
+    assert.match(account, /Online ordering/);
+    assert.match(account, /<strong>Available<\/strong>/);
+    assert.match(account, /place a pickup order during online ordering hours/);
+    assert.doesNotMatch(account, /Coming Soon|not enabled yet/i);
+    assert.match(customerHome, /Order Online/);
+    assert.match(customerHome, /My Orders/);
+    assert.doesNotMatch(customerHome, /Sign Up|Coming Soon/);
   });
 
   it("renders concise no-order, active, ready, and multiple-order actions without exposing a pickup code", async () => {

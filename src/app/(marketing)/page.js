@@ -57,22 +57,44 @@ export default async function Home() {
                   <h1>{businessData.tagline}</h1>
                   <p className="hero__description">{businessData.heroDescription}</p>
 
+                  {!user ? (
+                    <p className="hero__description">
+                      <strong>Online ordering available.</strong> Sign up or sign in to place your pickup order.
+                    </p>
+                  ) : null}
+
                   <div className="button-row">
-                    <ButtonLink href="/menu" variant="primary">
-                      View Menu
-                    </ButtonLink>
-                    <ButtonLink
-                      ariaLabel="Order on WhatsApp"
-                      href={whatsappLink}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                      variant="secondary"
-                    >
-                      Order on WhatsApp
-                    </ButtonLink>
-                    <ButtonLink href={directionsLink} variant="secondary">
-                      Get Directions
-                    </ButtonLink>
+                    {!user ? (
+                      <>
+                        <ButtonLink href="/menu" variant="primary">
+                          Order Online
+                        </ButtonLink>
+                        <ButtonLink href="/login" variant="secondary">
+                          Sign In
+                        </ButtonLink>
+                        <ButtonLink href="/signup" variant="secondary">
+                          Sign Up
+                        </ButtonLink>
+                      </>
+                    ) : (
+                      <>
+                        <ButtonLink href="/menu" variant="primary">
+                          View Menu
+                        </ButtonLink>
+                        <ButtonLink
+                          ariaLabel="Order on WhatsApp"
+                          href={whatsappLink}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                          variant="secondary"
+                        >
+                          Order on WhatsApp
+                        </ButtonLink>
+                        <ButtonLink href={directionsLink} variant="secondary">
+                          Get Directions
+                        </ButtonLink>
+                      </>
+                    )}
                   </div>
 
                   <div className="hero__location">

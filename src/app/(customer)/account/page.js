@@ -60,13 +60,13 @@ export default async function AccountPage() {
         <ContentSection
           className="account-overview-card"
           title="My Orders"
-          description="Your order history and future pickup status will live here."
+          description="Track active pickup orders and review your order history."
         >
           <div className="account-ordering-state">
             <span className="account-ordering-state__label">Online ordering</span>
-            <strong>Coming Soon</strong>
+            <strong>Available</strong>
             <p>
-              WhatsApp ordering remains available while online pickup ordering is being prepared.
+              Browse the menu and place a pickup order during online ordering hours.
             </p>
           </div>
           <div className="section-actions">

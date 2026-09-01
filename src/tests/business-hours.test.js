@@ -261,4 +261,18 @@ describe("physical and online ordering separation", () => {
     assert.match(closedPresentation.message, /Kobby’s Kitchen is closed today/i);
     assert.equal(closedPresentation.secondary, "Kobby’s Kitchen reopens Wednesday at 4:00 PM.");
   });
+
+  it("presents the deployment safety switch as a temporary closure, not an unreleased feature", () => {
+    const presentation = presentPublicOrderingState({
+      acceptingOrders: false,
+      reason: "BUILD_DISABLED",
+      restaurantOpen: true,
+      businessNextCloseAt: new Date("2026-08-31T24:00:00.000Z"),
+      currentTime: new Date("2026-08-31T18:00:00.000Z"),
+    });
+
+    assert.equal(presentation.headline, "Online Ordering Closed");
+    assert.equal(presentation.message, "Online ordering is temporarily unavailable.");
+    assert.doesNotMatch(JSON.stringify(presentation), /Coming Soon|not enabled yet/i);
+  });
 });

@@ -191,7 +191,7 @@ export function presentPublicOrderingState(state) {
   if (state?.reason === "BUILD_DISABLED") {
     return {
       ...base,
-      message: "Online pickup ordering is not enabled yet.",
+      message: "Online ordering is temporarily unavailable.",
       secondary: state?.restaurantOpen
         ? formatRestaurantClose(state?.businessNextCloseAt)
         : null,
