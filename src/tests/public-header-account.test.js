@@ -24,17 +24,20 @@ describe("public authenticated account header", () => {
     assert.doesNotMatch(source, /Order Now/);
   });
 
-  it("keeps authenticated account actions inside the mobile hamburger", async () => {
-    const source = await readFile(
-      "src/components/navigation/MobileNavigation.jsx",
-      "utf8"
-    );
+  it("keeps account actions in the hamburger and Cart directly in the mobile header", async () => {
+    const [source, header] = await Promise.all([
+      readFile("src/components/navigation/MobileNavigation.jsx", "utf8"),
+      readFile("src/components/layout/SiteHeader.jsx", "utf8"),
+    ]);
 
     assert.match(source, /<details className="mobile-navigation">/);
     assert.match(source, /<HeaderAuthNavigation[\s\S]*mobile[\s\S]*navigation=\{authNavigation\}[\s\S]*\/>/);
     assert.match(source, /<CustomerOrdersNavigationLink[\s\S]*mobile[\s\S]*\/>/);
-    assert.match(source, /<CartLink mobile \/>/);
+    assert.doesNotMatch(source, /CartLink/);
+    assert.match(source, /\["\/account\/orders", "\/cart"\]/);
     assert.match(source, /<ThemeControl className="mobile-navigation__theme" \/>/);
+    assert.match(header, /className="site-header__mobile-actions"/);
+    assert.match(header, /<CartLink mobileHeader \/>/);
   });
 
   it("supports keyboard and outside-click account-menu dismissal", async () => {

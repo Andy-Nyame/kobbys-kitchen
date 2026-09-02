@@ -90,10 +90,13 @@ export default async function SiteHeader() {
           ) : null}
         </div>
 
-        <MobileNavigation
-          authNavigation={authNavigation}
-          customerOrdersNavigation={customerOrdersNavigation}
-        />
+        <div className="site-header__mobile-actions">
+          <CartLink mobileHeader />
+          <MobileNavigation
+            authNavigation={authNavigation}
+            customerOrdersNavigation={customerOrdersNavigation}
+          />
+        </div>
       </div>
     </header>
   );

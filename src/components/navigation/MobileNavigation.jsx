@@ -1,5 +1,4 @@
 import HeaderAuthNavigation from "@/components/navigation/HeaderAuthNavigation";
-import CartLink from "@/components/cart/CartLink";
 import CustomerOrdersNavigationLink from "@/components/navigation/CustomerOrdersNavigationLink";
 import NavigationLink from "@/components/navigation/NavigationLink";
 import ThemeControl from "@/components/theme/ThemeControl";
@@ -59,7 +58,9 @@ export default function MobileNavigation({
           ) : null}
           <HeaderAuthNavigation
             excludedMobileAccountHrefs={
-              customerOrdersNavigation ? ["/account/orders"] : []
+              customerOrdersNavigation
+                ? ["/account/orders", "/cart"]
+                : ["/cart"]
             }
             mobile
             navigation={authNavigation}
@@ -67,7 +68,6 @@ export default function MobileNavigation({
         </ul>
 
         <div className="mobile-navigation__actions">
-          <CartLink mobile />
           <ThemeControl className="mobile-navigation__theme" />
         </div>
       </nav>

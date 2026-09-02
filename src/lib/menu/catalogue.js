@@ -89,3 +89,22 @@ export async function getPublicMenuCatalogue() {
     return { ok: false, categories: [], items: [] };
   }
 }
+
+export async function getPublicCartCatalogueItems() {
+  try {
+    return await prisma.menuItem.findMany({
+      where: { active: true, category: { active: true } },
+      select: {
+        id: true,
+        priceMinor: true,
+        priceStepMinor: true,
+        available: true,
+      },
+    });
+  } catch (error) {
+    console.error("[public-cart-catalogue]", {
+      category: error?.code || "query_failed",
+    });
+    return [];
+  }
+}

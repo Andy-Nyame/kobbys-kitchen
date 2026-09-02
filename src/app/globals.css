@@ -200,6 +200,13 @@ select:focus-visible {
   display: none;
 }
 
+.site-header__mobile-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .site-header__auth-actions,
 .site-header__account-actions {
   display: flex;
@@ -209,8 +216,7 @@ select:focus-visible {
   padding: 0;
 }
 
-.header-cart-link,
-.mobile-navigation__cart {
+.header-cart-link {
   display: inline-flex;
   position: relative;
   min-width: 44px;
@@ -228,15 +234,12 @@ select:focus-visible {
 }
 
 .header-cart-link:hover,
-.header-cart-link:focus-visible,
-.mobile-navigation__cart:hover,
-.mobile-navigation__cart:focus-visible {
+.header-cart-link:focus-visible {
   border-color: var(--color-brand-orange);
   background-color: var(--color-surface-secondary);
 }
 
-.header-cart-link svg,
-.mobile-navigation__cart svg {
+.header-cart-link svg {
   width: 1.25rem;
   height: 1.25rem;
   fill: none;
@@ -253,6 +256,7 @@ select:focus-visible {
   display: grid;
   min-width: 1.25rem;
   height: 1.25rem;
+  padding-inline: 0.2rem;
   place-items: center;
   border: 2px solid var(--color-header-background);
   border-radius: 999px;
@@ -698,18 +702,9 @@ select:focus-visible {
   padding: 2rem 0 4rem;
 }
 
-.mobile-navigation__cart {
-  width: 100%;
-  justify-content: flex-start;
-  gap: 0.6rem;
-  border-radius: 1rem;
-  padding: 0.65rem 0.85rem;
-}
-
-.mobile-navigation__cart .header-cart-link__count {
-  position: static;
-  margin-left: auto;
-  border-color: var(--color-surface-elevated);
+.mobile-cart-cta-shell,
+.mobile-cart-cta-spacer {
+  display: none;
 }
 
 .theme-control {
@@ -2170,6 +2165,10 @@ select:focus-visible {
 }
 
 @media (min-width: 1024px) {
+  .site-header__mobile-actions {
+    display: none;
+  }
+
   .mobile-navigation {
     display: none;
   }
@@ -2202,6 +2201,90 @@ select:focus-visible {
 @media (max-width: 1023px) {
   .brand__tagline {
     display: none;
+  }
+
+  .mobile-cart-cta-shell {
+    position: fixed;
+    z-index: 40;
+    display: block;
+    left: 50%;
+    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    width: min(calc(100% - 2rem), 38rem);
+    transform: translateX(-50%);
+  }
+
+  .mobile-cart-cta {
+    display: flex;
+    min-height: 4rem;
+    align-items: center;
+    gap: 0.75rem;
+    border: 1px solid rgba(11, 11, 11, 0.16);
+    border-radius: var(--radius-medium);
+    background-color: var(--color-brand-yellow);
+    box-shadow: 0 16px 36px rgba(11, 11, 11, 0.25);
+    color: var(--color-accent-contrast);
+    padding: 0.65rem 0.8rem;
+    animation: mobile-cart-cta-in 180ms ease-out both;
+  }
+
+  .mobile-cart-cta:hover,
+  .mobile-cart-cta:focus-visible {
+    background-color: var(--color-brand-yellow-hover);
+  }
+
+  .mobile-cart-cta__icon {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    background-color: rgba(11, 11, 11, 0.1);
+  }
+
+  .mobile-cart-cta__icon svg {
+    width: 1.35rem;
+    height: 1.35rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+  }
+
+  .mobile-cart-cta__copy {
+    display: grid;
+    min-width: 0;
+    flex: 1;
+    line-height: 1.25;
+  }
+
+  .mobile-cart-cta__copy > span {
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .mobile-cart-cta__copy strong {
+    font-size: clamp(0.95rem, 4.5vw, 1.1rem);
+    white-space: nowrap;
+  }
+
+  .mobile-cart-cta__count {
+    display: grid;
+    min-width: 2rem;
+    height: 2rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 999px;
+    background-color: var(--color-submit-background);
+    color: var(--color-submit-text);
+    padding-inline: 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  .mobile-cart-cta-spacer {
+    height: calc(5.75rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -2247,9 +2330,41 @@ select:focus-visible {
 }
 
 @media (max-width: 479px) {
+  .site-header__inner {
+    gap: 0.5rem;
+  }
+
+  .site-header__mobile-actions {
+    gap: 0.35rem;
+  }
+
+  .brand {
+    gap: 0.55rem;
+  }
+
+  .brand__image {
+    width: 2.5rem;
+  }
+
+  .brand__name {
+    font-size: 0.95rem;
+  }
+
   .hours-list__item {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@keyframes mobile-cart-cta-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.65rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
