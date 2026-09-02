@@ -26,6 +26,7 @@ function databaseDouble({ role = "CHEF", status = "PREPARING", paymentStatus = "
     order: {
       id: "order-1",
       reference: "KK-20260830-TEST1",
+      userId: "customer-1",
       status,
       paymentMethod: "CASH",
       paymentStatus,
@@ -42,6 +43,7 @@ function databaseDouble({ role = "CHEF", status = "PREPARING", paymentStatus = "
     paymentUpdates: [],
     orderUpdates: [],
     receipt: null,
+    notifications: [],
   };
   const transaction = {
     user: { findUnique: async () => ({ role }) },
@@ -70,6 +72,12 @@ function databaseDouble({ role = "CHEF", status = "PREPARING", paymentStatus = "
       create: async ({ data }) => {
         state.receipt = { id: "receipt-1", ...data, receiptNumber: "KKR-20260830-ABC123" };
         return state.receipt;
+      },
+    },
+    notification: {
+      createMany: async ({ data }) => {
+        state.notifications.push(...data);
+        return { count: data.length };
       },
     },
     orderStatusHistory: { create: async ({ data }) => { state.history.push(data); return data; } },

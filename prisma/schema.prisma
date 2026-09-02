@@ -69,6 +69,18 @@ enum OrderingOverrideMode {
   CLOSED
 }
 
+enum NotificationType {
+  PAYMENT_CONFIRMED
+  ORDER_ACCEPTED
+  ORDER_READY
+  ORDER_CANCELLED
+  ORDER_COMPLETED
+  PAYMENT_RECONCILIATION_REQUIRED
+  NEW_ORDER
+  PAYMENT_EXCEPTION
+  NEW_KITCHEN_ORDER
+}
+
 model User {
   id            String    @id @default(uuid()) @db.Uuid
   name          String?
@@ -95,6 +107,7 @@ model User {
   cashPaymentsReceived Payment[]              @relation("PaymentCashReceivedBy")
   receiptsIssued       Receipt[]              @relation("ReceiptIssuedBy")
   refundsInitiated     Refund[]               @relation("RefundInitiatedBy")
+  notifications        Notification[]
 
   @@index([role])
   @@map("users")
@@ -371,6 +384,7 @@ model Order {
   items             OrderItem[]
   payment           Payment?
   statusHistory     OrderStatusHistory[]
+  notifications     Notification[]
 
   @@unique([userId, idempotencyKey])
   @@index([status, placedAt])
@@ -502,4 +516,25 @@ model Refund {
   @@index([status, createdAt])
   @@index([initiatedById])
   @@map("refunds")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  orderId   String?          @db.Uuid
+  type      NotificationType
+  title     String
+  message   String
+  href      String?
+  dedupeKey String           @unique
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@index([userId, createdAt])
+  @@index([orderId])
+  @@map("notifications")
 }

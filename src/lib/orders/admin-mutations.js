@@ -1,4 +1,8 @@
 import { assertPreparedOrderTransition } from "./admin-domain.js";
+import {
+  notifyOrderAccepted,
+  notifyOrderCancelled,
+} from "../notifications/service.js";
 
 export class AdminOrderMutationError extends Error {
   constructor(message, status = 409, code = "ORDER_UPDATE_CONFLICT") {
@@ -36,6 +40,7 @@ export async function executeAdminOrderMutation({
       select: {
         id: true,
         reference: true,
+        userId: true,
         status: true,
         paymentStatus: true,
         payment: { select: { status: true, provider: true } },
@@ -98,6 +103,12 @@ export async function executeAdminOrderMutation({
         changedAt: now,
       },
     });
+
+    if (mutation.nextStatus === "CONFIRMED") {
+      await notifyOrderAccepted(transaction, order);
+    } else if (mutation.nextStatus === "CANCELLED") {
+      await notifyOrderCancelled(transaction, order, mutation.cancellationReason);
+    }
 
     return {
       reference: order.reference,

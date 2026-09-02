@@ -5,6 +5,10 @@ import { describe, it } from "node:test";
 import { prepareAdminOrderMutation } from "../lib/orders/admin-domain.js";
 import { executeAdminOrderMutation } from "../lib/orders/admin-mutations.js";
 import { completePickup, markOrderReadyForPickup, recordCashReceived } from "../lib/pickup/service.js";
+import {
+  markNotificationRead,
+  notifyAdminsOfNewOrder,
+} from "../lib/notifications/service.js";
 
 const integrationDescribe = process.env.RUN_DEVELOPMENT_INTEGRATION_TESTS === "1" ? describe : describe.skip;
 class RollbackAcceptance extends Error {}
@@ -20,6 +24,7 @@ integrationDescribe("Development Neon operational order flow", () => {
     await assert.rejects(prisma.$transaction(async (transaction) => {
       const suffix = randomUUID().slice(0, 8).toUpperCase();
       const admin = await transaction.user.create({ data: { email: `ops-admin-${suffix}@example.test`, role: "ADMIN", profile: { create: { displayName: "Operations Admin" } } } });
+      const chef = await transaction.user.create({ data: { email: `ops-chef-${suffix}@example.test`, role: "CHEF", profile: { create: { displayName: "Operations Chef" } } } });
       const customer = await transaction.user.create({ data: { email: `ops-customer-${suffix}@example.test`, role: "CUSTOMER", profile: { create: { displayName: "Operations Customer" } } } });
       const createOrder = (reference) => transaction.order.create({ data: {
         reference,
@@ -39,6 +44,8 @@ integrationDescribe("Development Neon operational order flow", () => {
       }, include: { payment: true } });
       const transactionClient = { $transaction: async (callback) => callback(transaction) };
       const lifecycle = await createOrder(`KK-20260829-${suffix}A`);
+      await notifyAdminsOfNewOrder(transaction, lifecycle);
+      await notifyAdminsOfNewOrder(transaction, lifecycle);
       for (const action of ["ACCEPT", "START_PREPARING"]) {
         await executeAdminOrderMutation({ prismaClient: transactionClient, adminUserId: admin.id, mutation: prepareAdminOrderMutation({ reference: lifecycle.reference, action }) });
       }
@@ -53,6 +60,26 @@ integrationDescribe("Development Neon operational order flow", () => {
       assert.equal(completed.pickupCompletedById, admin.id);
       assert.equal(completed.statusHistory.length, 4);
       assert.ok(completed.statusHistory.every((event) => event.changedById === admin.id));
+
+      const notifications = await transaction.notification.findMany({
+        where: { userId: { in: [customer.id, admin.id, chef.id] } },
+        orderBy: { createdAt: "asc" },
+      });
+      assert.deepEqual(
+        notifications.filter((notification) => notification.userId === customer.id).map((notification) => notification.type).sort(),
+        ["ORDER_ACCEPTED", "ORDER_COMPLETED", "ORDER_READY", "PAYMENT_CONFIRMED"]
+      );
+      assert.deepEqual(
+        notifications.filter((notification) => notification.userId === admin.id).map((notification) => notification.type),
+        ["NEW_ORDER"]
+      );
+      assert.deepEqual(
+        notifications.filter((notification) => notification.userId === chef.id).map((notification) => notification.type),
+        ["NEW_KITCHEN_ORDER"]
+      );
+      const customerNotification = notifications.find((notification) => notification.userId === customer.id);
+      assert.equal((await markNotificationRead(transaction, admin.id, customerNotification.id)).count, 0);
+      assert.equal((await markNotificationRead(transaction, customer.id, customerNotification.id)).count, 1);
 
       const cancelledFixture = await createOrder(`KK-20260829-${suffix}B`);
       await executeAdminOrderMutation({ prismaClient: transactionClient, adminUserId: admin.id, mutation: prepareAdminOrderMutation({ reference: cancelledFixture.reference, action: "CANCEL", cancellationReason: "Item unavailable" }) });

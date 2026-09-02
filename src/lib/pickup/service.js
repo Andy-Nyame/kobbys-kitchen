@@ -7,10 +7,16 @@ import {
   normalizePickupCode,
 } from "./domain.js";
 import { issueReceipt } from "../payments/receipts.js";
+import {
+  notifyOrderCompleted,
+  notifyOrderReady,
+  notifyPaymentConfirmed,
+} from "../notifications/service.js";
 
 const PICKUP_ORDER_SELECT = {
   id: true,
   reference: true,
+  userId: true,
   status: true,
   paymentMethod: true,
   paymentStatus: true,
@@ -89,6 +95,7 @@ export async function markOrderReadyForPickup({
             changedAt: now,
           },
         });
+        await notifyOrderReady(transaction, order);
         return {
           ...getPickupPresentation({ ...order, status: "READY_FOR_PICKUP" }),
           pickupCode,
@@ -149,6 +156,7 @@ export async function recordCashReceived({ prismaClient, actorId, code, now = ne
       throw new PickupWorkflowError("This payment changed. Verify the order again.", 409, "STALE_PAYMENT");
     }
     const receipt = await issueReceipt({ client: transaction, paymentId: order.payment.id, issuedById: actorId, now });
+    await notifyPaymentConfirmed(transaction, order);
     return { ...getPickupPresentation(order), paymentStatus: "PAID", receiptNumber: receipt.receiptNumber, idempotent: false };
   });
 }
@@ -187,6 +195,7 @@ export async function completePickup({ prismaClient, actorId, code, now = new Da
         changedAt: now,
       },
     });
+    await notifyOrderCompleted(transaction, order);
     return { ...getPickupPresentation(order), status: "COMPLETED" };
   });
 }

@@ -26,6 +26,12 @@ import {
   requiresLatePaymentReconciliation,
 } from "./expiry-policy.js";
 import { issueReceipt } from "./receipts.js";
+import {
+  notifyAdminsOfNewOrder,
+  notifyOrderCancelled,
+  notifyPaymentConfirmed,
+  notifyPaymentReconciliationRequired,
+} from "../notifications/service.js";
 
 function assertVerifiedTransaction(attempt, verified) {
   if (!verified || verified.reference !== attempt.providerRef) {
@@ -379,6 +385,8 @@ export async function finalizeVerifiedPaystackPayment({
             cancellationReason: null,
           },
         });
+        await notifyPaymentConfirmed(transaction, attempt.payment.order);
+        await notifyAdminsOfNewOrder(transaction, attempt.payment.order);
       } else {
         await transaction.order.updateMany({
           where: {
@@ -400,6 +408,10 @@ export async function finalizeVerifiedPaystackPayment({
             cancellationReason: LATE_PAYSTACK_PAYMENT_REASON,
           },
         });
+        await notifyPaymentReconciliationRequired(
+          transaction,
+          attempt.payment.order
+        );
       }
       const receipt = await issueReceipt({
         client: transaction,
@@ -512,6 +524,7 @@ export async function initiateFullPaystackRefund({
         changedAt: now,
       },
     });
+    await notifyOrderCancelled(transaction, order, reason);
     return { order, refund, idempotent: false };
   });
   if (prepared.idempotent) return prepared;

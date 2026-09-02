@@ -50,11 +50,21 @@ function paymentDouble() {
     payment: { id: "payment-1", method: "CARD", status: "PENDING", amountMinor: 11000, currency: "GHS", provider: "PAYSTACK", providerRef: null, paidAt: null, receipt: null },
     attempt: { id: "attempt-1", paymentId: "payment-1", provider: "PAYSTACK", status: "PENDING", amountMinor: 11000, currency: "GHS", providerRef: "KKP-test-reference-1", providerTransactionId: null },
     receiptCreates: 0,
+    notifications: [],
   };
   function attemptRecord() {
     return { ...state.attempt, payment: { ...state.payment, receipt: state.payment.receipt, order: state.order } };
   }
   const transaction = {
+    user: {
+      findMany: async ({ where }) => where.role === "ADMIN" ? [{ id: "admin-1" }] : [],
+    },
+    notification: {
+      createMany: async ({ data }) => {
+        state.notifications.push(...data);
+        return { count: data.length };
+      },
+    },
     paymentAttempt: {
       findUnique: async () => attemptRecord(),
       update: async ({ data }) => Object.assign(state.attempt, data),
@@ -91,6 +101,7 @@ function refundDouble(role = "ADMIN") {
     order: {
       id: "order-1",
       reference: "KK-20260830-PAY001",
+      userId: "customer-1",
       status: "PENDING",
       payment: {
         id: "payment-1",
@@ -106,6 +117,9 @@ function refundDouble(role = "ADMIN") {
   };
   const transaction = {
     user: { findUnique: async () => ({ role }) },
+    notification: {
+      createMany: async ({ data }) => ({ count: data.length }),
+    },
     order: {
       findUnique: async () => state.order,
       update: async ({ data }) => Object.assign(state.order, data),

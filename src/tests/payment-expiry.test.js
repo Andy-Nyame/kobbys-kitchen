@@ -46,12 +46,22 @@ function finalizationDouble({ createdAt, status = "AWAITING_PAYMENT" }) {
       status: "PENDING",
     },
     receiptCreates: 0,
+    notifications: [],
   };
   const attemptRecord = () => ({
     ...state.attempt,
     payment: { ...state.payment, receipt: state.payment.receipt, order: state.order },
   });
   const transaction = {
+    user: {
+      findMany: async ({ where }) => where.role === "ADMIN" ? [{ id: "admin-1" }] : [],
+    },
+    notification: {
+      createMany: async ({ data }) => {
+        state.notifications.push(...data);
+        return { count: data.length };
+      },
+    },
     paymentAttempt: {
       findUnique: async () => attemptRecord(),
       update: async ({ data }) => Object.assign(state.attempt, data),

@@ -11,6 +11,7 @@ import {
   isPaystackMethod,
   PAYSTACK_PROVIDER,
 } from "../payments/domain.js";
+import { notifyAdminsOfNewOrder } from "../notifications/service.js";
 
 const orderResultInclude = {
   items: {
@@ -212,6 +213,10 @@ export async function createTrustedPickupOrder({
           },
           include: orderResultInclude,
         });
+
+        if (checkout.paymentMethod === "CASH") {
+          await notifyAdminsOfNewOrder(transaction, order);
+        }
 
         return presentOrderResult(order, false);
       },

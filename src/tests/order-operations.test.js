@@ -19,13 +19,24 @@ function createTransaction({ role = "ADMIN", initialStatus = "PENDING", changedC
     paymentStatus: "UNPAID",
     updates: [],
     history: [],
+    notifications: [],
   };
   const transaction = {
-    user: { findUnique: async () => ({ role }) },
+    user: {
+      findUnique: async () => ({ role }),
+      findMany: async ({ where }) => where.role === "CHEF" ? [{ id: "chef-1" }] : [],
+    },
+    notification: {
+      createMany: async ({ data }) => {
+        state.notifications.push(...data);
+        return { count: data.length };
+      },
+    },
     order: {
       findUnique: async () => ({
         id: "10000000-0000-4000-8000-000000000001",
         reference: "KK-20260829-TEST1",
+        userId: "customer-1",
         status: state.status,
         paymentStatus: state.paymentStatus,
       }),

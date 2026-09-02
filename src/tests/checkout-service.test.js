@@ -30,7 +30,7 @@ function createFakePrisma() {
     ["admin", { id: "admin", email: "admin@example.test", role: "ADMIN", profile: { id: "profile-admin" } }],
   ]);
   const orders = new Map();
-  const state = { createCount: 0, captured: null };
+  const state = { createCount: 0, captured: null, notifications: [] };
   const menuItems = [{
     id: ITEM_ID,
     name: "Indomie",
@@ -42,7 +42,16 @@ function createFakePrisma() {
     category: { active: true },
   }];
   const transaction = {
-    user: { findUnique: async ({ where }) => users.get(where.id) || null },
+    user: {
+      findUnique: async ({ where }) => users.get(where.id) || null,
+      findMany: async ({ where }) => [...users.values()].filter((user) => user.role === where.role),
+    },
+    notification: {
+      createMany: async ({ data }) => {
+        state.notifications.push(...data);
+        return { count: data.length };
+      },
+    },
     menuItem: { findMany: async () => menuItems },
     order: {
       findUnique: async ({ where }) => {

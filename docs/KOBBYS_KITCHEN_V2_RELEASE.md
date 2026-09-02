@@ -26,6 +26,7 @@ Deferred scope are not part of V2.
 | Pickup | Complete | Four-character server-generated credential at Ready, customer mask/show/copy, trusted verification, Cash amount due, payment-before-completion, and invalidation |
 | Reviews | Complete | Submission, approved/featured public visibility, and Admin moderation history |
 | Analytics | Complete | Account analytics, order/revenue/payment metrics, completed-paid top items, compact KPI cards, real trends, and empty states |
+| Notifications | Complete | Persistent role-owned Customer/Admin/Chef notifications, unread state, event deduplication, quiet polling, in-page alerts, and optional local Admin/Chef sound |
 | Managed media upload | Partial | Admin manages image references to existing `/public/images` assets; hosted upload/storage is intentionally not integrated |
 | Password-reset email delivery | Partial/optional | Secure reset-token and Resend delivery code exists; the current Production environment does not configure the optional Resend variables |
 | Delivery | Deferred by design | Checkout is pickup-only and explicitly labels Delivery as Coming Soon |
@@ -143,7 +144,8 @@ original paid amount or receipt identity.
 
 ## Operational refresh
 
-Live surfaces use one reusable 10-second polling controller. It pauses while the
+Live surfaces use one reusable 10-second polling controller. Mounted refresh
+subscribers share its timer and visibility/focus listeners. It pauses while the
 tab is hidden, refreshes immediately on visibility/focus return, coalesces nearby
 events, prevents overlapping requests, cleans timers/listeners on unmount, and
 keeps the last rendered state after transient failure.
@@ -158,6 +160,36 @@ Polling uses focused operational JSON where possible and `router.refresh()` for
 server-owned order queues. It never calls `window.location.reload()` or invokes
 the route-level spiral loader. Client component identity preserves pickup-code
 show/hide and Kitchen input state during normal refreshes.
+
+## Persistent notifications
+
+Notifications are trusted lifecycle records in Neon rather than browser-derived
+status messages. Each record belongs to one Auth.js User, has a controlled
+application link, persisted `readAt`, and a deterministic unique event key. The
+header panel loads the latest 25 records while its unread count remains
+authoritative across all records.
+
+- Customer events: verified payment, accepted, Ready, cancelled, completed, and
+  exceptional late-payment reconciliation.
+- Admin events: a paid Paystack or valid Cash order entering the operational
+  queue, plus late-payment reconciliation that requires review.
+- Chef events: an accepted order entering the Kitchen queue.
+
+Payment and order services create notification rows inside the same trusted
+database transaction as the lifecycle transition. Repeated callbacks, webhooks,
+and transition requests use `createMany(..., skipDuplicates: true)` together
+with the unique dedupe key, so one business event produces one record per
+recipient. Clients can only list their own notifications and mark their own
+records read; there is no client notification-creation endpoint. Pickup codes
+and sensitive payment/provider fields are never stored in notification copy.
+
+The Customer, Admin, and Kitchen headers expose the same accessible bell and
+bounded notification center. Quiet polling shares the operational refresh
+controller, preserves an open panel, and shows each newly observed important
+event as a non-blocking toast once. Admin and Chef may opt into a short
+browser-generated tone; that per-device preference is local and visual alerts
+remain the fallback when autoplay is blocked. Email is not required. Web Push,
+service workers, VAPID, and closed-browser delivery are deferred beyond V2.
 
 ## Production architecture
 
@@ -212,5 +244,7 @@ remain only in ignored local files or the deployment environment.
   `AUTH_EMAIL_FROM` are not currently configured in Production. This optional
   integration does not block ordering or Google authentication.
 - Polling is intentionally lightweight rather than WebSockets/SSE.
+- Browser Web Push and delivery while the application is closed are deferred;
+  persistent in-app history and open-page polling are the V2 notification scope.
 - The first genuine/live Paystack transaction and resulting callback/webhook/
   receipt observation remain the final operational acceptance step.

@@ -5,6 +5,7 @@ import DesktopNavigation from "@/components/navigation/DesktopNavigation";
 import HeaderAuthNavigation from "@/components/navigation/HeaderAuthNavigation";
 import MobileNavigation from "@/components/navigation/MobileNavigation";
 import CartLink from "@/components/cart/CartLink";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import ThemeControl from "@/components/theme/ThemeControl";
 import { businessData } from "@/data/businessData";
 import { getHeaderAuthNavigation } from "@/lib/auth/header-navigation";
@@ -14,27 +15,40 @@ import {
   getUserProfile,
 } from "@/lib/auth/guards";
 import { getCustomerActiveOrderOverview } from "@/lib/orders/customer-orders";
+import { IMPORTANT_CUSTOMER_NOTIFICATION_TYPES } from "@/lib/notifications/domain";
+import { getNotificationSnapshot } from "@/lib/notifications/queries";
 
 export default async function SiteHeader() {
   let user = null;
   let role = null;
   let profile = null;
   let customerOrdersNavigation = null;
+  let notificationSnapshot = null;
 
   try {
     ({ user, role } = await getCustomerAccess());
 
     if (role === "CUSTOMER") {
       customerOrdersNavigation = { activeOrderCount: 0 };
+      notificationSnapshot = { notifications: [], unreadCount: 0 };
       profile = await ensureCustomerProfile(user);
 
       try {
-        const overview = await getCustomerActiveOrderOverview(user.id, {
-          limit: 0,
-        });
-        customerOrdersNavigation.activeOrderCount = overview.totalCount;
+        const [overviewResult, notificationResult] = await Promise.allSettled([
+          getCustomerActiveOrderOverview(user.id, { limit: 0 }),
+          getNotificationSnapshot(user.id),
+        ]);
+        if (overviewResult.status === "fulfilled") {
+          customerOrdersNavigation.activeOrderCount = overviewResult.value.totalCount;
+        }
+        if (notificationResult.status === "fulfilled") {
+          notificationSnapshot = notificationResult.value;
+        }
+        if (overviewResult.status === "rejected" || notificationResult.status === "rejected") {
+          throw overviewResult.reason || notificationResult.reason;
+        }
       } catch (error) {
-        console.error("[site-header-active-orders]", {
+        console.error("[site-header-customer-data]", {
           reason: error?.code || "query_failed",
         });
       }
@@ -65,6 +79,15 @@ export default async function SiteHeader() {
             <span className="brand__tagline">{businessData.location.area}</span>
           </span>
         </Link>
+
+        {notificationSnapshot ? (
+          <div className="site-header__notification">
+            <NotificationBell
+              initialSnapshot={notificationSnapshot}
+              toastTypes={IMPORTANT_CUSTOMER_NOTIFICATION_TYPES}
+            />
+          </div>
+        ) : null}
 
         <div className="site-header__desktop-actions">
           <DesktopNavigation

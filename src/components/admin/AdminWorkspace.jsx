@@ -2,7 +2,9 @@ import Link from "next/link";
 
 import AdminNavigation from "@/components/admin/AdminNavigation";
 import AdminAccountMenu from "@/components/admin/AdminAccountMenu";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import ThemeControl from "@/components/theme/ThemeControl";
+import { ADMIN_SOUND_NOTIFICATION_TYPES } from "@/lib/notifications/domain";
 
 function AdminUtility({ presentation }) {
   return (
@@ -23,7 +25,12 @@ function AdminBrand() {
   );
 }
 
-export default function AdminWorkspace({ children, presentation, pendingOrderCount = 0 }) {
+export default function AdminWorkspace({
+  children,
+  notificationSnapshot,
+  presentation,
+  pendingOrderCount = 0,
+}) {
   return (
     <div className="admin-workspace">
       <aside className="admin-sidebar" aria-label="Administration workspace">
@@ -38,28 +45,37 @@ export default function AdminWorkspace({ children, presentation, pendingOrderCou
       <div className="admin-workspace__body">
         <header className="admin-mobile-header">
           <AdminBrand />
-          <details className="admin-mobile-drawer">
-            <summary
-              aria-controls="admin-mobile-drawer-panel"
-              className="admin-mobile-drawer__toggle"
-            >
-              <span className="admin-mobile-drawer__label admin-mobile-drawer__label--closed sr-only">
-                Open administration navigation
-              </span>
-              <span className="admin-mobile-drawer__label admin-mobile-drawer__label--open sr-only">
-                Close administration navigation
-              </span>
-              <span aria-hidden="true" className="admin-mobile-drawer__icon">
-                <span />
-                <span />
-                <span />
-              </span>
-            </summary>
-            <div className="admin-mobile-drawer__panel" id="admin-mobile-drawer-panel">
-              <AdminNavigation closeDetailsOnClick pendingOrderCount={pendingOrderCount} />
-              <AdminUtility presentation={presentation} />
-            </div>
-          </details>
+          <div className="admin-mobile-header__actions">
+            <NotificationBell
+              initialSnapshot={notificationSnapshot}
+              soundPreferenceKey="kobbys-admin-notification-sound"
+              soundTypes={ADMIN_SOUND_NOTIFICATION_TYPES}
+              toastTypes={ADMIN_SOUND_NOTIFICATION_TYPES}
+              variant="admin"
+            />
+            <details className="admin-mobile-drawer">
+              <summary
+                aria-controls="admin-mobile-drawer-panel"
+                className="admin-mobile-drawer__toggle"
+              >
+                <span className="admin-mobile-drawer__label admin-mobile-drawer__label--closed sr-only">
+                  Open administration navigation
+                </span>
+                <span className="admin-mobile-drawer__label admin-mobile-drawer__label--open sr-only">
+                  Close administration navigation
+                </span>
+                <span aria-hidden="true" className="admin-mobile-drawer__icon">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              </summary>
+              <div className="admin-mobile-drawer__panel" id="admin-mobile-drawer-panel">
+                <AdminNavigation closeDetailsOnClick pendingOrderCount={pendingOrderCount} />
+                <AdminUtility presentation={presentation} />
+              </div>
+            </details>
+          </div>
         </header>
 
         <main className="admin-workspace__main">
