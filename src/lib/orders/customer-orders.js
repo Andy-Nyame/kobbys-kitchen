@@ -2,6 +2,7 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 import { queryCustomerActiveOrderOverview } from "@/lib/orders/customer-active";
+import { expireAbandonedPaystackOrders } from "@/lib/payments/expiry";
 
 const customerOrderSelect = {
   reference: true,
@@ -68,7 +69,8 @@ const customerOrderSelect = {
   },
 };
 
-export function listCustomerOrders(userId) {
+export async function listCustomerOrders(userId) {
+  await expireAbandonedPaystackOrders({ userId });
   return prisma.order.findMany({
     where: { userId },
     select: customerOrderSelect,
@@ -76,13 +78,15 @@ export function listCustomerOrders(userId) {
   });
 }
 
-export function getCustomerOrderByReference(userId, reference) {
+export async function getCustomerOrderByReference(userId, reference) {
+  await expireAbandonedPaystackOrders({ userId, reference });
   return prisma.order.findFirst({
     where: { userId, reference },
     select: customerOrderSelect,
   });
 }
 
-export function getCustomerActiveOrderOverview(userId, options) {
+export async function getCustomerActiveOrderOverview(userId, options) {
+  await expireAbandonedPaystackOrders({ userId });
   return queryCustomerActiveOrderOverview(prisma, userId, options);
 }

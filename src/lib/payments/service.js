@@ -16,6 +16,15 @@ import {
   initializePaystackTransaction,
   verifyPaystackTransaction,
 } from "./providers/paystack.js";
+import { expireAbandonedPaystackOrders } from "./expiry.js";
+import {
+  isPaymentExpiredOrder,
+  isWithinPaymentWindow,
+  LATE_PAYSTACK_PAYMENT_REASON,
+  PAYMENT_EXPIRED_MESSAGE,
+  PAYMENT_EXPIRED_REASON,
+  requiresLatePaymentReconciliation,
+} from "./expiry-policy.js";
 import { issueReceipt } from "./receipts.js";
 
 function assertVerifiedTransaction(attempt, verified) {
@@ -47,7 +56,17 @@ async function loadAttempt(prismaClient, reference) {
       payment: {
         include: {
           receipt: true,
-          order: { select: { id: true, reference: true, userId: true, status: true } },
+          order: {
+            select: {
+              id: true,
+              reference: true,
+              userId: true,
+              status: true,
+              paymentStatus: true,
+              cancellationReason: true,
+              createdAt: true,
+            },
+          },
         },
       },
     },
@@ -124,6 +143,16 @@ export async function initializePaystackAttempt({
 export async function initializeNewOrderPayment({ prismaClient, order }) {
   if (!isPaystackMethod(order.paymentMethod)) return null;
   if (order.payment?.status === "PAID") return null;
+  const now = new Date();
+  if (!isWithinPaymentWindow(order.createdAt, now)) {
+    await expireAbandonedPaystackOrders({
+      prismaClient,
+      now,
+      userId: order.userId,
+      reference: order.reference,
+    });
+    throw new PaymentDomainError("PAYMENT_EXPIRED", PAYMENT_EXPIRED_MESSAGE, 409);
+  }
   const attempt = order.payment?.attempts?.[0];
   if (!attempt) {
     throw new PaymentDomainError("PAYMENT_ATTEMPT_MISSING", "Payment could not be initialized.");
@@ -157,11 +186,17 @@ export async function retryPaystackPayment({
   prismaClient,
   userId,
   orderReference,
-  assertOrderingOpen,
   createReference = createPaystackReference,
   initializeProvider = initializePaystackTransaction,
+  expireOrders = expireAbandonedPaystackOrders,
+  now = new Date(),
 }) {
-  await assertOrderingOpen({ client: prismaClient });
+  await expireOrders({
+    prismaClient,
+    now,
+    userId,
+    reference: orderReference,
+  });
   const prepared = await prismaClient.$transaction(async (transaction) => {
     const order = await transaction.order.findFirst({
       where: { reference: orderReference, userId },
@@ -180,6 +215,9 @@ export async function retryPaystackPayment({
     });
     if (!order || order.user.role !== "CUSTOMER") {
       throw new PaymentDomainError("ORDER_NOT_FOUND", "Order not found.", 404);
+    }
+    if (isPaymentExpiredOrder(order)) {
+      throw new PaymentDomainError("PAYMENT_EXPIRED", PAYMENT_EXPIRED_MESSAGE, 409);
     }
     const failedPayment =
       order.payment?.status === "FAILED" && order.paymentStatus === "FAILED";
@@ -226,6 +264,7 @@ export async function retryPaystackPayment({
       orderReference: prepared.order.reference,
       method: prepared.order.paymentMethod,
       initializeProvider,
+      now,
     });
   } catch (error) {
     if (error?.code !== "PAYMENT_ATTEMPT_BUSY") {
@@ -274,8 +313,28 @@ export async function finalizeVerifiedPaystackPayment({
           orderReference: attempt.payment.order.reference,
           receiptNumber: attempt.payment.receipt.receiptNumber,
           idempotent: true,
+          requiresAdminReconciliation: requiresLatePaymentReconciliation(
+            attempt.payment.order
+          ),
         };
       }
+
+      const paidAt = verified.paid_at ? new Date(verified.paid_at) : now;
+      if (!Number.isFinite(paidAt.getTime())) {
+        throw new PaymentDomainError(
+          "PAYMENT_TRANSACTION_INVALID",
+          "Payment transaction verification failed."
+        );
+      }
+      const withinPaymentWindow = isWithinPaymentWindow(
+        attempt.payment.order.createdAt,
+        paidAt
+      );
+      const canEnterOperations =
+        withinPaymentWindow &&
+        (attempt.payment.order.status === "AWAITING_PAYMENT" ||
+          isPaymentExpiredOrder(attempt.payment.order));
+      const requiresAdminReconciliation = !canEnterOperations;
 
       await transaction.paymentAttempt.update({
         where: { id: attempt.id },
@@ -294,14 +353,54 @@ export async function finalizeVerifiedPaystackPayment({
           status: "PAID",
           provider: PAYSTACK_PROVIDER,
           providerRef: reference,
-          paidAt: verified.paid_at ? new Date(verified.paid_at) : now,
+          paidAt,
           failedAt: null,
         },
       });
-      await transaction.order.updateMany({
-        where: { id: attempt.payment.order.id, status: "AWAITING_PAYMENT" },
-        data: { status: "PENDING", paymentStatus: "PAID" },
-      });
+      if (canEnterOperations) {
+        await transaction.order.updateMany({
+          where: {
+            id: attempt.payment.order.id,
+            OR: [
+              { status: "AWAITING_PAYMENT" },
+              {
+                status: "CANCELLED",
+                cancellationReason: {
+                  in: [PAYMENT_EXPIRED_REASON, LATE_PAYSTACK_PAYMENT_REASON],
+                },
+              },
+            ],
+          },
+          data: {
+            status: "PENDING",
+            paymentStatus: "PAID",
+            cancelledAt: null,
+            cancelledById: null,
+            cancellationReason: null,
+          },
+        });
+      } else {
+        await transaction.order.updateMany({
+          where: {
+            id: attempt.payment.order.id,
+            OR: [
+              { status: "AWAITING_PAYMENT" },
+              {
+                status: "CANCELLED",
+                cancellationReason: {
+                  in: [PAYMENT_EXPIRED_REASON, LATE_PAYSTACK_PAYMENT_REASON],
+                },
+              },
+            ],
+          },
+          data: {
+            status: "CANCELLED",
+            paymentStatus: "PAID",
+            cancelledAt: attempt.payment.order.cancelledAt || now,
+            cancellationReason: LATE_PAYSTACK_PAYMENT_REASON,
+          },
+        });
+      }
       const receipt = await issueReceipt({
         client: transaction,
         paymentId: attempt.payment.id,
@@ -312,6 +411,7 @@ export async function finalizeVerifiedPaystackPayment({
         orderReference: attempt.payment.order.reference,
         receiptNumber: receipt.receiptNumber,
         idempotent: false,
+        requiresAdminReconciliation,
       };
     });
   } catch (error) {
@@ -322,6 +422,9 @@ export async function finalizeVerifiedPaystackPayment({
           orderReference: settled.payment.order.reference,
           receiptNumber: settled.payment.receipt.receiptNumber,
           idempotent: true,
+          requiresAdminReconciliation: requiresLatePaymentReconciliation(
+            settled.payment.order
+          ),
         };
       }
     }

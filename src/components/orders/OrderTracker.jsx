@@ -1,8 +1,21 @@
 import { getOrderProgress } from "@/lib/orders/presentation";
+import { PAYMENT_EXPIRED_MESSAGE } from "@/lib/payments/expiry-policy";
 
-export default function OrderTracker({ status, cancellationReason = null }) {
+export default function OrderTracker({
+  status,
+  cancellationReason = null,
+  paymentExpired = false,
+}) {
   const progress = getOrderProgress(status);
   if (progress.cancelled) {
+    if (paymentExpired) {
+      return (
+        <section className="order-cancelled" aria-labelledby="payment-expired-title">
+          <h2 id="payment-expired-title">Payment Expired</h2>
+          <p>{PAYMENT_EXPIRED_MESSAGE}</p>
+        </section>
+      );
+    }
     return (
       <section className="order-cancelled" aria-labelledby="order-cancelled-title">
         <h2 id="order-cancelled-title">Order Cancelled</h2>

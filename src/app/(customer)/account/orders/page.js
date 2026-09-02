@@ -10,6 +10,7 @@ import {
   formatOrderLabel,
   formatOrderMoney,
 } from "@/lib/orders/presentation";
+import { isPaymentExpiredOrder } from "@/lib/payments/expiry-policy";
 
 export const metadata = {
   title: "My Orders | Kobby's Kitchen",
@@ -21,11 +22,12 @@ export const dynamic = "force-dynamic";
 function OrderCards({ orders }) {
   return (
     <ul className="order-list">
-      {orders.map((order) => (
-        <li key={order.reference} className="order-list__item">
+      {orders.map((order) => {
+        const paymentExpired = isPaymentExpiredOrder(order);
+        return <li key={order.reference} className="order-list__item">
           <div className="order-list__header">
             <div><strong>#{order.reference}</strong><p className="order-list__date">{formatOrderDateTime(order.placedAt)}</p></div>
-            <span className={`order-status order-status--${order.status.toLowerCase()}`}>{formatOrderLabel(order.status)}</span>
+            <span className={`order-status order-status--${order.status.toLowerCase()}`}>{paymentExpired ? "Payment Expired" : formatOrderLabel(order.status)}</span>
           </div>
           <dl className="order-list__summary">
             <div><dt>Total</dt><dd>{formatOrderMoney(order.totalMinor, order.currency)}</dd></div>
@@ -33,8 +35,8 @@ function OrderCards({ orders }) {
             <div><dt>Fulfillment</dt><dd>{formatOrderLabel(order.fulfillmentType)}</dd></div>
           </dl>
           <Link className="text-link" href={`/account/orders/${order.reference}`}>View Order</Link>
-        </li>
-      ))}
+        </li>;
+      })}
     </ul>
   );
 }

@@ -15,6 +15,10 @@ import {
   formatOrderMoney,
 } from "@/lib/orders/presentation";
 import { deriveMenuPriceMinor } from "@/lib/menu/pricing";
+import {
+  getCancellationReasonLabel,
+  isPaymentExpiredOrder,
+} from "@/lib/payments/expiry-policy";
 
 export const metadata = {
   title: "Order Details | Kobby's Kitchen",
@@ -37,20 +41,24 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
     .filter((item) => item.menuItem?.active && item.menuItem?.available && item.menuItem?.category?.active && deriveMenuPriceMinor(item.menuItem, item.priceTier) !== null)
     .map((item) => ({ menuItemId: item.menuItemId, priceTier: item.priceTier, quantity: item.quantity }));
   const unavailableReorderCount = order.items.length - reorderLines.length;
+  const paymentExpired = isPaymentExpiredOrder(order);
   const paymentRetryAvailable =
-    order.paymentStatus === "FAILED" ||
-    (order.paymentStatus === "PENDING" &&
-      order.payment?.attempts?.[0]?.status === "FAILED");
+    !paymentExpired &&
+    (order.paymentStatus === "FAILED" ||
+      (order.paymentStatus === "PENDING" &&
+        order.payment?.attempts?.[0]?.status === "FAILED"));
 
   return (
     <>
-      <PaymentResultActions
-        orderReference={order.reference}
-        paymentStatus={order.paymentStatus}
-        retryAvailable={paymentRetryAvailable}
-        showSuccess={query?.payment === "success" && order.paymentStatus === "PAID"}
-      />
-      {query?.placed === "1" ? (
+      {!paymentExpired ? (
+        <PaymentResultActions
+          orderReference={order.reference}
+          paymentStatus={order.paymentStatus}
+          retryAvailable={paymentRetryAvailable}
+          showSuccess={query?.payment === "success" && order.paymentStatus === "PAID"}
+        />
+      ) : null}
+      {!paymentExpired && query?.placed === "1" ? (
         <div className="order-confirmation-banner" role="status">
           <strong>Order placed successfully.</strong>
           <span>We&rsquo;ve received your order and the restaurant will confirm it shortly.</span>
@@ -62,7 +70,11 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
         description={`Placed ${formatOrderDateTime(order.placedAt)}. Keep this reference for pickup support.`}
       />
 
-      <OrderTracker cancellationReason={order.cancellationReason} status={order.status} />
+      <OrderTracker
+        cancellationReason={getCancellationReasonLabel(order.cancellationReason)}
+        paymentExpired={paymentExpired}
+        status={order.status}
+      />
 
       {order.status === "READY_FOR_PICKUP" && order.pickupCode ? (
         <PickupCodeCard code={order.pickupCode} />
@@ -97,7 +109,7 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
             <h2 id="order-status-title">Pickup details</h2>
           </div>
           <dl className="order-detail-facts">
-            <div><dt>Order status</dt><dd>{formatOrderLabel(order.status)}</dd></div>
+            <div><dt>Order status</dt><dd>{paymentExpired ? "Payment Expired" : formatOrderLabel(order.status)}</dd></div>
             <div><dt>Payment method</dt><dd>{formatOrderLabel(order.paymentMethod)}</dd></div>
             <div><dt>Payment status</dt><dd>{formatOrderLabel(order.paymentStatus)}</dd></div>
             <div><dt>Fulfillment</dt><dd>{formatOrderLabel(order.fulfillmentType)}</dd></div>
@@ -105,7 +117,7 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
             <div><dt>Phone</dt><dd>{order.customerPhoneSnapshot}</dd></div>
             <div><dt>Email</dt><dd>{order.customerEmailSnapshot}</dd></div>
             {order.note ? <div><dt>Order note</dt><dd>{order.note}</dd></div> : null}
-            {order.cancellationReason ? <div><dt>Cancellation reason</dt><dd>{order.cancellationReason}</dd></div> : null}
+            {!paymentExpired && order.cancellationReason ? <div><dt>Cancellation reason</dt><dd>{getCancellationReasonLabel(order.cancellationReason)}</dd></div> : null}
             {order.payment?.refund ? <div><dt>Refund status</dt><dd>{formatOrderLabel(order.payment.refund.status)}</dd></div> : null}
           </dl>
           <div className="order-contact-actions">
@@ -116,7 +128,7 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
       </div>
       <div className="section-actions">
         <Link className="button-link button-link--secondary" href="/account/orders">All Orders</Link>
-        {order.status === "COMPLETED" ? <OrderAgainButton lines={reorderLines} unavailableCount={unavailableReorderCount} /> : <Link className="button-link button-link--primary" href="/menu">Browse Menu</Link>}
+        {order.status === "COMPLETED" || paymentExpired ? <OrderAgainButton lines={reorderLines} unavailableCount={unavailableReorderCount} /> : <Link className="button-link button-link--primary" href="/menu">Browse Menu</Link>}
         {order.paymentStatus === "PAID" && order.payment?.receipt ? (
           <>
             <Link className="button-link button-link--secondary" href={`/account/orders/${encodeURIComponent(order.reference)}/receipt`}>View Receipt</Link>

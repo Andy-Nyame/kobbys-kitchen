@@ -2,6 +2,7 @@ import "server-only";
 
 import { getDateRangeBounds } from "@/lib/admin/filters";
 import { summarizeOrderMetrics } from "@/lib/analytics/order-metrics";
+import { expireAbandonedPaystackOrders } from "@/lib/payments/expiry";
 import { prisma } from "@/lib/prisma";
 
 function getDateWhere({ fromIso, toExclusiveIso }) {
@@ -16,6 +17,7 @@ function toDay(value) {
 }
 
 export async function getOrderMetrics(dateRange = {}) {
+  await expireAbandonedPaystackOrders();
   const bounds = getDateRangeBounds(dateRange);
   const dateWhere = getDateWhere(bounds);
   const hasRange = Object.keys(dateWhere).length > 0;

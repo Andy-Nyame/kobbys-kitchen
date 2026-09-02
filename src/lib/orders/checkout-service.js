@@ -60,6 +60,8 @@ function presentOrderResult(order, idempotent) {
     subtotalMinor: order.subtotalMinor,
     totalMinor: order.totalMinor,
     currency: order.currency,
+    createdAt: order.createdAt,
+    cancellationReason: order.cancellationReason,
     items: order.items,
     payment: order.payment,
     idempotent,

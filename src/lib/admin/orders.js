@@ -4,9 +4,10 @@ import { ADMIN_PAGE_SIZE, getDateRangeBounds } from "@/lib/admin/filters";
 import { ORDER_STATUS } from "@/lib/orders/domain";
 import { executeAdminOrderMutation } from "@/lib/orders/admin-mutations";
 import { markOrderReadyForPickup } from "@/lib/pickup/service";
+import { expireAbandonedPaystackOrders } from "@/lib/payments/expiry";
+import { getCancellationReasonLabel } from "@/lib/payments/expiry-policy";
 import { prisma } from "@/lib/prisma";
 const ACTIVE_ORDER_STATUSES = [
-  ORDER_STATUS.AWAITING_PAYMENT,
   ORDER_STATUS.PENDING,
   ORDER_STATUS.CONFIRMED,
   ORDER_STATUS.PREPARING,
@@ -38,7 +39,7 @@ function normalizeOrders(orders) {
     payment: order.payment || null,
     items: order.items || [],
     note: order.note || null,
-    cancellation_reason: order.cancellationReason || null,
+    cancellation_reason: getCancellationReasonLabel(order.cancellationReason),
   }));
 }
 
@@ -82,6 +83,7 @@ const orderSelect = {
 };
 
 export async function getRecentAdminOrders(limit = 8) {
+  await expireAbandonedPaystackOrders();
   const safeLimit = Math.min(Math.max(Number(limit) || 8, 1), 20);
   const [activeOrders, recentOrders] = await Promise.all([
     prisma.order.findMany({
@@ -119,11 +121,13 @@ export function mutateAdminOrder({ adminUserId, mutation }) {
   return executeAdminOrderMutation({ prismaClient: prisma, adminUserId, mutation });
 }
 
-export function countNewAdminOrders() {
+export async function countNewAdminOrders() {
+  await expireAbandonedPaystackOrders();
   return prisma.order.count({ where: { status: ORDER_STATUS.PENDING } });
 }
 
 export async function listAdminOrders(filters, { statuses = null } = {}) {
+  await expireAbandonedPaystackOrders();
   const start = (filters.page - 1) * ADMIN_PAGE_SIZE;
   const dateWhere = getOrderDateWhere(filters);
   const scopedStatus =

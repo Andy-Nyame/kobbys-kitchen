@@ -5,6 +5,7 @@ import {
   sortActiveKitchenOrders,
   sortReadyKitchenOrders,
 } from "@/lib/kitchen/queue";
+import { expireAbandonedPaystackOrders } from "@/lib/payments/expiry";
 import { prisma } from "@/lib/prisma";
 
 const KITCHEN_SELECT = {
@@ -45,6 +46,7 @@ function normalize(order) {
 }
 
 export async function listKitchenOrders(prismaClient = prisma) {
+  await expireAbandonedPaystackOrders({ prismaClient });
   const [active, ready] = await Promise.all([
     prismaClient.order.findMany({
       where: { status: { in: ACTIVE_KITCHEN_STATUSES } },

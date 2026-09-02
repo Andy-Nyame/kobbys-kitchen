@@ -25,6 +25,7 @@ import {
   processPaystackRefundEvent,
   retryPaystackPayment,
 } from "../lib/payments/service.js";
+import { isWithinPaymentWindow } from "../lib/payments/expiry-policy.js";
 
 const originalEnv = { ...process.env };
 
@@ -37,7 +38,15 @@ function resetPaystackEnv() {
 
 function paymentDouble() {
   const state = {
-    order: { id: "order-1", reference: "KK-20260830-PAY001", userId: "customer-1", status: "AWAITING_PAYMENT", paymentStatus: "PENDING" },
+    order: {
+      id: "order-1",
+      reference: "KK-20260830-PAY001",
+      userId: "customer-1",
+      status: "AWAITING_PAYMENT",
+      paymentStatus: "PENDING",
+      cancellationReason: null,
+      createdAt: new Date("2026-08-30T11:50:00.000Z"),
+    },
     payment: { id: "payment-1", method: "CARD", status: "PENDING", amountMinor: 11000, currency: "GHS", provider: "PAYSTACK", providerRef: null, paidAt: null, receipt: null },
     attempt: { id: "attempt-1", paymentId: "payment-1", provider: "PAYSTACK", status: "PENDING", amountMinor: 11000, currency: "GHS", providerRef: "KKP-test-reference-1", providerTransactionId: null },
     receiptCreates: 0,
@@ -306,7 +315,7 @@ describe("verified payment finalization and receipts", () => {
     assert.match(pdf.toString(), /KKR-20260830-ABC123/);
   });
 
-  it("retries only a failed owned payment with a new attempt and no second Order", async () => {
+  it("retries a failed owned payment before expiry with no second Order", async () => {
     process.env.AUTH_URL = "http://localhost:3000";
     process.env.PAYSTACK_SECRET_KEY = "sk_test_redacted";
     process.env.PAYSTACK_ENABLED = "true";
@@ -314,6 +323,7 @@ describe("verified payment finalization and receipts", () => {
       order: {
         id: "order-1", reference: "KK-20260830-PAY001", userId: "customer-1",
         status: "AWAITING_PAYMENT", paymentStatus: "FAILED", paymentMethod: "CARD",
+        createdAt: new Date("2026-08-30T12:00:00Z"),
         payment: { id: "payment-1", status: "FAILED", amountMinor: 11000, currency: "GHS", attempts: [{ status: "FAILED" }] },
         user: { email: "customer@example.test", role: "CUSTOMER" },
       },
@@ -348,6 +358,11 @@ describe("verified payment finalization and receipts", () => {
       assertOrderingOpen: async () => ({ acceptingOrders: true }),
       createReference: () => "KKP-retry-reference-2",
       initializeProvider: async (payload) => ({ authorizationUrl: "https://checkout.paystack.com/retry", reference: payload.reference }),
+      expireOrders: async ({ now }) => {
+        assert.equal(isWithinPaymentWindow(state.order.createdAt, now), true);
+        return { expiredOrders: 0, failedPayments: 0, abandonedAttempts: 0 };
+      },
+      now: new Date("2026-08-30T12:14:59.999Z"),
     });
     assert.equal(result.reference, "KKP-retry-reference-2");
     assert.equal(state.orderCreates, 0);
@@ -405,6 +420,7 @@ describe("verified payment finalization and receipts", () => {
         initializeProvider: async () => {
           throw new Error("provider rejected initialization");
         },
+        expireOrders: async () => ({ expiredOrders: 0, failedPayments: 0 }),
       }),
       /provider rejected initialization/
     );

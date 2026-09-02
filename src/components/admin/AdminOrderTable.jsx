@@ -58,6 +58,9 @@ export default function AdminOrderTable({ orders, emptyMessage = "No orders yet.
               </td>
               <td data-label="Order status">
                 <AdminStatusBadge status={order.status} />
+                {order.cancellation_reason ? (
+                  <p className="admin-order-note">{order.cancellation_reason}</p>
+                ) : null}
               </td>
               <td data-label="Created">{formatAdminDateTime(order.created_at)}</td>
               <td data-label="Actions">
