@@ -192,6 +192,55 @@ describe("Paystack configuration and hosted provider boundary", () => {
     resetPaystackEnv();
   });
 
+  it("logs safe upstream diagnostics while preserving the generic provider error", async () => {
+    process.env.PAYSTACK_SECRET_KEY = "sk_live_do-not-log-this";
+    const originalConsoleError = console.error;
+    const diagnostics = [];
+    console.error = (...values) => diagnostics.push(values);
+
+    try {
+      await assert.rejects(
+        initializePaystackTransaction(
+          {
+            email: "customer@example.test",
+            amount: "3000",
+            currency: "GHS",
+            reference: "KKP-safe-diagnostic-1",
+            callback_url: "https://example.test/api/payments/paystack/callback",
+            channels: ["mobile_money"],
+          },
+          async () => ({
+            ok: false,
+            status: 401,
+            json: async () => ({
+              status: false,
+              code: "invalid_key",
+              message:
+                "Invalid sk_live_do-not-log-this for customer@example.test",
+            }),
+          })
+        ),
+        (error) =>
+          error.code === "PAYSTACK_REQUEST_FAILED" &&
+          error.message === "The payment provider could not complete this request."
+      );
+    } finally {
+      console.error = originalConsoleError;
+      resetPaystackEnv();
+    }
+
+    assert.equal(diagnostics.length, 1);
+    assert.equal(diagnostics[0][0], "[paystack-provider]");
+    assert.deepEqual(diagnostics[0][1], {
+      stage: "initialize",
+      reference: "KKP-safe-diagnostic-1",
+      httpStatus: 401,
+      providerCode: "invalid_key",
+      providerMessage: "Invalid [redacted-key] for [redacted-email]",
+    });
+    assert.doesNotMatch(JSON.stringify(diagnostics), /do-not-log-this|customer@example\.test/);
+  });
+
   it("verifies transactions server-side and authenticates raw webhook bodies", async () => {
     process.env.PAYSTACK_SECRET_KEY = "sk_test_redacted";
     let url;
@@ -265,7 +314,7 @@ describe("verified payment finalization and receipts", () => {
       order: {
         id: "order-1", reference: "KK-20260830-PAY001", userId: "customer-1",
         status: "AWAITING_PAYMENT", paymentStatus: "FAILED", paymentMethod: "CARD",
-        payment: { id: "payment-1", status: "FAILED", amountMinor: 11000, currency: "GHS" },
+        payment: { id: "payment-1", status: "FAILED", amountMinor: 11000, currency: "GHS", attempts: [{ status: "FAILED" }] },
         user: { email: "customer@example.test", role: "CUSTOMER" },
       },
       attempt: null,
@@ -304,6 +353,64 @@ describe("verified payment finalization and receipts", () => {
     assert.equal(state.orderCreates, 0);
     assert.equal(state.order.payment.status, "PENDING");
     assert.equal(state.attempt.status, "PENDING");
+    resetPaystackEnv();
+  });
+
+  it("recovers an interrupted failed retry and reconciles another provider failure", async () => {
+    process.env.AUTH_URL = "http://localhost:3000";
+    process.env.PAYSTACK_SECRET_KEY = "sk_test_redacted";
+    process.env.PAYSTACK_ENABLED = "true";
+    const state = {
+      order: {
+        id: "order-1", reference: "KK-20260830-PAY001", userId: "customer-1",
+        status: "AWAITING_PAYMENT", paymentStatus: "PENDING", paymentMethod: "MOBILE_MONEY",
+        payment: { id: "payment-1", status: "PENDING", amountMinor: 3000, currency: "GHS", attempts: [{ status: "FAILED" }] },
+        user: { email: "customer@example.test", role: "CUSTOMER" },
+      },
+      attempt: null,
+    };
+    const transaction = {
+      order: {
+        findFirst: async () => state.order,
+        update: async ({ data }) => Object.assign(state.order, data),
+        updateMany: async ({ data }) => { Object.assign(state.order, data); return { count: 1 }; },
+      },
+      payment: {
+        update: async ({ data }) => Object.assign(state.order.payment, data),
+        updateMany: async ({ data }) => { Object.assign(state.order.payment, data); return { count: 1 }; },
+      },
+      paymentAttempt: {
+        count: async () => 2,
+        create: async ({ data }) => { state.attempt = { id: "attempt-3", status: "CREATED", ...data }; return state.attempt; },
+      },
+    };
+    const client = {
+      ...transaction,
+      $transaction: async (value) =>
+        typeof value === "function" ? value(transaction) : Promise.all(value),
+      paymentAttempt: {
+        ...transaction.paymentAttempt,
+        findUnique: async () => state.attempt,
+        updateMany: async ({ data }) => { Object.assign(state.attempt, data); return { count: 1 }; },
+      },
+    };
+
+    await assert.rejects(
+      retryPaystackPayment({
+        prismaClient: client,
+        userId: "customer-1",
+        orderReference: state.order.reference,
+        assertOrderingOpen: async () => ({ acceptingOrders: true }),
+        createReference: () => "KKP-retry-reference-3",
+        initializeProvider: async () => {
+          throw new Error("provider rejected initialization");
+        },
+      }),
+      /provider rejected initialization/
+    );
+    assert.equal(state.attempt.status, "FAILED");
+    assert.equal(state.order.payment.status, "FAILED");
+    assert.equal(state.order.paymentStatus, "FAILED");
     resetPaystackEnv();
   });
 

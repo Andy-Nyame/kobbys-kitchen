@@ -37,12 +37,17 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
     .filter((item) => item.menuItem?.active && item.menuItem?.available && item.menuItem?.category?.active && deriveMenuPriceMinor(item.menuItem, item.priceTier) !== null)
     .map((item) => ({ menuItemId: item.menuItemId, priceTier: item.priceTier, quantity: item.quantity }));
   const unavailableReorderCount = order.items.length - reorderLines.length;
+  const paymentRetryAvailable =
+    order.paymentStatus === "FAILED" ||
+    (order.paymentStatus === "PENDING" &&
+      order.payment?.attempts?.[0]?.status === "FAILED");
 
   return (
     <>
       <PaymentResultActions
         orderReference={order.reference}
         paymentStatus={order.paymentStatus}
+        retryAvailable={paymentRetryAvailable}
         showSuccess={query?.payment === "success" && order.paymentStatus === "PAID"}
       />
       {query?.placed === "1" ? (

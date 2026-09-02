@@ -4,7 +4,12 @@ import { useEffect, useRef, useState } from "react";
 
 import { useCart } from "@/components/cart/CartProvider";
 
-export default function PaymentResultActions({ orderReference, paymentStatus, showSuccess }) {
+export default function PaymentResultActions({
+  orderReference,
+  paymentStatus,
+  retryAvailable = paymentStatus === "FAILED",
+  showSuccess,
+}) {
   const { clearCart } = useCart();
   const cartCleared = useRef(false);
   const [pending, setPending] = useState(false);
@@ -46,11 +51,11 @@ export default function PaymentResultActions({ orderReference, paymentStatus, sh
   if (!new Set(["FAILED", "PENDING"]).has(paymentStatus)) return null;
   return (
     <section className="payment-result-card" aria-labelledby="payment-result-title">
-      <h2 id="payment-result-title">{paymentStatus === "FAILED" ? "Payment was not completed" : "Waiting for payment"}</h2>
-      <p>{paymentStatus === "FAILED"
+      <h2 id="payment-result-title">{retryAvailable ? "Payment was not completed" : "Waiting for payment"}</h2>
+      <p>{retryAvailable
         ? "Your order has not entered the kitchen queue. You can safely start a new payment attempt."
         : "Complete the hosted payment before this order can enter the kitchen queue."}</p>
-      {paymentStatus === "FAILED" ? (
+      {retryAvailable ? (
         <button className="button-link button-link--primary" disabled={pending} onClick={retry} type="button">
           {pending ? "Starting Payment…" : "Try Payment Again"}
         </button>

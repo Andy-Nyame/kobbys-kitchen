@@ -165,16 +165,32 @@ export async function retryPaystackPayment({
   const prepared = await prismaClient.$transaction(async (transaction) => {
     const order = await transaction.order.findFirst({
       where: { reference: orderReference, userId },
-      include: { payment: true, user: { select: { email: true, role: true } } },
+      include: {
+        payment: {
+          include: {
+            attempts: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { status: true },
+            },
+          },
+        },
+        user: { select: { email: true, role: true } },
+      },
     });
     if (!order || order.user.role !== "CUSTOMER") {
       throw new PaymentDomainError("ORDER_NOT_FOUND", "Order not found.", 404);
     }
+    const failedPayment =
+      order.payment?.status === "FAILED" && order.paymentStatus === "FAILED";
+    const interruptedRetry =
+      order.payment?.status === "PENDING" &&
+      order.paymentStatus === "PENDING" &&
+      order.payment.attempts[0]?.status === "FAILED";
     if (
       order.status !== "AWAITING_PAYMENT" ||
       !isPaystackMethod(order.paymentMethod) ||
-      order.payment?.status !== "FAILED" ||
-      order.paymentStatus !== "FAILED"
+      (!failedPayment && !interruptedRetry)
     ) {
       throw new PaymentDomainError("PAYMENT_RETRY_UNAVAILABLE", "This payment cannot be retried.");
     }
@@ -202,14 +218,35 @@ export async function retryPaystackPayment({
     });
     return { attempt, order, email: order.user.email };
   });
-  return initializePaystackAttempt({
-    prismaClient,
-    attemptId: prepared.attempt.id,
-    customerEmail: prepared.email,
-    orderReference: prepared.order.reference,
-    method: prepared.order.paymentMethod,
-    initializeProvider,
-  });
+  try {
+    return await initializePaystackAttempt({
+      prismaClient,
+      attemptId: prepared.attempt.id,
+      customerEmail: prepared.email,
+      orderReference: prepared.order.reference,
+      method: prepared.order.paymentMethod,
+      initializeProvider,
+    });
+  } catch (error) {
+    if (error?.code !== "PAYMENT_ATTEMPT_BUSY") {
+      const failedAt = new Date();
+      await prismaClient.$transaction([
+        prismaClient.payment.updateMany({
+          where: { id: prepared.order.payment.id, status: "PENDING" },
+          data: { status: "FAILED", failedAt },
+        }),
+        prismaClient.order.updateMany({
+          where: {
+            id: prepared.order.id,
+            status: "AWAITING_PAYMENT",
+            paymentStatus: "PENDING",
+          },
+          data: { paymentStatus: "FAILED" },
+        }),
+      ]);
+    }
+    throw error;
+  }
 }
 
 export async function finalizeVerifiedPaystackPayment({

@@ -57,6 +57,11 @@ const customerOrderSelect = {
       currency: true,
       provider: true,
       providerRef: true,
+      attempts: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { status: true },
+      },
       receipt: { select: { receiptNumber: true, issuedAt: true } },
       refund: { select: { status: true, amountMinor: true, processedAt: true } },
     },

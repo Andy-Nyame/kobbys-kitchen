@@ -4,6 +4,37 @@ import { PaymentDomainError } from "../domain.js";
 
 const PAYSTACK_API = "https://api.paystack.co";
 
+function sanitizeDiagnosticText(value, fallback) {
+  const normalized = typeof value === "string"
+    ? value
+        .normalize("NFKC")
+        .replace(/[\u0000-\u001f\u007f]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 240)
+    : "";
+
+  if (!normalized) return fallback;
+
+  return normalized
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted-email]")
+    .replace(/\b(?:sk|pk)_(?:live|test)_[A-Z0-9_-]+\b/gi, "[redacted-key]")
+    .replace(/\bBearer\s+\S+/gi, "Bearer [redacted]");
+}
+
+function logPaystackFailure({ stage, reference, httpStatus, providerCode, providerMessage }) {
+  console.error("[paystack-provider]", {
+    stage,
+    reference,
+    httpStatus,
+    providerCode: sanitizeDiagnosticText(providerCode, "PAYSTACK_ERROR"),
+    providerMessage: sanitizeDiagnosticText(
+      providerMessage,
+      "The provider returned an unsuccessful response."
+    ),
+  });
+}
+
 function secretKey() {
   const value = process.env.PAYSTACK_SECRET_KEY?.trim();
   if (!value) {
@@ -16,7 +47,7 @@ function secretKey() {
   return value;
 }
 
-async function requestPaystack(path, options = {}, fetchImpl = fetch) {
+async function requestPaystack(path, options = {}, fetchImpl = fetch, diagnostics = {}) {
   let response;
   try {
     response = await fetchImpl(`${PAYSTACK_API}${path}`, {
@@ -28,7 +59,14 @@ async function requestPaystack(path, options = {}, fetchImpl = fetch) {
       },
       cache: "no-store",
     });
-  } catch {
+  } catch (error) {
+    logPaystackFailure({
+      stage: diagnostics.stage || "request",
+      reference: diagnostics.reference || null,
+      httpStatus: null,
+      providerCode: error?.cause?.code || error?.code || "PAYSTACK_NETWORK_ERROR",
+      providerMessage: "The provider network request failed.",
+    });
     throw new PaymentDomainError(
       "PAYSTACK_NETWORK_ERROR",
       "The payment provider could not be reached. Please try again.",
@@ -38,6 +76,13 @@ async function requestPaystack(path, options = {}, fetchImpl = fetch) {
 
   const body = await response.json().catch(() => null);
   if (!response.ok || !body?.status) {
+    logPaystackFailure({
+      stage: diagnostics.stage || "request",
+      reference: diagnostics.reference || null,
+      httpStatus: response.status,
+      providerCode: body?.code || body?.data?.code || "PAYSTACK_REQUEST_FAILED",
+      providerMessage: body?.message,
+    });
     throw new PaymentDomainError(
       "PAYSTACK_REQUEST_FAILED",
       "The payment provider could not complete this request.",
@@ -51,7 +96,8 @@ export async function initializePaystackTransaction(payload, fetchImpl) {
   const data = await requestPaystack(
     "/transaction/initialize",
     { method: "POST", body: JSON.stringify(payload) },
-    fetchImpl
+    fetchImpl,
+    { stage: "initialize", reference: payload.reference }
   );
   const authorizationUrl = data?.authorization_url;
   let authorizationHost = "";
