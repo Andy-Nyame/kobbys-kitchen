@@ -110,7 +110,7 @@ export default async function AboutPage() {
           description="Behind every meal is a dedicated team committed to serving with care, consistency, and warmth. From preparation to presentation, our staff work together to make every Kobby’s Kitchen experience welcoming and memorable."
         >
           <div className="team-photo-grid">
-            <figure className="team-photo-card">
+            <div className="team-photo-card">
               <div className="team-photo-card__media">
                 <Image
                   alt="Kobby’s Kitchen staff members"
@@ -121,9 +121,8 @@ export default async function AboutPage() {
                   width={854}
                 />
               </div>
-              <figcaption>Our Kitchen Team</figcaption>
-            </figure>
-            <figure className="team-photo-card">
+            </div>
+            <div className="team-photo-card">
               <div className="team-photo-card__media">
                 <Image
                   alt="Kobby’s Kitchen team"
@@ -134,8 +133,7 @@ export default async function AboutPage() {
                   width={1084}
                 />
               </div>
-              <figcaption>The Team Behind Kobby&rsquo;s Kitchen</figcaption>
-            </figure>
+            </div>
           </div>
         </ContentSection>
 
