@@ -105,26 +105,37 @@ export default async function AboutPage() {
         />
 
         <ContentSection
+          className="team-section"
           title="Meet Our Team"
-          description="Our team works together to prepare and serve every order with care, consistency, and attention to quality."
+          description="Behind every meal is a dedicated team committed to serving with care, consistency, and warmth. From preparation to presentation, our staff work together to make every Kobby’s Kitchen experience welcoming and memorable."
         >
           <div className="team-photo-grid">
-            <Image
-              alt="Kobby's Kitchen staff members"
-              className="team-photo"
-              height={1280}
-              sizes="(min-width: 1280px) 37rem, (min-width: 640px) 44vw, calc(100vw - 4.5rem)"
-              src="/images/people/staff-01.jpg"
-              width={854}
-            />
-            <Image
-              alt="Kobby's Kitchen team"
-              className="team-photo"
-              height={1280}
-              sizes="(min-width: 1280px) 37rem, (min-width: 640px) 44vw, calc(100vw - 4.5rem)"
-              src="/images/people/staff-02.jpg"
-              width={1084}
-            />
+            <figure className="team-photo-card">
+              <div className="team-photo-card__media">
+                <Image
+                  alt="Kobby’s Kitchen staff members"
+                  className="team-photo"
+                  height={1280}
+                  sizes="(min-width: 1280px) 36rem, (min-width: 640px) 42vw, calc(100vw - 5.5rem)"
+                  src="/images/people/staff-01.jpg"
+                  width={854}
+                />
+              </div>
+              <figcaption>Our Kitchen Team</figcaption>
+            </figure>
+            <figure className="team-photo-card">
+              <div className="team-photo-card__media">
+                <Image
+                  alt="Kobby’s Kitchen team"
+                  className="team-photo"
+                  height={1280}
+                  sizes="(min-width: 1280px) 36rem, (min-width: 640px) 42vw, calc(100vw - 5.5rem)"
+                  src="/images/people/staff-02.jpg"
+                  width={1084}
+                />
+              </div>
+              <figcaption>The Team Behind Kobby&rsquo;s Kitchen</figcaption>
+            </figure>
           </div>
         </ContentSection>
 
