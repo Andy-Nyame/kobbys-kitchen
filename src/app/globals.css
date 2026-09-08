@@ -1847,6 +1847,22 @@ select:focus-visible {
   aspect-ratio: 4 / 5;
 }
 
+.team-photo-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.team-photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  border: 1px solid var(--color-border);
+  border-radius: 1.35rem;
+  object-fit: cover;
+  object-position: center;
+}
+
 .hours-list {
   display: grid;
   gap: 0.75rem;
@@ -2392,6 +2408,12 @@ select:focus-visible {
   .site-footer__grid {
     grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
     align-items: start;
+  }
+}
+
+@media (min-width: 640px) {
+  .team-photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

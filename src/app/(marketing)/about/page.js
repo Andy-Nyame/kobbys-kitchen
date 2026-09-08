@@ -105,6 +105,30 @@ export default async function AboutPage() {
         />
 
         <ContentSection
+          title="Meet Our Team"
+          description="Our team works together to prepare and serve every order with care, consistency, and attention to quality."
+        >
+          <div className="team-photo-grid">
+            <Image
+              alt="Kobby's Kitchen staff members"
+              className="team-photo"
+              height={1280}
+              sizes="(min-width: 1280px) 37rem, (min-width: 640px) 44vw, calc(100vw - 4.5rem)"
+              src="/images/people/staff-01.jpg"
+              width={854}
+            />
+            <Image
+              alt="Kobby's Kitchen team"
+              className="team-photo"
+              height={1280}
+              sizes="(min-width: 1280px) 37rem, (min-width: 640px) 44vw, calc(100vw - 4.5rem)"
+              src="/images/people/staff-02.jpg"
+              width={1084}
+            />
+          </div>
+        </ContentSection>
+
+        <ContentSection
           title="Opening Hours"
           description="Our normal weekly restaurant schedule. Temporary ordering pauses and overrides do not change these hours."
         >
