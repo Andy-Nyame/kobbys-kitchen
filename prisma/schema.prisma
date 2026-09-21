@@ -81,6 +81,12 @@ enum NotificationType {
   NEW_KITCHEN_ORDER
 }
 
+enum CampaignPopupFrequency {
+  EVERY_VISIT
+  ONCE_PER_SESSION
+  ONCE_PER_CUSTOMER
+}
+
 model User {
   id            String    @id @default(uuid()) @db.Uuid
   name          String?
@@ -537,4 +543,33 @@ model Notification {
   @@index([userId, createdAt])
   @@index([orderId])
   @@map("notifications")
+}
+
+model Campaign {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  name               String
+  headline           String?
+  altText            String
+  active             Boolean                @default(false)
+  startAt            DateTime?
+  endAt              DateTime?
+  priority           Int                    @default(0)
+  desktopImagePath   String
+  desktopImageWidth  Int
+  desktopImageHeight Int
+  mobileImagePath    String?
+  mobileImageWidth   Int?
+  mobileImageHeight  Int?
+  destinationPath    String
+  slideshowEnabled   Boolean                @default(false)
+  popupEnabled       Boolean                @default(false)
+  popupFrequency     CampaignPopupFrequency @default(ONCE_PER_SESSION)
+  dismissible        Boolean                @default(true)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  @@index([active, startAt, endAt, priority])
+  @@index([slideshowEnabled, active, priority])
+  @@index([popupEnabled, active, priority])
+  @@map("campaigns")
 }

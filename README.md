@@ -10,6 +10,7 @@ Kitchen workspace. See:
 - [V2 release documentation](docs/KOBBYS_KITCHEN_V2_RELEASE.md)
 - [System architecture](docs/SYSTEM_ARCHITECTURE.md)
 - [Paystack setup and acceptance](docs/paystack-setup.md)
+- [Promotional campaigns](docs/PROMOTIONAL_CAMPAIGNS.md)
 
 ## Local development
 

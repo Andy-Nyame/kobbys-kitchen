@@ -6,6 +6,7 @@ const adminNavigation = [
   { href: "/admin/menu", label: "Menu" },
   { href: "/admin/payments", label: "Payments" },
   { href: "/admin/reviews", label: "Reviews" },
+  { href: "/admin/campaigns", label: "Campaigns" },
   { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/operations", label: "Operations" },
   { href: "/admin/settings", label: "Settings" },

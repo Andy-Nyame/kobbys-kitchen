@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Image from "next/image";
 
+import CampaignSlideshow from "@/components/campaigns/CampaignSlideshow";
 import OpeningHours from "@/components/ordering/OpeningHours";
 import CustomerHomeOrders from "@/components/orders/CustomerHomeOrders";
 import HomeReviewSummary from "@/components/reviews/HomeReviewSummary";
@@ -12,6 +13,7 @@ import { menuItems } from "@/data/menuData";
 import { getCustomerAccess } from "@/lib/auth/guards";
 import { getPublicBusinessHours } from "@/lib/business-hours/server";
 import { getCustomerActiveOrderOverview } from "@/lib/orders/customer-orders";
+import { getHomepageCampaigns } from "@/lib/campaigns/server";
 
 export const metadata = {
   title: "Kobby's Kitchen | Fast Food in Tema Community Two",
@@ -26,9 +28,15 @@ export default async function Home() {
   const phoneLink = businessData.phone.href;
   const whatsappLink = businessData.whatsapp.href;
   const directionsLink = businessData.googleMapsLink;
-  const [openingHours, { user, role }] = await Promise.all([
+  const [openingHours, { user, role }, homepageCampaigns] = await Promise.all([
     getPublicBusinessHours(),
     getCustomerAccess(),
+    getHomepageCampaigns().catch((error) => {
+      console.error("[homepage-campaigns]", {
+        reason: error?.code || "query_failed",
+      });
+      return [];
+    }),
   ]);
   let customerOrderOverview;
 
@@ -46,6 +54,8 @@ export default async function Home() {
   return (
     <main className="page">
       <div className="container content-stack">
+        <CampaignSlideshow campaigns={homepageCampaigns} />
+
         <section className="hero">
           <div className="hero__grid">
             <div className="hero__content">

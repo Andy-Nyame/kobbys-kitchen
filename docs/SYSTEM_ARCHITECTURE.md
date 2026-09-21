@@ -80,6 +80,8 @@ The relational model includes:
   at most one Refund per Payment.
 - User-owned Notifications with read timestamps, controlled order links, and a
   unique deterministic lifecycle-event key.
+- Promotional Campaigns with server-authoritative schedules, reusable homepage
+  and popup placements, safe internal destinations, and configurable frequency.
 
 Money is stored as integer GHS minor units. OrderItem names, tiers, unit prices,
 quantities, and totals are historical snapshots and are never recomputed from a
@@ -220,6 +222,20 @@ Account analytics and order/payment analytics are separate. Recognized revenue i
 PAID, non-cancelled, non-refunding revenue. Failed/unpaid attempts are excluded;
 unpaid Cash is reported separately. Top items derive from trusted completed/paid
 order snapshots. Charts use real query series and render explicit empty states.
+
+## Promotional campaigns
+
+`src/lib/campaigns` separates pure eligibility, safe-path and popup-frequency
+policy from Prisma reads and Admin mutations. Homepage and popup queries enforce
+`active`, `startAt`, `endAt`, placement flags and priority on the server. The
+homepage uses one lightweight client slideshow only for interaction; one slide
+does not animate. The public marketing layout renders one delayed accessible
+popup from the same record and suppresses it around Cart, Checkout, payment,
+order-detail, Admin and Kitchen flows.
+
+Admin changes pass through the existing ADMIN guard and a transaction-level role
+check. Promo codes, discounts and challenge rankings are intentionally not part
+of this foundation.
 
 ## Environment and database isolation
 
