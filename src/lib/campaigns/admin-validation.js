@@ -1,6 +1,7 @@
 import {
   CAMPAIGN_POPUP_FREQUENCIES,
   isSafeCampaignDestination,
+  isSafeCampaignImagePath,
 } from "./domain.js";
 
 export const CAMPAIGN_ADMIN_ACTION = Object.freeze({
@@ -16,6 +17,15 @@ function requiredBoolean(value, label) {
     throw new TypeError(`${label} must be true or false.`);
   }
   return value;
+}
+
+function imageDimension(value, label, { optional = false } = {}) {
+  if (optional && (value === null || value === "")) return null;
+  const dimension = Number(value);
+  if (!Number.isInteger(dimension) || dimension < 1 || dimension > 10_000) {
+    throw new TypeError(`${label} must be a whole number from 1 to 10000.`);
+  }
+  return dimension;
 }
 
 function parseAccraDateTime(value, label) {
@@ -68,6 +78,28 @@ export function prepareCampaignMutation(payload) {
     throw new TypeError("Campaign popup frequency is not supported.");
   }
 
+  const desktopImagePath = typeof payload.desktopImagePath === "string"
+    ? payload.desktopImagePath.trim()
+    : "";
+  if (!isSafeCampaignImagePath(desktopImagePath)) {
+    throw new TypeError("Desktop creative must use a safe project image path.");
+  }
+  const desktopImageWidth = imageDimension(payload.desktopImageWidth, "Desktop image width");
+  const desktopImageHeight = imageDimension(payload.desktopImageHeight, "Desktop image height");
+
+  const mobileImagePath = typeof payload.mobileImagePath === "string"
+    ? payload.mobileImagePath.trim()
+    : "";
+  const mobileImageWidth = imageDimension(payload.mobileImageWidth, "Mobile image width", { optional: true });
+  const mobileImageHeight = imageDimension(payload.mobileImageHeight, "Mobile image height", { optional: true });
+  const hasMobileCreative = Boolean(mobileImagePath || mobileImageWidth || mobileImageHeight);
+  if (
+    hasMobileCreative &&
+    (!isSafeCampaignImagePath(mobileImagePath) || !mobileImageWidth || !mobileImageHeight)
+  ) {
+    throw new TypeError("Mobile creative requires a safe path, width, and height.");
+  }
+
   return {
     action: payload.action,
     campaignId: payload.id,
@@ -80,6 +112,12 @@ export function prepareCampaignMutation(payload) {
       priority,
       destinationPath,
       popupFrequency: payload.popupFrequency,
+      desktopImagePath,
+      desktopImageWidth,
+      desktopImageHeight,
+      mobileImagePath: hasMobileCreative ? mobileImagePath : null,
+      mobileImageWidth: hasMobileCreative ? mobileImageWidth : null,
+      mobileImageHeight: hasMobileCreative ? mobileImageHeight : null,
     },
   };
 }

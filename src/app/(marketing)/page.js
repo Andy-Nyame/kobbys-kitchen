@@ -54,8 +54,6 @@ export default async function Home() {
   return (
     <main className="page">
       <div className="container content-stack">
-        <CampaignSlideshow campaigns={homepageCampaigns} />
-
         <section className="hero">
           <div className="hero__grid">
             <div className="hero__content">
@@ -116,22 +114,7 @@ export default async function Home() {
             </div>
 
             <div className="hero__visual">
-              <div className="hero__visual-card">
-                <Image
-                  alt="Fresh meals and takeaway from Kobby's Kitchen"
-                  className="hero__visual-image"
-                  priority
-                  sizes="(min-width: 900px) 40vw, 100vw"
-                  src="/images/food/fresh-meals-and-takeaway.png"
-                  width={1254}
-                  height={1254}
-                />
-                <div className="hero__visual-caption">
-                  <span>Fast-food</span>
-                  <span>Takeaway</span>
-                  <span>Event orders</span>
-                </div>
-              </div>
+              <CampaignSlideshow campaigns={homepageCampaigns} variant="hero" />
             </div>
           </div>
         </section>

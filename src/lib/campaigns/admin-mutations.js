@@ -46,6 +46,12 @@ export async function executeAdminCampaignMutation({
         priority: true,
         destinationPath: true,
         popupFrequency: true,
+        desktopImagePath: true,
+        desktopImageWidth: true,
+        desktopImageHeight: true,
+        mobileImagePath: true,
+        mobileImageWidth: true,
+        mobileImageHeight: true,
       },
     });
   });

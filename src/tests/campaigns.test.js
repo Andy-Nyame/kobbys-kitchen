@@ -40,6 +40,16 @@ const baseCampaign = {
   destinationPath: "/menu",
   createdAt: "2026-09-21T00:00:00.000Z",
 };
+const foodShowcase = {
+  ...baseCampaign,
+  id: "8de1a26a-1a70-4b47-a756-740f2268fe18",
+  name: "Homepage Food Showcase",
+  headline: "Fresh meals and takeaway",
+  endAt: null,
+  priority: 10,
+  popupEnabled: false,
+  desktopImagePath: "/images/food/fresh-meals-and-takeaway.png",
+};
 
 function campaign(overrides = {}) {
   return { ...baseCampaign, ...overrides };
@@ -62,6 +72,24 @@ describe("campaign eligibility and ordering", () => {
       campaign({ id: "high", priority: 20 }),
     ], { now, placement: "slideshow" });
     assert.deepEqual(eligible.map(({ id }) => id), ["high", "low"]);
+  });
+
+  it("keeps the promo first and the evergreen food showcase after promo expiry", () => {
+    const active = filterEligibleCampaigns(
+      [foodShowcase, campaign()],
+      { now, placement: "slideshow" }
+    );
+    assert.deepEqual(active.map(({ name }) => name), [
+      "Online Order Challenge",
+      "Homepage Food Showcase",
+    ]);
+
+    const afterExpiry = filterEligibleCampaigns(
+      [foodShowcase, campaign()],
+      { now: new Date("2026-09-27T00:00:00.000Z"), placement: "slideshow" }
+    );
+    assert.deepEqual(afterExpiry.map(({ name }) => name), ["Homepage Food Showcase"]);
+    assert.equal(isCampaignEligible(foodShowcase, { now, placement: "popup" }), false);
   });
 
   it("uses the desktop creative as a mobile fallback and accepts only safe internal destinations", () => {
@@ -129,6 +157,12 @@ describe("campaign Admin boundary", () => {
     priority: 100,
     destinationPath: "/menu",
     popupFrequency: "ONCE_PER_SESSION",
+    desktopImagePath: "/images/promotions/online-order-challenge.png",
+    desktopImageWidth: 1254,
+    desktopImageHeight: 1254,
+    mobileImagePath: null,
+    mobileImageWidth: null,
+    mobileImageHeight: null,
   };
 
   it("normalizes trusted settings and rejects unsafe/browser-owned authority", () => {
@@ -137,6 +171,7 @@ describe("campaign Admin boundary", () => {
     assert.equal(mutation.data.destinationPath, "/menu");
     assert.throws(() => prepareCampaignMutation({ ...validPayload, role: "ADMIN" }), /Authorization context/);
     assert.throws(() => prepareCampaignMutation({ ...validPayload, destinationPath: "javascript:alert(1)" }), /safe internal path/);
+    assert.throws(() => prepareCampaignMutation({ ...validPayload, desktopImagePath: "https://attacker.example/poster.png" }), /safe project image path/);
     assert.throws(() => prepareCampaignMutation({ ...validPayload, endAt: "2026-09-20T00:00" }), /after its start/);
   });
 
@@ -178,6 +213,14 @@ describe("campaign Admin boundary", () => {
 });
 
 describe("campaign presentation integration", () => {
+  it("renders exactly one campaign slideshow inside the existing hero media area", async () => {
+    const home = await readFile("src/app/(marketing)/page.js", "utf8");
+    assert.equal((home.match(/<CampaignSlideshow/g) || []).length, 1);
+    assert.match(home, /<div className="hero__visual">\s*<CampaignSlideshow campaigns=\{homepageCampaigns\} variant="hero" \/>\s*<\/div>/);
+    assert.doesNotMatch(home, /<div className="container content-stack">\s*<CampaignSlideshow/);
+    assert.match(home, /<CustomerHomeOrders overview=\{customerOrderOverview\} \/>/);
+  });
+
   it("keeps single-slide UI clean while enabling multi-slide rotation, swipe and reduced motion", async () => {
     const slideshow = await readFile("src/components/campaigns/CampaignSlideshow.jsx", "utf8");
     assert.match(slideshow, /campaigns\.length > 1/);
@@ -186,6 +229,8 @@ describe("campaign presentation integration", () => {
     assert.match(slideshow, /prefers-reduced-motion/);
     assert.match(slideshow, /onTouchStart/);
     assert.match(slideshow, /href=\{campaign\.destinationPath\}/);
+    assert.match(slideshow, /variant === "hero"/);
+    assert.match(slideshow, /!isHero/);
   });
 
   it("uses a delayed accessible dismissible dialog and the same campaign destination", async () => {
@@ -210,6 +255,17 @@ describe("campaign presentation integration", () => {
     assert.match(migration, /'\/menu'/);
     assert.match(schema, /model Campaign/);
     assert.doesNotMatch(schema, /model PromoCode|model CampaignLeaderboard|model ChallengeEntry/);
+  });
+
+  it("documents the evergreen food showcase without changing popup behavior", async () => {
+    const [documentation, popup] = await Promise.all([
+      readFile("docs/PROMOTIONAL_CAMPAIGNS.md", "utf8"),
+      readFile("src/components/campaigns/CampaignPopup.jsx", "utf8"),
+    ]);
+    assert.match(documentation, /Homepage Food Showcase/);
+    assert.match(documentation, /popup-disabled/);
+    assert.match(popup, /getCampaignPopupStoragePolicy/);
+    assert.match(popup, /POPUP_DELAY_MS = 2200/);
   });
 
   it("authorizes both the Admin page and mutation route through existing trusted Admin guards", async () => {

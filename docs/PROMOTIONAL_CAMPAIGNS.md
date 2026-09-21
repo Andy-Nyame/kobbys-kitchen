@@ -6,7 +6,7 @@ at `/admin/campaigns`; normal customers cannot mutate campaign settings.
 
 ## Placements and scheduling
 
-- `slideshowEnabled` includes an eligible campaign in the homepage slideshow.
+- `slideshowEnabled` includes an eligible campaign in the homepage hero slideshow.
 - `popupEnabled` makes the highest-priority eligible campaign available to the
   public-site popup.
 - `active` is the master switch.
@@ -19,6 +19,10 @@ at `/admin/campaigns`; normal customers cannot mutate campaign settings.
 
 The **Online Order Challenge** uses the approved “ORDER ONLINE. WIN BIG!” artwork
 and ends at 23:59:59 Ghana time on **Saturday, 26 September 2026**.
+
+The evergreen **Homepage Food Showcase** uses the existing food collage, has no
+expiry, remains popup-disabled, and follows the promotion at lower priority. It
+becomes the single clean hero image automatically after the promotion expires.
 
 ## Popup frequency
 

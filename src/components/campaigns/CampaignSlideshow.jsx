@@ -34,7 +34,7 @@ function CampaignImage({ campaign, priority }) {
   );
 }
 
-export default function CampaignSlideshow({ campaigns }) {
+export default function CampaignSlideshow({ campaigns, variant = "default" }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchStartX = useRef(null);
@@ -57,6 +57,7 @@ export default function CampaignSlideshow({ campaigns }) {
 
   const safeIndex = currentIndex % campaigns.length;
   const campaign = campaigns[safeIndex];
+  const isHero = variant === "hero";
   const showPrevious = () => {
     setCurrentIndex((index) => (index - 1 + campaigns.length) % campaigns.length);
   };
@@ -68,7 +69,7 @@ export default function CampaignSlideshow({ campaigns }) {
     <section
       aria-label="Kobby's Kitchen promotions"
       aria-roledescription="carousel"
-      className="campaign-slideshow"
+      className={`campaign-slideshow${isHero ? " campaign-slideshow--hero" : ""}`}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false);
       }}
@@ -89,7 +90,7 @@ export default function CampaignSlideshow({ campaigns }) {
     >
       <div className="campaign-slideshow__viewport">
         <Link
-          aria-label={`${campaign.name}: ${campaign.headline || "View campaign"}. Order online.`}
+          aria-label={`${campaign.name}: ${campaign.headline || "View campaign"}.`}
           className="campaign-slideshow__link"
           href={campaign.destinationPath}
         >
@@ -99,9 +100,11 @@ export default function CampaignSlideshow({ campaigns }) {
 
       {hasMultipleSlides ? (
         <div className="campaign-slideshow__controls">
-          <button aria-label="Previous promotion" onClick={showPrevious} type="button">
-            <span aria-hidden="true">←</span>
-          </button>
+          {!isHero ? (
+            <button aria-label="Previous promotion" onClick={showPrevious} type="button">
+              <span aria-hidden="true">←</span>
+            </button>
+          ) : null}
           <div className="campaign-slideshow__dots" aria-label="Choose a promotion">
             {campaigns.map((item, index) => (
               <button
@@ -113,9 +116,11 @@ export default function CampaignSlideshow({ campaigns }) {
               />
             ))}
           </div>
-          <button aria-label="Next promotion" onClick={showNext} type="button">
-            <span aria-hidden="true">→</span>
-          </button>
+          {!isHero ? (
+            <button aria-label="Next promotion" onClick={showNext} type="button">
+              <span aria-hidden="true">→</span>
+            </button>
+          ) : null}
         </div>
       ) : null}
     </section>

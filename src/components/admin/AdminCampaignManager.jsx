@@ -46,6 +46,16 @@ function CampaignEditor({ campaign, onSaved }) {
           priority: Number(draft.priority),
           destinationPath: draft.destinationPath,
           popupFrequency: draft.popupFrequency,
+          desktopImagePath: draft.desktopImagePath,
+          desktopImageWidth: Number(draft.desktopImageWidth),
+          desktopImageHeight: Number(draft.desktopImageHeight),
+          mobileImagePath: draft.mobileImagePath || null,
+          mobileImageWidth: draft.mobileImageWidth === "" || draft.mobileImageWidth === null
+            ? null
+            : Number(draft.mobileImageWidth),
+          mobileImageHeight: draft.mobileImageHeight === "" || draft.mobileImageHeight === null
+            ? null
+            : Number(draft.mobileImageHeight),
         }),
       });
       const result = await response.json();
@@ -168,6 +178,73 @@ function CampaignEditor({ campaign, onSaved }) {
               required
               type="text"
               value={draft.destinationPath}
+            />
+          </label>
+          <label className="form-field admin-campaign-form__destination">
+            <span>Desktop image path</span>
+            <input
+              disabled={pending}
+              onChange={(event) => update("desktopImagePath", event.target.value)}
+              placeholder="/images/promotions/campaign.png"
+              required
+              type="text"
+              value={draft.desktopImagePath}
+            />
+          </label>
+          <label className="form-field">
+            <span>Desktop image width</span>
+            <input
+              disabled={pending}
+              max="10000"
+              min="1"
+              onChange={(event) => update("desktopImageWidth", event.target.value)}
+              required
+              type="number"
+              value={draft.desktopImageWidth}
+            />
+          </label>
+          <label className="form-field">
+            <span>Desktop image height</span>
+            <input
+              disabled={pending}
+              max="10000"
+              min="1"
+              onChange={(event) => update("desktopImageHeight", event.target.value)}
+              required
+              type="number"
+              value={draft.desktopImageHeight}
+            />
+          </label>
+          <label className="form-field admin-campaign-form__destination">
+            <span>Mobile image path (optional)</span>
+            <input
+              disabled={pending}
+              onChange={(event) => update("mobileImagePath", event.target.value)}
+              placeholder="/images/promotions/campaign-mobile.png"
+              type="text"
+              value={draft.mobileImagePath || ""}
+            />
+          </label>
+          <label className="form-field">
+            <span>Mobile image width (optional)</span>
+            <input
+              disabled={pending}
+              max="10000"
+              min="1"
+              onChange={(event) => update("mobileImageWidth", event.target.value)}
+              type="number"
+              value={draft.mobileImageWidth || ""}
+            />
+          </label>
+          <label className="form-field">
+            <span>Mobile image height (optional)</span>
+            <input
+              disabled={pending}
+              max="10000"
+              min="1"
+              onChange={(event) => update("mobileImageHeight", event.target.value)}
+              type="number"
+              value={draft.mobileImageHeight || ""}
             />
           </label>
         </div>
