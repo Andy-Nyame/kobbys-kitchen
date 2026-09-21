@@ -280,6 +280,54 @@
 
 /* Admin campaign controls */
 
+.admin-promo-list,
+.admin-promo-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.admin-promo-form {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-elevated);
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.admin-promo-form__heading,
+.admin-promo-form__footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-promo-form__heading h3,
+.admin-promo-form__heading p,
+.admin-promo-form__footer p {
+  margin: 0;
+}
+
+.admin-promo-form__heading > span,
+.admin-promo-form__footer p {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.admin-promo-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .admin-promo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-promo-grid__wide {
+    grid-column: 1 / -1;
+  }
+}
+
 .admin-campaign-list {
   display: grid;
   gap: 1.25rem;
@@ -2167,6 +2215,53 @@ select:focus-visible {
   justify-self: start;
 }
 
+.cart-promo {
+  display: grid;
+  gap: 0.75rem;
+  border-block: 1px solid var(--color-border);
+  padding-block: 1rem;
+}
+
+.cart-promo h3,
+.cart-promo p {
+  margin: 0;
+}
+
+.cart-promo__form,
+.cart-promo__applied {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cart-promo__form input {
+  min-width: 0;
+  flex: 1;
+  text-transform: uppercase;
+}
+
+.cart-promo__applied > div {
+  display: grid;
+  flex: 1;
+  gap: 0.15rem;
+}
+
+.cart-promo__applied span,
+.cart-promo__feedback {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.cart-promo__discount {
+  color: var(--color-ready-text);
+  white-space: nowrap;
+}
+
+.cart-page__total {
+  border-top: 2px solid var(--color-border);
+  padding-top: 0.8rem;
+}
+
 .section-note,
 .note-stack {
   max-width: 42rem;
@@ -2975,6 +3070,19 @@ select:focus-visible {
 
   .cart-line__controls {
     justify-content: space-between;
+  }
+
+  .cart-promo__form,
+  .cart-promo__applied,
+  .admin-promo-form__heading,
+  .admin-promo-form__footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cart-promo__form .button-link,
+  .admin-promo-form__footer .button-link {
+    width: 100%;
   }
 }
 
@@ -4862,6 +4970,24 @@ select:focus-visible {
   border-top: 2px solid var(--color-border);
   padding-top: 1rem;
   font-size: 1.2rem;
+}
+
+.checkout-summary__totals {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.checkout-summary__totals > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.checkout-summary__totals dd {
+  margin: 0;
+  white-space: nowrap;
 }
 
 .checkout-error,

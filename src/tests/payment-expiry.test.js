@@ -145,9 +145,10 @@ describe("unpaid Paystack order expiry", () => {
           calls.push(["order", args]);
           return { count: 1 };
         },
+        findMany: async () => [],
       },
-      $transaction: async (operations) => Promise.all(operations),
     };
+    prismaClient.$transaction = async (callback) => callback(prismaClient);
     const now = new Date("2026-09-02T12:15:00Z");
     const result = await expireAbandonedPaystackOrders({ prismaClient, now });
     assert.deepEqual(result, {

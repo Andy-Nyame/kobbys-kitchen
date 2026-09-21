@@ -38,6 +38,7 @@ export default function ReceiptDocument({ receipt, copyType = RECEIPT_COPY.CUSTO
           ))}
         </ul>
       </section>
+      {model.discount ? <dl className="receipt-document__facts"><div><dt>Subtotal</dt><dd>{model.subtotal}</dd></div><div><dt>Promo {model.promoCode}</dt><dd>−{model.discount}</dd></div></dl> : null}
       <p className="receipt-document__total"><span>Total</span><strong>{model.total}</strong></p>
       <footer className="receipt-document__footer">
         <strong>Approved</strong>

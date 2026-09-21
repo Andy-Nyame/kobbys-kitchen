@@ -99,6 +99,7 @@ export default async function CustomerOrderDetailPage({ params, searchParams }) 
           </ul>
           <dl className="order-detail-total">
             <div><dt>Subtotal</dt><dd>{formatOrderMoney(order.subtotalMinor, order.currency)}</dd></div>
+            {order.discountMinor > 0 ? <div><dt>Promo · {order.promoCodeSnapshot}</dt><dd>−{formatOrderMoney(order.discountMinor, order.currency)}</dd></div> : null}
             <div><dt>Total</dt><dd>{formatOrderMoney(order.totalMinor, order.currency)}</dd></div>
           </dl>
         </section>

@@ -8,6 +8,7 @@ import {
 } from "@/lib/orders/checkout-domain";
 import { createPickupOrderForCustomer } from "@/lib/orders/server";
 import { getPaymentAvailability, PaymentDomainError } from "@/lib/payments/domain";
+import { PromoDomainError } from "@/lib/promos/domain";
 
 const conflictCodes = new Set([
   "ORDERING_CLOSED",
@@ -53,6 +54,13 @@ function errorResponse(error) {
   }
 
   if (error instanceof PaymentDomainError) {
+    return NextResponse.json(
+      { ok: false, code: error.code, message: error.message, errors: {} },
+      { status: error.status }
+    );
+  }
+
+  if (error instanceof PromoDomainError) {
     return NextResponse.json(
       { ok: false, code: error.code, message: error.message, errors: {} },
       { status: error.status }

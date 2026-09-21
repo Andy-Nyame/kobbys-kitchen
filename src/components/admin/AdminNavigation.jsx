@@ -7,6 +7,7 @@ const adminNavigation = [
   { href: "/admin/payments", label: "Payments" },
   { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/campaigns", label: "Campaigns" },
+  { href: "/admin/promos", label: "Promo Codes" },
   { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/operations", label: "Operations" },
   { href: "/admin/settings", label: "Settings" },

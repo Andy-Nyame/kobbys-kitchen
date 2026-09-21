@@ -17,6 +17,7 @@ const STATUS_LABELS = Object.freeze({
   CASH: "Cash at Pickup",
   MOBILE_MONEY: "Mobile Money",
   CARD: "Card",
+  PROMO: "Promo",
   PICKUP: "Pickup",
 });
 

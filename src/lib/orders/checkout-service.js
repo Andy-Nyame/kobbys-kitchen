@@ -12,6 +12,14 @@ import {
   PAYSTACK_PROVIDER,
 } from "../payments/domain.js";
 import { notifyAdminsOfNewOrder } from "../notifications/service.js";
+import { notifyPaymentConfirmed } from "../notifications/service.js";
+import { issueReceipt } from "../payments/receipts.js";
+import {
+  claimPromoForCheckout,
+  createPromoReservation,
+  redeemPromoReservation,
+} from "../promos/service.js";
+import { PromoDomainError } from "../promos/domain.js";
 
 const orderResultInclude = {
   items: {
@@ -59,7 +67,9 @@ function presentOrderResult(order, idempotent) {
     customerPhone: order.customerPhoneSnapshot,
     note: order.note,
     subtotalMinor: order.subtotalMinor,
+    discountMinor: order.discountMinor,
     totalMinor: order.totalMinor,
+    promoCode: order.promoCodeSnapshot,
     currency: order.currency,
     createdAt: order.createdAt,
     cancellationReason: order.cancellationReason,
@@ -161,8 +171,21 @@ export async function createTrustedPickupOrder({
           },
         });
         const trustedCart = deriveTrustedOrderLines(checkout.lines, menuItems);
-        const initialState = getInitialOrderPaymentState(checkout.paymentMethod);
-        const paystackReference = isPaystackMethod(checkout.paymentMethod)
+        const promoClaim = checkout.promoCode
+          ? await claimPromoForCheckout({
+              transaction,
+              userId: trustedUser.id,
+              code: checkout.promoCode,
+              subtotalMinor: trustedCart.subtotalMinor,
+            })
+          : null;
+        const totalMinor = promoClaim
+          ? promoClaim.calculation.totalMinor
+          : trustedCart.totalMinor;
+        const effectivePaymentMethod =
+          totalMinor === 0 ? "PROMO" : checkout.paymentMethod;
+        const initialState = getInitialOrderPaymentState(effectivePaymentMethod);
+        const paystackReference = isPaystackMethod(effectivePaymentMethod)
           ? createProviderReference()
           : null;
 
@@ -174,14 +197,16 @@ export async function createTrustedPickupOrder({
             userId: trustedUser.id,
             status: initialState.orderStatus,
             fulfillmentType: "PICKUP",
-            paymentMethod: checkout.paymentMethod,
+            paymentMethod: effectivePaymentMethod,
             paymentStatus: initialState.paymentStatus,
             customerNameSnapshot: checkout.customerName,
             customerEmailSnapshot: trustedUser.email,
             customerPhoneSnapshot: checkout.customerPhone,
             note: checkout.note,
             subtotalMinor: trustedCart.subtotalMinor,
-            totalMinor: trustedCart.totalMinor,
+            discountMinor: promoClaim?.calculation.discountMinor || 0,
+            totalMinor,
+            ...(promoClaim ? promoClaim.snapshot : {}),
             currency: "GHS",
             idempotencyKey: checkout.idempotencyKey,
             items: {
@@ -189,9 +214,9 @@ export async function createTrustedPickupOrder({
             },
             payment: {
               create: {
-                method: checkout.paymentMethod,
+                method: effectivePaymentMethod,
                 status: initialState.paymentStatus,
-                amountMinor: trustedCart.totalMinor,
+                amountMinor: totalMinor,
                 currency: "GHS",
                 ...(paystackReference
                   ? {
@@ -200,7 +225,7 @@ export async function createTrustedPickupOrder({
                         create: {
                           provider: PAYSTACK_PROVIDER,
                           status: "CREATED",
-                          amountMinor: trustedCart.totalMinor,
+                          amountMinor: totalMinor,
                           currency: "GHS",
                           providerRef: paystackReference,
                           idempotencyKey: `${checkout.idempotencyKey}:1`,
@@ -214,7 +239,21 @@ export async function createTrustedPickupOrder({
           include: orderResultInclude,
         });
 
-        if (checkout.paymentMethod === "CASH") {
+        if (promoClaim) {
+          await createPromoReservation({
+            transaction,
+            promoCodeId: promoClaim.promo.id,
+            orderId: order.id,
+            userId: trustedUser.id,
+          });
+        }
+
+        if (effectivePaymentMethod === "PROMO") {
+          await redeemPromoReservation(transaction, order.id);
+          await issueReceipt({ client: transaction, paymentId: order.payment.id });
+          await notifyPaymentConfirmed(transaction, order);
+          await notifyAdminsOfNewOrder(transaction, order);
+        } else if (effectivePaymentMethod === "CASH") {
           await notifyAdminsOfNewOrder(transaction, order);
         }
 
@@ -237,6 +276,18 @@ export async function createTrustedPickupOrder({
       if (existing) {
         return presentOrderResult(existing, true);
       }
+      throw new PromoDomainError(
+        "PROMO_USAGE_CONFLICT",
+        "This promo changed while your order was being placed. Try again.",
+        409
+      );
+    }
+    if (error?.code === "P2034") {
+      throw new PromoDomainError(
+        "PROMO_USAGE_CONFLICT",
+        "This promo changed while your order was being placed. Try again.",
+        409
+      );
     }
 
     throw error;

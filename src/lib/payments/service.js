@@ -32,6 +32,7 @@ import {
   notifyPaymentConfirmed,
   notifyPaymentReconciliationRequired,
 } from "../notifications/service.js";
+import { redeemPromoReservation } from "../promos/service.js";
 
 function assertVerifiedTransaction(attempt, verified) {
   if (!verified || verified.reference !== attempt.providerRef) {
@@ -363,6 +364,11 @@ export async function finalizeVerifiedPaystackPayment({
           failedAt: null,
         },
       });
+      if (attempt.payment.order.promoCodeId) {
+        await redeemPromoReservation(transaction, attempt.payment.order.id, now, {
+          allowReleased: true,
+        });
+      }
       if (canEnterOperations) {
         await transaction.order.updateMany({
           where: {

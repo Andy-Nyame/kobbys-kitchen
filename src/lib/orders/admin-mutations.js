@@ -3,6 +3,10 @@ import {
   notifyOrderAccepted,
   notifyOrderCancelled,
 } from "../notifications/service.js";
+import {
+  redeemPromoReservation,
+  releasePromoReservation,
+} from "../promos/service.js";
 
 export class AdminOrderMutationError extends Error {
   constructor(message, status = 409, code = "ORDER_UPDATE_CONFLICT") {
@@ -43,6 +47,7 @@ export async function executeAdminOrderMutation({
         userId: true,
         status: true,
         paymentStatus: true,
+        promoCodeId: true,
         payment: { select: { status: true, provider: true } },
       },
     });
@@ -105,8 +110,14 @@ export async function executeAdminOrderMutation({
     });
 
     if (mutation.nextStatus === "CONFIRMED") {
+      if (order.promoCodeId) {
+        await redeemPromoReservation(transaction, order.id, now);
+      }
       await notifyOrderAccepted(transaction, order);
     } else if (mutation.nextStatus === "CANCELLED") {
+      if (order.promoCodeId) {
+        await releasePromoReservation(transaction, order.id, now);
+      }
       await notifyOrderCancelled(transaction, order, mutation.cancellationReason);
     }
 

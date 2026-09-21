@@ -49,6 +49,9 @@ const receiptOrderSelect = {
           customerNameSnapshot: true,
           fulfillmentType: true,
           totalMinor: true,
+          subtotalMinor: true,
+          discountMinor: true,
+          promoCodeSnapshot: true,
           currency: true,
           items: {
             orderBy: { createdAt: "asc" },

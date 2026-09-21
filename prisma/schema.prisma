@@ -37,6 +37,18 @@ enum PaymentMethod {
   CASH
   MOBILE_MONEY
   CARD
+  PROMO
+}
+
+enum PromoDiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum PromoRedemptionStatus {
+  RESERVED
+  REDEEMED
+  RELEASED
 }
 
 enum PaymentStatus {
@@ -114,6 +126,9 @@ model User {
   receiptsIssued       Receipt[]              @relation("ReceiptIssuedBy")
   refundsInitiated     Refund[]               @relation("RefundInitiatedBy")
   notifications        Notification[]
+  assignedPromoCodes   PromoCode[]            @relation("PromoCustomerRestriction")
+  promoRedemptions     PromoRedemption[]
+  promoCustomerUsages  PromoCustomerUsage[]
 
   @@index([role])
   @@map("users")
@@ -357,32 +372,37 @@ model BusinessHoursWindow {
 }
 
 model Order {
-  id                    String          @id @default(uuid()) @db.Uuid
-  reference             String          @unique
-  userId                String          @db.Uuid
-  status                OrderStatus     @default(AWAITING_PAYMENT)
-  fulfillmentType       FulfillmentType @default(PICKUP)
-  paymentMethod         PaymentMethod
-  paymentStatus         PaymentStatus   @default(UNPAID)
-  customerNameSnapshot  String
-  customerEmailSnapshot String
-  customerPhoneSnapshot String
-  note                  String?
-  subtotalMinor         Int
-  totalMinor            Int
-  currency              String          @default("GHS")
-  idempotencyKey        String
-  placedAt              DateTime        @default(now())
-  completedAt           DateTime?
-  pickupCode            String?         @unique @db.VarChar(4)
-  pickupCodeGeneratedAt DateTime?
-  pickedUpAt            DateTime?
-  pickupCompletedById   String?         @db.Uuid
-  cancelledAt           DateTime?
-  cancelledById         String?         @db.Uuid
-  cancellationReason    String?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  id                         String             @id @default(uuid()) @db.Uuid
+  reference                  String             @unique
+  userId                     String             @db.Uuid
+  status                     OrderStatus        @default(AWAITING_PAYMENT)
+  fulfillmentType            FulfillmentType    @default(PICKUP)
+  paymentMethod              PaymentMethod
+  paymentStatus              PaymentStatus      @default(UNPAID)
+  customerNameSnapshot       String
+  customerEmailSnapshot      String
+  customerPhoneSnapshot      String
+  note                       String?
+  subtotalMinor              Int
+  discountMinor              Int                @default(0)
+  totalMinor                 Int
+  promoCodeId                String?            @db.Uuid
+  promoCodeSnapshot          String?
+  promoDiscountTypeSnapshot  PromoDiscountType?
+  promoDiscountValueSnapshot Int?
+  currency                   String             @default("GHS")
+  idempotencyKey             String
+  placedAt                   DateTime           @default(now())
+  completedAt                DateTime?
+  pickupCode                 String?            @unique @db.VarChar(4)
+  pickupCodeGeneratedAt      DateTime?
+  pickedUpAt                 DateTime?
+  pickupCompletedById        String?            @db.Uuid
+  cancelledAt                DateTime?
+  cancelledById              String?            @db.Uuid
+  cancellationReason         String?
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime           @updatedAt
 
   user              User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
   cancelledBy       User?                @relation("OrderCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
@@ -391,6 +411,8 @@ model Order {
   payment           Payment?
   statusHistory     OrderStatusHistory[]
   notifications     Notification[]
+  promoCode         PromoCode?           @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
+  promoRedemption   PromoRedemption?
 
   @@unique([userId, idempotencyKey])
   @@index([status, placedAt])
@@ -398,7 +420,75 @@ model Order {
   @@index([paymentStatus, placedAt])
   @@index([cancelledById])
   @@index([pickupCompletedById])
+  @@index([promoCodeId])
   @@map("orders")
+}
+
+model PromoCode {
+  id                    String            @id @default(uuid()) @db.Uuid
+  code                  String            @unique
+  name                  String?
+  discountType          PromoDiscountType
+  discountValue         Int
+  active                Boolean           @default(true)
+  startAt               DateTime?
+  endAt                 DateTime?
+  minimumSubtotalMinor  Int?
+  maximumDiscountMinor  Int?
+  totalUsageLimit       Int?
+  perCustomerUsageLimit Int?
+  restrictedCustomerId  String?           @db.Uuid
+  claimedUsageCount     Int               @default(0)
+  redeemedUsageCount    Int               @default(0)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  restrictedCustomer User?                @relation("PromoCustomerRestriction", fields: [restrictedCustomerId], references: [id], onDelete: Restrict)
+  orders             Order[]
+  redemptions        PromoRedemption[]
+  customerUsages     PromoCustomerUsage[]
+
+  @@index([active, startAt, endAt])
+  @@index([restrictedCustomerId, active])
+  @@map("promo_codes")
+}
+
+model PromoRedemption {
+  id          String                @id @default(uuid()) @db.Uuid
+  promoCodeId String                @db.Uuid
+  orderId     String                @unique @db.Uuid
+  userId      String                @db.Uuid
+  status      PromoRedemptionStatus @default(RESERVED)
+  redeemedAt  DateTime?
+  releasedAt  DateTime?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  promoCode PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Restrict)
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([promoCodeId, status])
+  @@index([promoCodeId, userId, status])
+  @@index([userId, createdAt])
+  @@map("promo_redemptions")
+}
+
+model PromoCustomerUsage {
+  id                 String   @id @default(uuid()) @db.Uuid
+  promoCodeId        String   @db.Uuid
+  userId             String   @db.Uuid
+  claimedUsageCount  Int      @default(0)
+  redeemedUsageCount Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  promoCode PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Restrict)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([promoCodeId, userId])
+  @@index([userId])
+  @@map("promo_customer_usage")
 }
 
 model OrderStatusHistory {

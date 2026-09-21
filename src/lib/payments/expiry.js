@@ -3,6 +3,7 @@ import {
   PAYMENT_EXPIRED_REASON,
   PAYMENT_WINDOW_MS,
 } from "./expiry-policy.js";
+import { releasePromoReservationsForOrders } from "../promos/service.js";
 
 export async function expireAbandonedPaystackOrders({
   prismaClient = null,
@@ -20,8 +21,8 @@ export async function expireAbandonedPaystackOrders({
     ...(reference ? { reference } : {}),
   };
 
-  const [attempts, payments, orders] = await client.$transaction([
-    client.paymentAttempt.updateMany({
+  return client.$transaction(async (transaction) => {
+    const attempts = await transaction.paymentAttempt.updateMany({
       where: {
         status: { in: ["CREATED", "PENDING"] },
         payment: { order: orderScope },
@@ -33,8 +34,8 @@ export async function expireAbandonedPaystackOrders({
         failureMessage: "Payment window expired.",
         completedAt: now,
       },
-    }),
-    client.payment.updateMany({
+    });
+    const payments = await transaction.payment.updateMany({
       where: {
         status: "PENDING",
         paidAt: null,
@@ -42,8 +43,8 @@ export async function expireAbandonedPaystackOrders({
         order: orderScope,
       },
       data: { status: "FAILED", failedAt: now },
-    }),
-    client.order.updateMany({
+    });
+    const orders = await transaction.order.updateMany({
       where: {
         ...orderScope,
         payment: { is: { status: "FAILED", paidAt: null } },
@@ -54,12 +55,26 @@ export async function expireAbandonedPaystackOrders({
         cancelledAt: now,
         cancellationReason: PAYMENT_EXPIRED_REASON,
       },
-    }),
-  ]);
-
-  return {
-    expiredOrders: orders.count,
-    failedPayments: payments.count,
-    abandonedAttempts: attempts.count,
-  };
+    });
+    const expired = orders.count
+      ? await transaction.order.findMany({
+          where: {
+            ...orderScope,
+            status: "CANCELLED",
+            cancellationReason: PAYMENT_EXPIRED_REASON,
+          },
+          select: { id: true, promoCodeId: true },
+        })
+      : [];
+    await releasePromoReservationsForOrders(
+      transaction,
+      expired.filter((order) => order.promoCodeId).map((order) => order.id),
+      now
+    );
+    return {
+      expiredOrders: orders.count,
+      failedPayments: payments.count,
+      abandonedAttempts: attempts.count,
+    };
+  });
 }

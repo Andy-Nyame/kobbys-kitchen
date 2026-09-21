@@ -124,6 +124,10 @@ function createReceiptLines(model) {
 
   lines.push(
     { type: "rule", height: 10 },
+    ...(model.discount ? [
+      { type: "total", label: "SUBTOTAL", amount: model.subtotal, height: 14, size: 8 },
+      { type: "total", label: `PROMO ${model.promoCode} (-)`, amount: model.discount, height: 14, size: 8 },
+    ] : []),
     { type: "total", label: "TOTAL", amount: model.total, height: 18 },
     { type: "rule", height: 10 },
     { type: "fact", label: "METHOD", value: model.paymentMethod.toUpperCase() },
@@ -163,8 +167,9 @@ function renderLine(commands, line, y) {
     addMoney(commands, line.amount, PAGE_WIDTH - MARGIN, y, 6.5);
   }
   if (line.type === "total") {
-    addText(commands, line.label, MARGIN, y, 11, true);
-    addMoney(commands, line.amount, PAGE_WIDTH - MARGIN, y, 11, true);
+    const size = line.size || 11;
+    addText(commands, line.label, MARGIN, y, size, true);
+    addMoney(commands, line.amount, PAGE_WIDTH - MARGIN, y, size, true);
   }
 }
 

@@ -1,13 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useState } from "react";
 
 import { useCart } from "@/components/cart/CartProvider";
+import PromoCodeControl from "@/components/cart/PromoCodeControl";
 import { useLiveOrderingStatus } from "@/components/operations/OperationalStatusProvider";
 import { formatGhs, getCartSubtotalMinor, resolveCartLines } from "@/lib/cart/domain";
 
 export default function CartPageContent({ catalogueItems, orderingStatus: initialOrderingStatus }) {
   const orderingStatus = useLiveOrderingStatus(initialOrderingStatus);
+  const [promoPreview, setPromoPreview] = useState(null);
+  const updatePromoPreview = useCallback((promo) => setPromoPreview(promo), []);
   const { clearCart, decreaseItem, increaseItem, lines, removeItem } = useCart();
   const { resolvedLines: cartLines, unresolvedLines } = resolveCartLines(
     lines,
@@ -78,6 +82,13 @@ export default function CartPageContent({ catalogueItems, orderingStatus: initia
 
       <div className="cart-page__summary">
         <div><span>Subtotal</span><strong>{formatGhs(subtotalMinor)}</strong></div>
+        <PromoCodeControl lines={lines} onPreviewChange={updatePromoPreview} />
+        {promoPreview ? (
+          <>
+            <div><span>Discount · {promoPreview.code}</span><strong>−{formatGhs(promoPreview.discountMinor)}</strong></div>
+            <div className="cart-page__total"><span>Total</span><strong>{formatGhs(promoPreview.totalMinor)}</strong></div>
+          </>
+        ) : null}
         <p>
           {orderingStatus.isOpen
             ? "Checkout revalidates every price and item before placing your pickup order."

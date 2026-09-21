@@ -2,6 +2,7 @@ export const PAYMENT_METHOD = Object.freeze({
   CASH: "CASH",
   MOBILE_MONEY: "MOBILE_MONEY",
   CARD: "CARD",
+  PROMO: "PROMO",
 });
 
 export const PAYMENT_STATUS = Object.freeze({
@@ -40,6 +41,10 @@ const INITIAL_STATE_BY_PAYMENT_METHOD = Object.freeze({
   [PAYMENT_METHOD.CARD]: Object.freeze({
     orderStatus: ORDER_STATUS.AWAITING_PAYMENT,
     paymentStatus: PAYMENT_STATUS.PENDING,
+  }),
+  [PAYMENT_METHOD.PROMO]: Object.freeze({
+    orderStatus: ORDER_STATUS.PENDING,
+    paymentStatus: PAYMENT_STATUS.PAID,
   }),
 });
 

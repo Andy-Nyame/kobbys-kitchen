@@ -54,6 +54,11 @@ export function createReceiptPresentation(receipt, copyType = RECEIPT_COPY.CUSTO
       unitPrice: formatOrderMoney(item.unitPriceMinor, order.currency),
       lineTotal: formatOrderMoney(item.lineTotalMinor, order.currency),
     })),
+    subtotal: formatOrderMoney(order.subtotalMinor ?? order.totalMinor, order.currency),
+    discount: order.discountMinor > 0
+      ? formatOrderMoney(order.discountMinor, order.currency)
+      : null,
+    promoCode: order.promoCodeSnapshot || null,
     total: formatOrderMoney(order.totalMinor, order.currency),
   };
 }

@@ -1,8 +1,10 @@
 import { deriveMenuPriceMinor, normalizePriceTier } from "../menu/pricing.js";
+import { normalizePromoCode, PROMO_CODE_PATTERN } from "../promos/domain.js";
 
 export const CART_STORAGE_KEY = "kobbys-kitchen-cart";
-export const CART_STORAGE_VERSION = 2;
+export const CART_STORAGE_VERSION = 3;
 export const LEGACY_CART_STORAGE_VERSION = 1;
+export const PRE_PROMO_CART_STORAGE_VERSION = 2;
 export const MAX_CART_ITEM_QUANTITY = 20;
 
 const UUID_PATTERN =
@@ -56,35 +58,58 @@ export function normalizeCartLines(lines) {
 }
 
 export function parsePersistedCart(value) {
+  return parsePersistedCartState(value).lines;
+}
+
+export function parsePersistedCartState(value) {
   if (typeof value !== "string") {
-    return [];
+    return { lines: [], promoCode: null };
   }
 
   try {
     const parsed = JSON.parse(value);
 
     if (!parsed || !Array.isArray(parsed.lines)) {
-      return [];
+      return { lines: [], promoCode: null };
     }
 
     if (parsed.version === LEGACY_CART_STORAGE_VERSION) {
-      return normalizeCartLines(
-        parsed.lines.map((line) => ({ ...line, priceTier: 0 }))
-      );
+      return {
+        lines: normalizeCartLines(
+          parsed.lines.map((line) => ({ ...line, priceTier: 0 }))
+        ),
+        promoCode: null,
+      };
     }
 
-    return parsed.version === CART_STORAGE_VERSION
-      ? normalizeCartLines(parsed.lines)
-      : [];
+    if (
+      parsed.version !== PRE_PROMO_CART_STORAGE_VERSION &&
+      parsed.version !== CART_STORAGE_VERSION
+    ) {
+      return { lines: [], promoCode: null };
+    }
+    const normalizedPromoCode = normalizePromoCode(parsed.promoCode);
+    return {
+      lines: normalizeCartLines(parsed.lines),
+      promoCode:
+        parsed.version === CART_STORAGE_VERSION &&
+        PROMO_CODE_PATTERN.test(normalizedPromoCode)
+          ? normalizedPromoCode
+          : null,
+    };
   } catch {
-    return [];
+    return { lines: [], promoCode: null };
   }
 }
 
-export function serializeCart(lines) {
+export function serializeCart(lines, promoCode = null) {
+  const normalizedPromoCode = normalizePromoCode(promoCode);
   return JSON.stringify({
     version: CART_STORAGE_VERSION,
     lines: normalizeCartLines(lines),
+    promoCode: PROMO_CODE_PATTERN.test(normalizedPromoCode)
+      ? normalizedPromoCode
+      : null,
   });
 }
 

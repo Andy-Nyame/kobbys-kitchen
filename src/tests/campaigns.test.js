@@ -254,7 +254,8 @@ describe("campaign presentation integration", () => {
     assert.match(migration, /2026-09-26 23:59:59\.999/);
     assert.match(migration, /'\/menu'/);
     assert.match(schema, /model Campaign/);
-    assert.doesNotMatch(schema, /model PromoCode|model CampaignLeaderboard|model ChallengeEntry/);
+    assert.match(schema, /model PromoCode/);
+    assert.doesNotMatch(schema, /model CampaignLeaderboard|model ChallengeEntry/);
   });
 
   it("documents the evergreen food showcase without changing popup behavior", async () => {

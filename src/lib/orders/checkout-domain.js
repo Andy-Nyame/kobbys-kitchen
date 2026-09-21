@@ -7,6 +7,7 @@ import {
   MAX_ORDER_NOTE_LENGTH,
 } from "./checkout-constants.js";
 import { PAYMENT_METHOD } from "./domain.js";
+import { assertPromoCode, PromoDomainError } from "../promos/domain.js";
 import { assertPaymentMethodAvailable } from "../payments/domain.js";
 import {
   normalizeDisplayName,
@@ -195,12 +196,39 @@ export function validateCheckoutPayload(payload, paymentAvailability) {
   }
 
   const customer = validateCustomerDetails(payload);
+  for (const field of [
+    "discountMinor",
+    "subtotalMinor",
+    "totalMinor",
+    "promoCodeId",
+    "promoDiscountValue",
+  ]) {
+    if (Object.hasOwn(payload, field)) {
+      throw new CheckoutDomainError(
+        "CHECKOUT_INVALID",
+        "Trusted order totals cannot be supplied by the browser."
+      );
+    }
+  }
+
+  let promoCode = null;
+  if (payload.promoCode !== null && payload.promoCode !== undefined && payload.promoCode !== "") {
+    try {
+      promoCode = assertPromoCode(payload.promoCode);
+    } catch (error) {
+      if (error instanceof PromoDomainError) {
+        throw new CheckoutDomainError(error.code, error.message);
+      }
+      throw error;
+    }
+  }
 
   return {
     ...customer,
     note: normalizeCheckoutNote(payload.note),
     paymentMethod: payload.paymentMethod,
     idempotencyKey: payload.idempotencyKey.toLowerCase(),
+    promoCode,
     lines: validateCheckoutLines(payload.lines),
   };
 }

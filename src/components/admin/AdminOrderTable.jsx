@@ -51,6 +51,11 @@ export default function AdminOrderTable({ orders, emptyMessage = "No orders yet.
               </td>
               <td data-label="Total">
                 {formatMoneyMinor(order.total_minor, order.currency)}
+                {order.discount_minor > 0 ? (
+                  <small className="admin-table__secondary">
+                    {order.promo_code_snapshot} · −{formatMoneyMinor(order.discount_minor, order.currency)}
+                  </small>
+                ) : null}
               </td>
               <td data-label="Payment">
                 <span>{formatStatusLabel(order.payment?.method)}</span>

@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { useCart } from "@/components/cart/CartProvider";
+import { usePromoPreview } from "@/components/cart/usePromoPreview";
 import { useLiveOrderingStatus } from "@/components/operations/OperationalStatusProvider";
 import { formatGhs, resolveCartLines } from "@/lib/cart/domain";
 import { MAX_ORDER_NOTE_LENGTH } from "@/lib/orders/checkout-constants";
@@ -20,7 +21,7 @@ function getIdempotencyKey() {
 export default function CheckoutForm({ catalogueItems, customer, orderingStatus: initialOrderingStatus, paymentOptions }) {
   const router = useRouter();
   const orderingStatus = useLiveOrderingStatus(initialOrderingStatus);
-  const { clearCart, hasLoaded, lines } = useCart();
+  const { clearCart, hasLoaded, lines, promoCode, removePromoCode } = useCart();
   const [customerName, setCustomerName] = useState(customer.displayName);
   const [customerPhone, setCustomerPhone] = useState(customer.phone);
   const [note, setNote] = useState("");
@@ -38,6 +39,24 @@ export default function CheckoutForm({ catalogueItems, customer, orderingStatus:
     (total, line) => total + line.lineTotalMinor,
     0
   );
+  const handleInvalidPromo = useCallback(
+    (error) => {
+      removePromoCode();
+      setFeedback({
+        type: "error",
+        message: error.message || "The saved promo is no longer available.",
+      });
+    },
+    [removePromoCode]
+  );
+  const promoPreview = usePromoPreview({
+    code: promoCode,
+    lines,
+    onInvalid: handleInvalidPromo,
+  });
+  const discountMinor =
+    promoPreview.status === "valid" ? promoPreview.promo.discountMinor : 0;
+  const totalMinor = subtotalMinor - discountMinor;
   const canSubmit =
     hasLoaded &&
     orderingStatus.isOpen &&
@@ -45,6 +64,7 @@ export default function CheckoutForm({ catalogueItems, customer, orderingStatus:
     resolvedLines.length > 0 &&
     unresolvedLines.length === 0 &&
     resolvedLines.every((line) => line.orderable) &&
+    (!promoCode || promoPreview.status === "valid") &&
     feedback.type !== "submitting";
 
   async function handleSubmit(event) {
@@ -77,6 +97,7 @@ export default function CheckoutForm({ catalogueItems, customer, orderingStatus:
           customerPhone,
           note,
           paymentMethod,
+          promoCode,
           lines: resolvedLines.map((line) => ({
             menuItemId: line.menuItemId,
             priceTier: line.priceTier,
@@ -99,6 +120,9 @@ export default function CheckoutForm({ catalogueItems, customer, orderingStatus:
         if (result?.code === "PRICE_CHANGED") {
           router.refresh();
         }
+        if (String(result?.code || "").startsWith("PROMO_")) {
+          removePromoCode();
+        }
         return;
       }
 
@@ -111,11 +135,8 @@ export default function CheckoutForm({ catalogueItems, customer, orderingStatus:
         return;
       }
 
-      if (paymentMethod !== "CASH") {
-        if (result.order?.paymentStatus === "PAID") {
-          router.push(result.redirectTo);
-          return;
-        }
+      const paidWithoutProviderRedirect = result.order?.paymentStatus === "PAID";
+      if (!paidWithoutProviderRedirect && paymentMethod !== "CASH") {
         setFeedback({
           type: "error",
           message: "Secure payment could not start. Opening your saved payment attempt…",
@@ -127,7 +148,9 @@ export default function CheckoutForm({ catalogueItems, customer, orderingStatus:
       setFeedback({
         type: "success",
         message:
-          result.status === "already_created"
+          paidWithoutProviderRedirect
+            ? "Order placed successfully. Opening its confirmation…"
+            : result.status === "already_created"
             ? "Your order was already placed. Opening its confirmation…"
             : "Order placed successfully. Opening your confirmation…",
       });
@@ -262,7 +285,14 @@ export default function CheckoutForm({ catalogueItems, customer, orderingStatus:
             Remove unavailable or outdated selections from your cart before checkout.
           </p>
         ) : null}
-        <div className="checkout-summary__total"><span>Total</span><strong>{formatGhs(subtotalMinor)}</strong></div>
+        <dl className="checkout-summary__totals">
+          <div><dt>Subtotal</dt><dd>{formatGhs(subtotalMinor)}</dd></div>
+          {promoPreview.status === "valid" ? (
+            <div><dt>Promo · {promoPreview.promo.code}</dt><dd>−{formatGhs(discountMinor)}</dd></div>
+          ) : null}
+          <div className="checkout-summary__total"><dt>Total</dt><dd>{formatGhs(totalMinor)}</dd></div>
+        </dl>
+        {promoCode && promoPreview.status === "loading" ? <p className="checkout-summary__pickup" role="status">Rechecking promo…</p> : null}
         <p className="checkout-summary__pickup">Pickup only · No delivery fee</p>
         {!orderingStatus.isOpen ? (
           <p className="checkout-error" role="status">
