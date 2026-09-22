@@ -3,6 +3,7 @@ import NavigationLink from "@/components/navigation/NavigationLink";
 const adminNavigation = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/customers", label: "Customers" },
   { href: "/admin/menu", label: "Menu" },
   { href: "/admin/payments", label: "Payments" },
   { href: "/admin/reviews", label: "Reviews" },
