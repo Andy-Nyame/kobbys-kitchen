@@ -16,8 +16,7 @@ export default function AdminReviewActions({ review }) {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const action = formData.get("action");
+    const action = event.nativeEvent.submitter?.value;
 
     setPending(true);
     setState({ ok: null, message: "" });

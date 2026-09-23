@@ -11,6 +11,13 @@ export const REVIEW_MODERATION_ACTION = Object.freeze({
   UNFEATURE: "UNFEATURE",
 });
 
+const REVIEW_MODERATION_SUCCESS_MESSAGE = Object.freeze({
+  [REVIEW_MODERATION_ACTION.APPROVE]: "Review approved.",
+  [REVIEW_MODERATION_ACTION.HIDE]: "Review hidden.",
+  [REVIEW_MODERATION_ACTION.FEATURE]: "Review featured.",
+  [REVIEW_MODERATION_ACTION.UNFEATURE]: "Review removed from featured reviews.",
+});
+
 const REVIEW_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -18,12 +25,24 @@ export function isReviewId(value) {
   return typeof value === "string" && REVIEW_ID_PATTERN.test(value);
 }
 
+export function isReviewModerationAction(value) {
+  return Object.values(REVIEW_MODERATION_ACTION).includes(value);
+}
+
+export function getReviewModerationSuccessMessage(action) {
+  if (!isReviewModerationAction(action)) {
+    throw new TypeError("Unsupported review moderation action.");
+  }
+
+  return REVIEW_MODERATION_SUCCESS_MESSAGE[action];
+}
+
 export function getReviewModerationUpdate(review, action) {
   if (!review || !Object.values(REVIEW_STATUS).includes(review.status)) {
     throw new TypeError("A valid current review state is required.");
   }
 
-  if (!Object.values(REVIEW_MODERATION_ACTION).includes(action)) {
+  if (!isReviewModerationAction(action)) {
     throw new TypeError("Unsupported review moderation action.");
   }
 

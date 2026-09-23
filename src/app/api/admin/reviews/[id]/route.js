@@ -1,11 +1,13 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 import { moderateAdminReview } from "@/lib/admin/reviews";
 import { getAdminAuthorization } from "@/lib/auth/authorization";
 import { getAuthenticatedUser, getUserRole } from "@/lib/auth/guards";
 import {
+  getReviewModerationSuccessMessage,
   isReviewId,
-  REVIEW_MODERATION_ACTION,
+  isReviewModerationAction,
 } from "@/lib/reviews/moderation";
 
 export async function PATCH(request, context) {
@@ -37,7 +39,7 @@ export async function PATCH(request, context) {
 
   if (
     !isReviewId(id) ||
-    !Object.values(REVIEW_MODERATION_ACTION).includes(payload?.action)
+    !isReviewModerationAction(payload?.action)
   ) {
     return NextResponse.json(
       { ok: false, message: "The moderation request was invalid." },
@@ -52,21 +54,31 @@ export async function PATCH(request, context) {
       adminUserId: user.id,
     });
 
+    revalidatePath("/");
+    revalidatePath("/reviews");
+    revalidatePath("/admin/reviews");
+
     return NextResponse.json(
-      { ok: true, message: "Review moderation updated.", review },
+      {
+        ok: true,
+        message: getReviewModerationSuccessMessage(payload.action),
+        review,
+      },
       { status: 200 }
     );
   } catch (error) {
     console.error("[admin-review-moderation]", error);
 
+    const reviewNotFound = error?.message === "The review could not be found.";
+
     return NextResponse.json(
       {
         ok: false,
-        message: error instanceof TypeError
+        message: error instanceof TypeError || reviewNotFound
           ? error.message
           : "The review could not be updated. Refresh and try again.",
       },
-      { status: error instanceof TypeError ? 400 : 409 }
+      { status: error instanceof TypeError ? 400 : reviewNotFound ? 404 : 409 }
     );
   }
 }

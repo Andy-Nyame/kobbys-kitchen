@@ -5410,6 +5410,45 @@ select:focus-visible {
 }
 
 @media (max-width: 700px) {
+  .admin-workspace .form-field {
+    gap: 0.4rem;
+  }
+
+  .admin-workspace .form-field input,
+  .admin-workspace .form-field select,
+  .admin-workspace .form-field textarea {
+    min-height: 44px;
+    padding: 0.55rem 0.75rem;
+    line-height: 1.25;
+  }
+
+  .admin-workspace .form-field textarea {
+    min-height: 6.5rem;
+  }
+
+  .admin-workspace .admin-filter-form,
+  .admin-workspace .admin-promo-grid,
+  .admin-workspace .admin-campaign-toggle-grid,
+  .admin-workspace .admin-campaign-field-grid {
+    gap: 0.75rem;
+  }
+
+  .admin-workspace .admin-promo-form,
+  .admin-workspace .admin-campaign-form {
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .admin-workspace .admin-campaign-toggle {
+    gap: 0.6rem;
+    padding: 0.7rem;
+  }
+
+  .admin-workspace .button-link {
+    min-height: 44px;
+    padding: 0.65rem 0.9rem;
+  }
+
   .admin-table-shell {
     overflow: visible;
     border: 0;
@@ -5473,6 +5512,14 @@ select:focus-visible {
 
   .admin-table td > .admin-status {
     margin-top: 0;
+  }
+
+  .admin-table td[data-label="Actions"] {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-review-actions {
+    min-width: 0;
   }
 }
 

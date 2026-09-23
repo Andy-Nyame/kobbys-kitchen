@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 
 import { parseReviewFilters } from "../lib/admin/filters.js";
 import { getAdminAuthorization } from "../lib/auth/authorization.js";
 import {
   getReviewModerationUpdate,
+  getReviewModerationSuccessMessage,
   isReviewId,
+  isReviewModerationAction,
   REVIEW_MODERATION_ACTION,
   REVIEW_STATUS,
 } from "../lib/reviews/moderation.js";
@@ -29,6 +32,19 @@ describe("server-side public review visibility", () => {
 });
 
 describe("review moderation transitions", () => {
+  it("accepts the four explicit request actions and rejects unknown values", () => {
+    for (const action of Object.values(REVIEW_MODERATION_ACTION)) {
+      assert.equal(isReviewModerationAction(action), true);
+      assert.match(getReviewModerationSuccessMessage(action), /^Review /);
+    }
+
+    assert.equal(isReviewModerationAction("PUBLISH"), false);
+    assert.throws(
+      () => getReviewModerationSuccessMessage("PUBLISH"),
+      /Unsupported/
+    );
+  });
+
   it("approves pending or hidden reviews without featuring them", () => {
     for (const status of [REVIEW_STATUS.PENDING, REVIEW_STATUS.HIDDEN]) {
       assert.deepEqual(
@@ -92,6 +108,19 @@ describe("review moderation transitions", () => {
 });
 
 describe("review admin boundaries and filters", () => {
+  it("submits the clicked moderation action and refreshes Admin and public review views", async () => {
+    const [actionsSource, routeSource] = await Promise.all([
+      readFile("src/components/admin/AdminReviewActions.jsx", "utf8"),
+      readFile("src/app/api/admin/reviews/[id]/route.js", "utf8"),
+    ]);
+
+    assert.match(actionsSource, /nativeEvent\.submitter\?\.value/);
+    assert.match(routeSource, /isReviewModerationAction\(payload\?\.action\)/);
+    assert.match(routeSource, /revalidatePath\("\/"\)/);
+    assert.match(routeSource, /revalidatePath\("\/reviews"\)/);
+    assert.match(routeSource, /revalidatePath\("\/admin\/reviews"\)/);
+  });
+
   it("allows ADMIN and denies public or CUSTOMER moderation contexts", () => {
     assert.equal(getAdminAuthorization(null, null).allowed, false);
     assert.equal(
