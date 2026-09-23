@@ -7,7 +7,6 @@ import { getInitialOrderPaymentState } from "./domain.js";
 import {
   assertPaymentMethodAvailable,
   createPaystackReference,
-  getPaymentAvailability,
   isPaystackMethod,
   PAYSTACK_PROVIDER,
 } from "../payments/domain.js";
@@ -95,7 +94,7 @@ export async function createTrustedPickupOrder({
   assertOrderingOpen,
   createReference = createOrderReference,
   createProviderReference = createPaystackReference,
-  resolvePaymentAvailability = getPaymentAvailability,
+  resolvePaymentAvailability,
 }) {
   if (!prismaClient || typeof prismaClient.$transaction !== "function") {
     throw new TypeError("A Prisma transaction client is required.");
@@ -103,6 +102,10 @@ export async function createTrustedPickupOrder({
 
   if (typeof assertOrderingOpen !== "function") {
     throw new TypeError("The authoritative ordering guard is required.");
+  }
+
+  if (typeof resolvePaymentAvailability !== "function") {
+    throw new TypeError("The authoritative payment availability resolver is required.");
   }
 
   try {
@@ -151,7 +154,10 @@ export async function createTrustedPickupOrder({
 
         assertPaymentMethodAvailable(
           checkout.paymentMethod,
-          resolvePaymentAvailability({ customerEmail: trustedUser.email })
+          await resolvePaymentAvailability({
+            customerEmail: trustedUser.email,
+            client: transaction,
+          })
         );
 
         await assertOrderingOpen({ client: transaction });

@@ -6,7 +6,7 @@ import PageIntro from "@/components/ui/PageIntro";
 import { ensureCustomerProfile, requireCustomer } from "@/lib/auth/guards";
 import { getPublicMenuCatalogue } from "@/lib/menu/catalogue";
 import { getPublicOrderingStatus } from "@/lib/ordering/server";
-import { getPaymentAvailability } from "@/lib/payments/domain";
+import { getCurrentPaymentAvailability } from "@/lib/payments/availability-server";
 
 export const metadata = {
   title: "Checkout | Kobby's Kitchen",
@@ -17,10 +17,11 @@ export const dynamic = "force-dynamic";
 
 export default async function CheckoutPage() {
   const user = await requireCustomer("/checkout");
-  const [profile, catalogue, orderingStatus] = await Promise.all([
+  const [profile, catalogue, orderingStatus, paymentOptions] = await Promise.all([
     ensureCustomerProfile(user),
     getPublicMenuCatalogue(),
     getPublicOrderingStatus(),
+    getCurrentPaymentAvailability({ customerEmail: user.email }),
   ]);
 
   if (!profile) {
@@ -44,7 +45,7 @@ export default async function CheckoutPage() {
             phone: profile.phone || "",
           }}
           orderingStatus={orderingStatus}
-          paymentOptions={getPaymentAvailability({ customerEmail: user.email })}
+          paymentOptions={paymentOptions}
         />
       ) : (
         <section className="cart-empty-state" role="alert">

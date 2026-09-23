@@ -23,6 +23,7 @@ describe("pickup checkout authorization and UI boundaries", () => {
     );
 
     assert.match(source, /disabled=\{!paymentOptions\.cashAvailable\}/);
+    assert.match(source, /paymentOptions\.cashOnPickupEnabled \? \(/);
     assert.match(source, /disabled=\{!paymentOptions\.methods\.MOBILE_MONEY\}/);
     assert.match(source, /disabled=\{!paymentOptions\.methods\.CARD\}/);
     assert.match(source, /Cash on Pickup is unavailable for this account/);

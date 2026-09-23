@@ -9,6 +9,7 @@ export async function getAdminOrderingSettings() {
 
   return {
     acceptingOrders: data?.acceptingOrders === true,
+    cashOnPickupEnabled: data?.cashOnPickupEnabled === true,
     updatedAt: data?.updatedAt || null,
     configured: Boolean(data),
   };

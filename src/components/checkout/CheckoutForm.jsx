@@ -252,10 +252,12 @@ export default function CheckoutForm({ catalogueItems, customer, orderingStatus:
 
         <fieldset className="checkout-card checkout-payment">
           <legend>Payment method</legend>
-          <label className={`checkout-payment__option ${paymentMethod === "CASH" ? "checkout-payment__option--selected" : ""} ${!paymentOptions.cashAvailable ? "checkout-payment__option--disabled" : ""}`}>
-            <input checked={paymentMethod === "CASH"} disabled={!paymentOptions.cashAvailable} name="paymentMethod" onChange={() => setPaymentMethod("CASH")} type="radio" value="CASH" />
-            <span><strong>Cash on Pickup</strong><small>{paymentOptions.cashAvailable ? "Pay when collecting your order." : "Cash on Pickup is unavailable for this account. Please pay securely online."}</small></span>
-          </label>
+          {paymentOptions.cashOnPickupEnabled ? (
+            <label className={`checkout-payment__option ${paymentMethod === "CASH" ? "checkout-payment__option--selected" : ""} ${!paymentOptions.cashAvailable ? "checkout-payment__option--disabled" : ""}`}>
+              <input checked={paymentMethod === "CASH"} disabled={!paymentOptions.cashAvailable} name="paymentMethod" onChange={() => setPaymentMethod("CASH")} type="radio" value="CASH" />
+              <span><strong>Cash on Pickup</strong><small>{paymentOptions.cashAvailable ? "Pay when collecting your order." : "Cash on Pickup is unavailable for this account. Please pay securely online."}</small></span>
+            </label>
+          ) : null}
           <label className={`checkout-payment__option ${paymentMethod === "MOBILE_MONEY" ? "checkout-payment__option--selected" : ""} ${!paymentOptions.methods.MOBILE_MONEY ? "checkout-payment__option--disabled" : ""}`}>
             <input checked={paymentMethod === "MOBILE_MONEY"} disabled={!paymentOptions.methods.MOBILE_MONEY} name="paymentMethod" onChange={() => setPaymentMethod("MOBILE_MONEY")} type="radio" value="MOBILE_MONEY" />
             <span><strong>Mobile Money</strong><small>{paymentOptions.methods.MOBILE_MONEY ? "Pay securely through hosted Paystack checkout." : "Online payment is not currently available."}</small></span>

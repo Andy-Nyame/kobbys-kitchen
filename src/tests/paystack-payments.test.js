@@ -165,7 +165,7 @@ describe("Paystack configuration and hosted provider boundary", () => {
     process.env.PAYSTACK_SECRET_KEY = "sk_test_redacted";
     assert.deepEqual(getPaymentAvailability().methods, { CASH: false, MOBILE_MONEY: true, CARD: true });
     process.env.CASH_ON_PICKUP_ALLOWED_EMAILS = "customer@example.test";
-    assert.deepEqual(getPaymentAvailability({ customerEmail: "customer@example.test" }).methods, { CASH: true, MOBILE_MONEY: true, CARD: true });
+    assert.deepEqual(getPaymentAvailability({ customerEmail: "customer@example.test", cashOnPickupEnabled: true }).methods, { CASH: true, MOBILE_MONEY: true, CARD: true });
     resetPaystackEnv();
   });
 

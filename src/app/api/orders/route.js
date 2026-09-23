@@ -7,7 +7,8 @@ import {
   validateCheckoutPayload,
 } from "@/lib/orders/checkout-domain";
 import { createPickupOrderForCustomer } from "@/lib/orders/server";
-import { getPaymentAvailability, PaymentDomainError } from "@/lib/payments/domain";
+import { getCurrentPaymentAvailability } from "@/lib/payments/availability-server";
+import { PaymentDomainError } from "@/lib/payments/domain";
 import { PromoDomainError } from "@/lib/promos/domain";
 
 const conflictCodes = new Set([
@@ -118,9 +119,12 @@ export async function POST(request) {
   }
 
   try {
+    const paymentAvailability = await getCurrentPaymentAvailability({
+      customerEmail: user.email,
+    });
     const checkout = validateCheckoutPayload(
       payload,
-      getPaymentAvailability({ customerEmail: user.email })
+      paymentAvailability
     );
     const order = await createPickupOrderForCustomer(user.id, checkout);
 

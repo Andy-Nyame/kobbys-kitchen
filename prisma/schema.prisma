@@ -309,13 +309,14 @@ model ReviewModeration {
 }
 
 model OrderingSetting {
-  id                String               @id @default("default")
-  acceptingOrders   Boolean              @default(false)
-  emergencyPaused   Boolean              @default(false)
-  overrideMode      OrderingOverrideMode @default(NONE)
-  overrideExpiresAt DateTime?
-  changedById       String?              @db.Uuid
-  updatedAt         DateTime             @updatedAt
+  id                  String               @id @default("default")
+  acceptingOrders     Boolean              @default(false)
+  cashOnPickupEnabled Boolean              @default(false)
+  emergencyPaused     Boolean              @default(false)
+  overrideMode        OrderingOverrideMode @default(NONE)
+  overrideExpiresAt   DateTime?
+  changedById         String?              @db.Uuid
+  updatedAt           DateTime             @updatedAt
 
   changedBy       User?                    @relation("OrderingSettingChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
   scheduleWindows OrderingScheduleWindow[]

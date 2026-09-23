@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createTrustedPickupOrder } from "./checkout-service.js";
 import { initializeNewOrderPayment } from "@/lib/payments/service";
 import { PaymentDomainError } from "@/lib/payments/domain";
+import { getCurrentPaymentAvailability } from "@/lib/payments/availability-server";
 
 export async function createPickupOrderForCustomer(userId, checkout) {
   const order = await createTrustedPickupOrder({
@@ -12,6 +13,7 @@ export async function createPickupOrderForCustomer(userId, checkout) {
     userId,
     checkout,
     assertOrderingOpen: assertOrderingOpenForSubmission,
+    resolvePaymentAvailability: getCurrentPaymentAvailability,
   });
   try {
     const paymentCheckout = await initializeNewOrderPayment({ prismaClient: prisma, order });

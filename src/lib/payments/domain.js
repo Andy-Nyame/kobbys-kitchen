@@ -50,17 +50,20 @@ export function isCashOnPickupAllowedForEmail(
   return parseCashOnPickupAllowedEmails(configuredEmails).includes(normalizedEmail);
 }
 
-export function getPaymentAvailability({ customerEmail } = {}) {
+export function getPaymentAvailability({ customerEmail, cashOnPickupEnabled = false } = {}) {
   const paystackConfigured = Boolean(process.env.PAYSTACK_SECRET_KEY?.trim());
   const paystackAvailable = enabled("PAYSTACK_ENABLED") && paystackConfigured;
   const onlinePaymentRequired =
     paystackAvailable && enabled("ONLINE_PAYMENT_REQUIRED");
-  const cashAvailable = isCashOnPickupAllowedForEmail(customerEmail);
+  const cashAccountEligible = isCashOnPickupAllowedForEmail(customerEmail);
+  const cashAvailable = cashOnPickupEnabled === true && cashAccountEligible;
 
   return Object.freeze({
     paystackAvailable,
     paystackConfigured,
     onlinePaymentRequired,
+    cashOnPickupEnabled: cashOnPickupEnabled === true,
+    cashAccountEligible,
     cashAvailable,
     methods: Object.freeze({
       [PAYMENT_METHOD.CASH]: cashAvailable,
@@ -75,7 +78,9 @@ export function assertPaymentMethodAvailable(method, availability) {
     throw new PaymentDomainError(
       "PAYMENT_METHOD_UNAVAILABLE",
       method === PAYMENT_METHOD.CASH
-        ? "Cash on Pickup is unavailable for this account. Please pay securely online."
+        ? availability?.cashOnPickupEnabled === false
+          ? "Cash on Pickup is currently unavailable. Please choose another payment method."
+          : "Cash on Pickup is unavailable for this account. Please pay securely online."
         : "That payment method is not currently available.",
       400
     );

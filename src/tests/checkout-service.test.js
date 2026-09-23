@@ -181,6 +181,7 @@ describe("atomic trusted pickup order creation", () => {
         userId: "admin",
         checkout: validCheckout(),
         assertOrderingOpen: async () => ({ acceptingOrders: true }),
+        resolvePaymentAvailability: allowCash,
       }),
       (error) => error.code === "CUSTOMER_REQUIRED"
     );
@@ -198,12 +199,48 @@ describe("atomic trusted pickup order creation", () => {
         assertOrderingOpen: async () => ({ acceptingOrders: true }),
         resolvePaymentAvailability: ({ customerEmail }) => {
           checkedEmail = customerEmail;
-          return { methods: { CASH: false } };
+          return { cashOnPickupEnabled: false, methods: { CASH: false } };
         },
       }),
       (error) => error.code === "PAYMENT_METHOD_UNAVAILABLE"
     );
     assert.equal(checkedEmail, "ama@example.test");
     assert.equal(prisma.state.createCount, 0);
+  });
+
+  it("rechecks the latest Cash setting before writes while preserving existing orders", async () => {
+    const prisma = createFakePrisma();
+    let cashEnabled = true;
+    const options = {
+      prismaClient: prisma,
+      userId: CUSTOMER_ID,
+      checkout: validCheckout(),
+      assertOrderingOpen: async () => ({ acceptingOrders: true }),
+      resolvePaymentAvailability: async ({ client }) => {
+        assert.equal(client, prisma.transaction);
+        return {
+          cashOnPickupEnabled: cashEnabled,
+          methods: { CASH: cashEnabled },
+        };
+      },
+    };
+
+    const existing = await createTrustedPickupOrder(options);
+    cashEnabled = false;
+
+    const retry = await createTrustedPickupOrder(options);
+    assert.equal(retry.id, existing.id);
+    assert.equal(retry.idempotent, true);
+
+    await assert.rejects(
+      createTrustedPickupOrder({
+        ...options,
+        checkout: validCheckout("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"),
+      }),
+      (error) =>
+        error.code === "PAYMENT_METHOD_UNAVAILABLE" &&
+        /currently unavailable/.test(error.message)
+    );
+    assert.equal(prisma.state.createCount, 1);
   });
 });

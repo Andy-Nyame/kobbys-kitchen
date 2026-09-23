@@ -51,12 +51,25 @@ describe("Cash on Pickup account allowlist", () => {
       process.env.CASH_ON_PICKUP_ALLOWED_EMAILS = "allowed@example.test";
 
       assert.deepEqual(
-        getPaymentAvailability({ customerEmail: "normal@example.test" }).methods,
+        getPaymentAvailability({
+          customerEmail: "normal@example.test",
+          cashOnPickupEnabled: true,
+        }).methods,
         { CASH: false, MOBILE_MONEY: true, CARD: true }
       );
       assert.deepEqual(
-        getPaymentAvailability({ customerEmail: "ALLOWED@example.test" }).methods,
+        getPaymentAvailability({
+          customerEmail: "ALLOWED@example.test",
+          cashOnPickupEnabled: true,
+        }).methods,
         { CASH: true, MOBILE_MONEY: true, CARD: true }
+      );
+      assert.equal(
+        getPaymentAvailability({
+          customerEmail: "ALLOWED@example.test",
+          cashOnPickupEnabled: false,
+        }).methods.CASH,
+        false
       );
     } finally {
       for (const [name, value] of [
@@ -78,10 +91,11 @@ describe("Cash on Pickup account allowlist", () => {
       readFile("src/lib/orders/checkout-service.js", "utf8"),
     ]);
 
-    assert.match(page, /getPaymentAvailability\(\{ customerEmail: user\.email \}\)/);
-    assert.match(route, /getPaymentAvailability\(\{ customerEmail: user\.email \}\)/);
-    assert.doesNotMatch(route, /getPaymentAvailability\(\{ customerEmail: payload/);
+    assert.match(page, /getCurrentPaymentAvailability\(\{ customerEmail: user\.email \}\)/);
+    assert.match(route, /getCurrentPaymentAvailability\(\{\s*customerEmail: user\.email/);
+    assert.doesNotMatch(route, /getCurrentPaymentAvailability\(\{ customerEmail: payload/);
     assert.match(service, /customerEmail: trustedUser\.email/);
+    assert.match(service, /client: transaction/);
   });
 
   it("documents only a blank server-side setting", async () => {

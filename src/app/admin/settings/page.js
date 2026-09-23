@@ -1,4 +1,5 @@
 import AdminBusinessHoursManager from "@/components/admin/AdminBusinessHoursManager";
+import AdminCashOnPickupSetting from "@/components/admin/AdminCashOnPickupSetting";
 import ContentSection from "@/components/ui/ContentSection";
 import PageIntro from "@/components/ui/PageIntro";
 import { getOrderingAvailability } from "@/lib/admin/ordering-status";
@@ -7,6 +8,7 @@ import { getAdminOrderingSettings } from "@/lib/admin/settings";
 import { getAdminBusinessHours } from "@/lib/admin/business-hours";
 import { requireAdmin } from "@/lib/auth/guards";
 import { isOrderingEnabled } from "@/lib/feature-flags";
+import { getPaymentAvailability } from "@/lib/payments/domain";
 
 export const metadata = {
   title: "Admin Settings | Kobby's Kitchen",
@@ -33,6 +35,7 @@ export default async function AdminSettingsPage() {
     featureEnabled,
     acceptingOrders: settings?.acceptingOrders === true,
   });
+  const onlinePaymentAvailability = getPaymentAvailability();
 
   return (
     <>
@@ -80,6 +83,21 @@ export default async function AdminSettingsPage() {
           <strong>{orderingStatus.message}</strong>
           <p>Online ordering hours and temporary controls are managed under Operations.</p>
         </div>
+      </ContentSection>
+
+      <ContentSection title="Payment Methods" description="Control payment choices for new online orders." className="admin-section">
+        <dl className="admin-settings-list admin-settings-list--payment-methods">
+          <div><dt>Mobile Money</dt><dd>{onlinePaymentAvailability.methods.MOBILE_MONEY ? "Available" : "Unavailable"}</dd></div>
+          <div><dt>Card</dt><dd>{onlinePaymentAvailability.methods.CARD ? "Available" : "Unavailable"}</dd></div>
+        </dl>
+        {settings ? (
+          <AdminCashOnPickupSetting initialEnabled={settings.cashOnPickupEnabled} />
+        ) : (
+          <div className="admin-notice admin-notice--warning" role="alert">
+            <strong>Cash on Pickup setting is unavailable.</strong>
+            <p>No change can be saved until the current setting loads.</p>
+          </div>
+        )}
       </ContentSection>
 
       <ContentSection title="Fulfillment" description="Current V2 fulfillment scope." className="admin-section">
