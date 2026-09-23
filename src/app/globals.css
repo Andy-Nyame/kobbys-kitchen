@@ -283,6 +283,7 @@
 .admin-promo-list,
 .admin-promo-form {
   display: grid;
+  min-width: 0;
   gap: 1.25rem;
 }
 
@@ -315,7 +316,12 @@
 
 .admin-promo-grid {
   display: grid;
+  min-width: 0;
   gap: 1rem;
+}
+
+.admin-promo-grid > * {
+  min-width: 0;
 }
 
 @media (min-width: 768px) {
@@ -335,6 +341,7 @@
 
 .admin-campaign-card {
   display: grid;
+  min-width: 0;
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-medium);
@@ -352,6 +359,7 @@
 
 .admin-campaign-form {
   display: grid;
+  min-width: 0;
   gap: 1.25rem;
   padding: 1.25rem;
 }
@@ -370,7 +378,13 @@
 .admin-campaign-toggle-grid,
 .admin-campaign-field-grid {
   display: grid;
+  min-width: 0;
   gap: 1rem;
+}
+
+.admin-campaign-toggle-grid > *,
+.admin-campaign-field-grid > * {
+  min-width: 0;
 }
 
 .admin-campaign-toggle {
@@ -392,6 +406,7 @@
 
 .admin-campaign-toggle span {
   display: grid;
+  min-width: 0;
   gap: 0.15rem;
 }
 
@@ -552,6 +567,7 @@ button,
 input,
 textarea,
 select {
+  max-width: 100%;
   font: inherit;
 }
 
@@ -2217,6 +2233,7 @@ select:focus-visible {
 
 .cart-promo {
   display: grid;
+  min-width: 0;
   gap: 0.75rem;
   border-block: 1px solid var(--color-border);
   padding-block: 1rem;
@@ -2230,6 +2247,7 @@ select:focus-visible {
 .cart-promo__form,
 .cart-promo__applied {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 0.75rem;
 }
@@ -2242,8 +2260,15 @@ select:focus-visible {
 
 .cart-promo__applied > div {
   display: grid;
+  min-width: 0;
   flex: 1;
   gap: 0.15rem;
+}
+
+.cart-promo__applied strong,
+.cart-promo__applied span,
+.cart-promo__feedback {
+  overflow-wrap: anywhere;
 }
 
 .cart-promo__applied span,
@@ -2434,13 +2459,14 @@ select:focus-visible {
 .form-card,
 .form-field {
   display: grid;
+  min-width: 0;
   gap: 0.75rem;
 }
 
 .form-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
 }
 
 .form-field label {
@@ -2455,6 +2481,8 @@ select:focus-visible {
 .form-field textarea,
 .form-field select {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--color-border);
   border-radius: 0.95rem;
   background-color: var(--color-surface);
